@@ -1,0 +1,268 @@
+{
+  "" : {
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/TinnitusRelief-master.dia",
+    "emit-module-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/TinnitusRelief-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/TinnitusRelief-master-emit-module.dia",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/TinnitusRelief-master.swiftdeps"
+  },
+  "/Users/midnight/Documents/Projects/tin/TinnitusRelief/ContentView.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ContentView.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ContentView.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ContentView.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ContentView.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ContentView.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ContentView.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ContentView.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ContentView~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/TinnitusRelief/Extensions/Color+Extensions.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/Color+Extensions.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/Color+Extensions.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/Color+Extensions.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/Color+Extensions.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/Color+Extensions.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/Color+Extensions.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/Color+Extensions.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/Color+Extensions~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/TinnitusRelief/Extensions/View+Extensions.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/View+Extensions.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/View+Extensions.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/View+Extensions.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/View+Extensions.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/View+Extensions.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/View+Extensions.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/View+Extensions.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/View+Extensions~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/TinnitusRelief/Models/Persistence.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/Persistence.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/Persistence.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/Persistence.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/Persistence.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/Persistence.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/Persistence.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/Persistence.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/Persistence~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/TinnitusRelief/Services/AudioEngine/AudioEngineService.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/AudioEngineService.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/AudioEngineService.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/AudioEngineService.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/AudioEngineService.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/AudioEngineService.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/AudioEngineService.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/AudioEngineService.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/AudioEngineService~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/TinnitusRelief/Services/AudioEngine/SoundLibraryService.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundLibraryService.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundLibraryService.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundLibraryService.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundLibraryService.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundLibraryService.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundLibraryService.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundLibraryService.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundLibraryService~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/TinnitusRelief/Services/AudioEngine/UnifiedAudioEngineManager.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UnifiedAudioEngineManager.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UnifiedAudioEngineManager.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UnifiedAudioEngineManager.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UnifiedAudioEngineManager.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UnifiedAudioEngineManager.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UnifiedAudioEngineManager.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UnifiedAudioEngineManager.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UnifiedAudioEngineManager~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/TinnitusRelief/TinnitusReliefApp.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/TinnitusReliefApp.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/TinnitusReliefApp.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/TinnitusReliefApp.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/TinnitusReliefApp.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/TinnitusReliefApp.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/TinnitusReliefApp.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/TinnitusReliefApp.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/TinnitusReliefApp~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/TinnitusRelief/Utilities/HapticFeedback.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/HapticFeedback.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/HapticFeedback.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/HapticFeedback.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/HapticFeedback.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/HapticFeedback.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/HapticFeedback.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/HapticFeedback.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/HapticFeedback~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/TinnitusRelief/ViewModels/DiaryViewModel.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryViewModel.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryViewModel.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryViewModel.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryViewModel.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryViewModel.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryViewModel.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryViewModel.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryViewModel~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/TinnitusRelief/ViewModels/FrequencyMatchingViewModel.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyMatchingViewModel.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyMatchingViewModel.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyMatchingViewModel.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyMatchingViewModel.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyMatchingViewModel.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyMatchingViewModel.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyMatchingViewModel.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyMatchingViewModel~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/TinnitusRelief/Views/Components/MainTabView.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/MainTabView.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/MainTabView.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/MainTabView.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/MainTabView.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/MainTabView.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/MainTabView.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/MainTabView.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/MainTabView~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/TinnitusRelief/Views/Diary/DiaryView.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryView.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryView.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryView.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryView.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryView.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryView.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryView.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryView~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/TinnitusRelief/Views/FrequencyMatching/FrequencyControlPoint.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyControlPoint.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyControlPoint.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyControlPoint.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyControlPoint.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyControlPoint.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyControlPoint.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyControlPoint.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyControlPoint~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/TinnitusRelief/Views/FrequencyMatching/FrequencyMatchingView.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyMatchingView.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyMatchingView.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyMatchingView.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyMatchingView.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyMatchingView.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyMatchingView.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyMatchingView.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/FrequencyMatchingView~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/TinnitusRelief/Views/SoundLibrary/SoundLibraryView.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundLibraryView.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundLibraryView.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundLibraryView.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundLibraryView.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundLibraryView.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundLibraryView.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundLibraryView.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundLibraryView~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/DerivedSources/CoreDataGenerated/TinnitusRelief/DiaryEntry+CoreDataClass.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryEntry+CoreDataClass.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryEntry+CoreDataClass.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryEntry+CoreDataClass.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryEntry+CoreDataClass.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryEntry+CoreDataClass.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryEntry+CoreDataClass.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryEntry+CoreDataClass.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryEntry+CoreDataClass~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/DerivedSources/CoreDataGenerated/TinnitusRelief/DiaryEntry+CoreDataProperties.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryEntry+CoreDataProperties.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryEntry+CoreDataProperties.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryEntry+CoreDataProperties.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryEntry+CoreDataProperties.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryEntry+CoreDataProperties.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryEntry+CoreDataProperties.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryEntry+CoreDataProperties.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/DiaryEntry+CoreDataProperties~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/DerivedSources/CoreDataGenerated/TinnitusRelief/ScheduleEntry+CoreDataClass.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ScheduleEntry+CoreDataClass.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ScheduleEntry+CoreDataClass.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ScheduleEntry+CoreDataClass.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ScheduleEntry+CoreDataClass.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ScheduleEntry+CoreDataClass.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ScheduleEntry+CoreDataClass.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ScheduleEntry+CoreDataClass.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ScheduleEntry+CoreDataClass~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/DerivedSources/CoreDataGenerated/TinnitusRelief/ScheduleEntry+CoreDataProperties.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ScheduleEntry+CoreDataProperties.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ScheduleEntry+CoreDataProperties.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ScheduleEntry+CoreDataProperties.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ScheduleEntry+CoreDataProperties.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ScheduleEntry+CoreDataProperties.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ScheduleEntry+CoreDataProperties.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ScheduleEntry+CoreDataProperties.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/ScheduleEntry+CoreDataProperties~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/DerivedSources/CoreDataGenerated/TinnitusRelief/SoundPreset+CoreDataClass.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundPreset+CoreDataClass.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundPreset+CoreDataClass.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundPreset+CoreDataClass.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundPreset+CoreDataClass.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundPreset+CoreDataClass.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundPreset+CoreDataClass.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundPreset+CoreDataClass.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundPreset+CoreDataClass~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/DerivedSources/CoreDataGenerated/TinnitusRelief/SoundPreset+CoreDataProperties.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundPreset+CoreDataProperties.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundPreset+CoreDataProperties.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundPreset+CoreDataProperties.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundPreset+CoreDataProperties.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundPreset+CoreDataProperties.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundPreset+CoreDataProperties.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundPreset+CoreDataProperties.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/SoundPreset+CoreDataProperties~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/DerivedSources/CoreDataGenerated/TinnitusRelief/TinnitusRelief+CoreDataModel.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/TinnitusRelief+CoreDataModel.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/TinnitusRelief+CoreDataModel.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/TinnitusRelief+CoreDataModel.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/TinnitusRelief+CoreDataModel.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/TinnitusRelief+CoreDataModel.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/TinnitusRelief+CoreDataModel.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/TinnitusRelief+CoreDataModel.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/TinnitusRelief+CoreDataModel~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/DerivedSources/CoreDataGenerated/TinnitusRelief/UserProfile+CoreDataClass.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UserProfile+CoreDataClass.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UserProfile+CoreDataClass.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UserProfile+CoreDataClass.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UserProfile+CoreDataClass.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UserProfile+CoreDataClass.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UserProfile+CoreDataClass.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UserProfile+CoreDataClass.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UserProfile+CoreDataClass~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/DerivedSources/CoreDataGenerated/TinnitusRelief/UserProfile+CoreDataProperties.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UserProfile+CoreDataProperties.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UserProfile+CoreDataProperties.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UserProfile+CoreDataProperties.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UserProfile+CoreDataProperties.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UserProfile+CoreDataProperties.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UserProfile+CoreDataProperties.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UserProfile+CoreDataProperties.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/UserProfile+CoreDataProperties~partial.swiftmodule"
+  },
+  "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/GeneratedAssetSymbols.dia",
+    "index-unit-output-path" : "/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftdeps",
+    "swiftmodule" : "/Users/midnight/Documents/Projects/tin/build/TinnitusRelief.build/Debug-iphoneos/TinnitusRelief.build/Objects-normal/arm64/GeneratedAssetSymbols~partial.swiftmodule"
+  }
+}
