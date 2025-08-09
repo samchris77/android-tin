@@ -12,7 +12,7 @@ struct DiaryView: View {
                     logView
                         .tabItem {
                             Image(systemName: "plus.circle")
-                            Text("Logs")
+                            Text("Add")
                         }
                         .tag(0)
                     
@@ -30,8 +30,9 @@ struct DiaryView: View {
                         }
                         .tag(2)
                 }
+                .accentColor(.orange)
             }
-            .navigationTitle("Tinnitus Diary")
+            .navigationTitle("Log")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {

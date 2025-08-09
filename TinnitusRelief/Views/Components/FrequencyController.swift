@@ -76,18 +76,6 @@ struct FrequencyController: View {
         VStack(spacing: 16) {
             // Header
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Frequency Match")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    
-                    Text("Active Session")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                
-                Spacer()
-                
                 Button(action: togglePlayback) {
                     Image(systemName: audioManager.isFrequencyPlaying ? "pause.fill" : "play.fill")
                         .font(.system(size: 18, weight: .medium))
@@ -104,6 +92,18 @@ struct FrequencyController: View {
                                 )
                         )
                 }
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Frequency Match")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Text("Active Session")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
                 
                 Button(action: { isExpanded.toggle() }) {
                     Image(systemName: "chevron.down")
@@ -188,34 +188,6 @@ struct FrequencyController: View {
                 }
             }
             
-            // Action Buttons
-            HStack(spacing: 12) {
-                Button(action: { audioManager.stopFrequencyMatching() }) {
-                    Text("Stop")
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .foregroundColor(.red)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 40)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.red.opacity(0.1))
-                        )
-                }
-                
-                Button(action: {}) {
-                    Text("Save")
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .foregroundColor(.orange)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 40)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.orange.opacity(0.1))
-                        )
-                }
-            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 16)
