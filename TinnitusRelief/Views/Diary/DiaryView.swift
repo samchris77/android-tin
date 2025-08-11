@@ -199,7 +199,13 @@ struct DiaryView: View {
                     ForEach(viewModel.diaryEntries, id: \.id) { entry in
                         DiaryEntryRowView(entry: entry) {
                             viewModel.deleteEntry(entry)
-                            refreshTrigger += 1 // Force UI update after deletion
+                            
+                            // Wait for database operations to complete, then refresh UI
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                viewModel.fetchEntries()
+                                refreshTrigger += 1 // Force UI update after data is ready
+                                print("UI refresh triggered after delete - refreshTrigger: \(refreshTrigger)")
+                            }
                         }
                     }
                 }
@@ -370,6 +376,7 @@ struct EntryFormView: View {
     @State private var comfortLevel: Int = 5
     @State private var stressLevel: Int = 5
     @State private var showSuccess: Bool = false
+    @State private var submittedEntryNumber: Int = 0
     
     var body: some View {
         VStack(spacing: 20) {
@@ -399,6 +406,9 @@ struct EntryFormView: View {
             
             
             Button(action: {
+                // Capture the entry number that will be created (current entryNumber)
+                submittedEntryNumber = entryNumber
+                
                 onSave(Int16(loudnessLevel), Int16(comfortLevel), Int16(stressLevel))
                 
                 // Show success message
@@ -440,7 +450,7 @@ struct EntryFormView: View {
                             .font(.system(size: 24))
                             .foregroundColor(.green)
                         
-                        Text("Entry #\(entryNumber) for \(formatDate(currentDate)) submitted")
+                        Text("Entry #\(submittedEntryNumber) for \(formatDate(currentDate)) submitted")
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.primary)
                             .multilineTextAlignment(.center)
