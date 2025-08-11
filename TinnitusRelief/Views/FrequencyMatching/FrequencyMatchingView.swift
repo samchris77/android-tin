@@ -10,7 +10,6 @@ struct FrequencyMatchingView: View {
                 backgroundView
                 dotGridOverlay
                 controlSurface(geometry: geometry)
-                frequencyVolumeDisplay
             }
         }
         .navigationBarHidden(true)
@@ -116,72 +115,6 @@ struct FrequencyMatchingView: View {
         }
     }
     
-    
-    private var frequencyVolumeDisplay: some View {
-        VStack {
-            Spacer()
-            
-            VStack(spacing: 12) {
-                HStack(spacing: 24) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Frequency")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                        Text(viewModel.getFrequencyDisplayText())
-                            .font(.system(size: 16, weight: .semibold, design: .monospaced))
-                            .foregroundColor(.primary)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Volume")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                        Text(viewModel.getVolumeDisplayText())
-                            .font(.system(size: 16, weight: .semibold, design: .monospaced))
-                            .foregroundColor(.primary)
-                    }
-                    
-                    Spacer()
-                    
-                    Button(action: {
-                        if viewModel.isPlaying {
-                            viewModel.stopPlaying()
-                        } else {
-                            viewModel.startPlaying()
-                        }
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
-                                .font(.system(size: 14, weight: .medium))
-                            Text(viewModel.isPlaying ? "Pause" : "Play")
-                                .font(.system(size: 14, weight: .medium))
-                        }
-                        .foregroundColor(.white)
-                        .frame(height: 38)
-                        .padding(.horizontal, 16)
-                        .background(
-                            LinearGradient(
-                                colors: viewModel.isPlaying ? [Color.red, Color.orange] : [Color.orange, Color.red],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .cornerRadius(19)
-                        .shadow(radius: 2, x: 0, y: 1)
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(.ultraThinMaterial)
-                    .padding(.horizontal, 8)
-                    .shadow(radius: 4, x: 0, y: -2)
-            )
-            .padding(.bottom, 20)
-        }
-    }
 }
 
 #Preview {

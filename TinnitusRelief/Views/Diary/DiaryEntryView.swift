@@ -5,7 +5,6 @@ struct DiaryEntryView: View {
     
     // Entry data
     @State private var severity: Double = 5.0
-    @State private var notes: String = ""
     @State private var hasUnsavedChanges = false
     
     private let currentDate = Date()
@@ -84,43 +83,6 @@ struct DiaryEntryView: View {
                         )
                     }
                     
-                    // Notes field
-                    VStack(alignment: .leading, spacing: 16) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Notes (Optional)")
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.primary)
-                            
-                            Text("Any observations, triggers, or treatments?")
-                                .font(.body)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        ZStack(alignment: .topLeading) {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(.systemGray6))
-                                .frame(minHeight: 120)
-                            
-                            TextEditor(text: $notes)
-                                .padding(12)
-                                .background(Color.clear)
-                                // iOS 15 compatible - no scrollContentBackground needed
-                                .font(.body)
-                                .onChange(of: notes) { _ in
-                                    hasUnsavedChanges = true
-                                }
-                            
-                            if notes.isEmpty {
-                                Text("Optional notes...")
-                                    .foregroundColor(.secondary.opacity(0.6))
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 20)
-                                    .allowsHitTesting(false)
-                            }
-                        }
-                        .frame(minHeight: 120)
-                    }
                     
                     Spacer(minLength: 100) // Space for auto-save indicator
                 }
@@ -131,7 +93,6 @@ struct DiaryEntryView: View {
         .onAppear {
             // Reset form for new entry
             severity = 5.0
-            notes = ""
             hasUnsavedChanges = false
         }
         .onDisappear {
@@ -176,7 +137,7 @@ struct DiaryEntryView: View {
         viewModel.addEntry(
             date: currentDate,
             severity: Int(severity),
-            notes: notes.isEmpty ? nil : notes
+            notes: nil
         )
         
         // Provide haptic feedback

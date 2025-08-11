@@ -5,33 +5,31 @@ struct MainTabView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Frequency Controller positioned at top (hidden on frequency match page)
-            if selectedTab != 0 {
-                FrequencyController()
-                    .zIndex(1)
-            }
+            // Frequency Controller positioned at top (shown on all pages)
+            FrequencyController()
+                .zIndex(1)
             
             TabView(selection: $selectedTab) {
-            FrequencyMatchingView(selectedTab: $selectedTab)
-                .tabItem {
-                    Image(systemName: selectedTab == 0 ? "waveform.path" : "waveform.path")
-                    Text("Frequency")
-                }
-                .tag(0)
-            
-            DiaryView()
-                .tabItem {
-                    Image(systemName: selectedTab == 1 ? "book.fill" : "book")
-                    Text("Log")
-                }
-                .tag(1)
-            
-            CombinedProfileView()
-                .tabItem {
-                    Image(systemName: selectedTab == 2 ? "person.fill" : "person")
-                    Text("Profile")
-                }
-                .tag(2)
+                FrequencyMatchingView(selectedTab: $selectedTab)
+                    .tabItem {
+                        Image(systemName: selectedTab == 0 ? "waveform.path" : "waveform.path")
+                        Text("Frequency")
+                    }
+                    .tag(0)
+                
+                DiaryView()
+                    .tabItem {
+                        Image(systemName: selectedTab == 1 ? "book.fill" : "book")
+                        Text("Log")
+                    }
+                    .tag(1)
+                
+                CombinedProfileView()
+                    .tabItem {
+                        Image(systemName: selectedTab == 2 ? "person.fill" : "person")
+                        Text("Profile")
+                    }
+                    .tag(2)
             }
             .accentColor(.orange)
         }
@@ -43,11 +41,7 @@ struct CombinedProfileView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
-                    profileHeader
-                    
                     progressSection
-                    
-                    preferencesSection
                     
                     settingsSection
                     
@@ -60,31 +54,6 @@ struct CombinedProfileView: View {
         }
     }
     
-    private var profileHeader: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "person.circle.fill")
-                .font(.system(size: 80))
-                .foregroundColor(.orange)
-            
-            VStack(spacing: 4) {
-                Text("Welcome to TinnitusRelief")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                
-                Text("Your personalized tinnitus management companion")
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(.ultraThinMaterial)
-                .shadow(radius: 4, x: 0, y: 2)
-        )
-    }
     
     private var progressSection: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -117,43 +86,6 @@ struct CombinedProfileView: View {
         }
     }
     
-    private var preferencesSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Preferences")
-                .font(.headline)
-                .foregroundColor(.primary)
-            
-            VStack(spacing: 0) {
-                PreferenceRowView(
-                    title: "Tinnitus Frequency",
-                    value: "8.2 kHz",
-                    action: {}
-                )
-                
-                Divider()
-                    .padding(.horizontal)
-                
-                PreferenceRowView(
-                    title: "Preferred Volume",
-                    value: "30%",
-                    action: {}
-                )
-                
-                Divider()
-                    .padding(.horizontal)
-                
-                PreferenceRowView(
-                    title: "Session Duration",
-                    value: "45 minutes",
-                    action: {}
-                )
-            }
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(.ultraThinMaterial)
-            )
-        }
-    }
     
     private var settingsSection: some View {
         VStack(alignment: .leading, spacing: 16) {

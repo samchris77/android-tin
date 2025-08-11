@@ -186,7 +186,10 @@ extension UnifiedAudioEngineManager {
     
     func updateFrequency(_ frequency: Float) {
         let clampedFrequency = max(20, min(16000, frequency))
-        currentFrequency = clampedFrequency
+        
+        DispatchQueue.main.async {
+            self.currentFrequency = clampedFrequency
+        }
         
         // Update the bandpass filter center frequency in real-time
         if let band = frequencyEQ.bands.first {
@@ -198,7 +201,11 @@ extension UnifiedAudioEngineManager {
     
     func updateFrequencyVolume(_ volume: Float) {
         let clampedVolume = max(0, min(1, volume))
-        currentFrequencyVolume = clampedVolume
+        
+        DispatchQueue.main.async {
+            self.currentFrequencyVolume = clampedVolume
+        }
+        
         delegate?.audioManagerDidUpdateVolume(clampedVolume)
     }
     
