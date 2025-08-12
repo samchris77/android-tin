@@ -48,11 +48,11 @@ struct FrequencyMatchingView: View {
     
     private func controlSurface(geometry: GeometryProxy) -> some View {
         let safeArea = geometry.safeAreaInsets
-        let availableHeight = geometry.size.height - safeArea.top - safeArea.bottom - 120
-        let availableWidth = geometry.size.width - 60
+        let availableHeight = geometry.size.height - safeArea.top - safeArea.bottom - 60
+        let availableWidth = geometry.size.width - 20
         let controlAreaFrame = CGRect(
-            x: 30,
-            y: safeArea.top + 80,
+            x: 10,
+            y: safeArea.top + 40,
             width: availableWidth,
             height: availableHeight
         )
@@ -90,28 +90,32 @@ struct FrequencyMatchingView: View {
     }
     
     private func controlLabels(frame: CGRect) -> some View {
-        ZStack {
-            Text("louder")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.orange)
-                .position(x: frame.midX, y: frame.minY - 10)
+        GeometryReader { geometry in
+            let safeArea = geometry.safeAreaInsets
             
-            Text("softer")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.orange)
-                .position(x: frame.midX, y: frame.maxY + 20)
-            
-            Text("bass")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.orange)
-                .rotationEffect(.degrees(-90))
-                .position(x: frame.minX - 20, y: frame.midY)
-            
-            Text("treble")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.orange)
-                .rotationEffect(.degrees(90))
-                .position(x: frame.maxX + 20, y: frame.midY)
+            ZStack {
+                Text("louder")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.orange)
+                    .position(x: frame.midX, y: safeArea.top + 20)
+                
+                Text("softer")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.orange)
+                    .position(x: frame.midX, y: geometry.size.height - safeArea.bottom + 50)
+                
+                Text("bass")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.orange)
+                    .rotationEffect(.degrees(-90))
+                    .position(x: safeArea.leading + 30, y: frame.midY)
+                
+                Text("treble")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.orange)
+                    .rotationEffect(.degrees(90))
+                    .position(x: geometry.size.width - safeArea.trailing - 30, y: frame.midY)
+            }
         }
     }
     
