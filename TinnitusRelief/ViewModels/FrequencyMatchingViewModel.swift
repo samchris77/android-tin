@@ -34,6 +34,23 @@ class FrequencyMatchingViewModel: ObservableObject {
             .assign(to: \.currentVolume, on: self)
             .store(in: &cancellables)
         
+        // Update control position when frequency or volume changes externally
+        Publishers.CombineLatest(audioManager.$currentFrequency, audioManager.$currentFrequencyVolume)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] frequency, volume in
+                guard let self = self else { return }
+                
+                let normalizedX = UnifiedAudioEngineManager.normalizedXFromFrequency(frequency)
+                let normalizedY = UnifiedAudioEngineManager.normalizedYFromVolume(volume)
+                let newPosition = CGPoint(x: CGFloat(normalizedX), y: CGFloat(normalizedY))
+                
+                // Only update if user is not currently dragging
+                if !self.isDragging {
+                    self.controlPosition = newPosition
+                }
+            }
+            .store(in: &cancellables)
+        
         $controlPosition
             .debounce(for: .milliseconds(16), scheduler: DispatchQueue.main)
             .sink { [weak self] position in

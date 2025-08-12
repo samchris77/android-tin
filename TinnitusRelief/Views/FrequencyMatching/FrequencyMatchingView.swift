@@ -10,8 +10,6 @@ struct FrequencyMatchingView: View {
                 backgroundView
                 dotGridOverlay
                 controlSurface(geometry: geometry)
-                navigationBar
-                frequencyVolumeDisplay
             }
         }
         .navigationBarHidden(true)
@@ -117,97 +115,6 @@ struct FrequencyMatchingView: View {
         }
     }
     
-    private var navigationBar: some View {
-        VStack {
-            HStack {
-                Button("Cancel") {
-                    viewModel.stopPlaying()
-                    selectedTab = 0 // Navigate to Home tab
-                }
-                .font(.system(size: 17, weight: .regular))
-                .foregroundColor(.blue)
-                
-                Spacer()
-                
-                Button("Set") {
-                    viewModel.saveMatchedFrequency()
-                    selectedTab = 0 // Navigate to Home tab
-                }
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(.blue)
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 10)
-            
-            Spacer()
-        }
-    }
-    
-    private var frequencyVolumeDisplay: some View {
-        VStack {
-            Spacer()
-            
-            VStack(spacing: 8) {
-                HStack(spacing: 20) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Frequency")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text(viewModel.getFrequencyDisplayText())
-                            .font(.system(size: 18, weight: .semibold, design: .monospaced))
-                            .foregroundColor(.primary)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Volume")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text(viewModel.getVolumeDisplayText())
-                            .font(.system(size: 18, weight: .semibold, design: .monospaced))
-                            .foregroundColor(.primary)
-                    }
-                    
-                    Spacer()
-                }
-                
-                HStack {
-                    Button(action: {
-                        if viewModel.isPlaying {
-                            viewModel.stopPlaying()
-                        } else {
-                            viewModel.startPlaying()
-                        }
-                    }) {
-                        HStack {
-                            Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
-                            Text(viewModel.isPlaying ? "Pause" : "Play")
-                        }
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white)
-                        .frame(height: 44)
-                        .frame(maxWidth: .infinity)
-                        .background(
-                            LinearGradient(
-                                colors: viewModel.isPlaying ? [Color.red, Color.orange] : [Color.orange, Color.red],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .cornerRadius(12)
-                        .shadow(radius: 4, x: 0, y: 2)
-                    }
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 40)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(.ultraThinMaterial)
-                    .padding(.horizontal, 10)
-                    .shadow(radius: 10, x: 0, y: -5)
-            )
-        }
-    }
 }
 
 #Preview {

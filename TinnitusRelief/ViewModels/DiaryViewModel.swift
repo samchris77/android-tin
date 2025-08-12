@@ -38,13 +38,39 @@ class DiaryViewModel: ObservableObject {
         request.sortDescriptors = [NSSortDescriptor(keyPath: \DiaryEntry.date, ascending: false)]
         
         do {
-            diaryEntries = try persistenceController.container.viewContext.fetch(request)
+            let allEntries = try persistenceController.container.viewContext.fetch(request)
+            
+            // Filter out invalid entries and clean up database
+            let validEntries = allEntries.filter { entry in
+                return entry.date != nil && entry.entryNumber > 0
+            }
+            
+            // Remove invalid entries from database
+            let invalidEntries = allEntries.filter { entry in
+                return entry.date == nil || entry.entryNumber <= 0
+            }
+            
+            if !invalidEntries.isEmpty {
+                print("Cleaning up \(invalidEntries.count) invalid entries")
+                for invalidEntry in invalidEntries {
+                    persistenceController.container.viewContext.delete(invalidEntry)
+                }
+                
+                do {
+                    try persistenceController.container.viewContext.save()
+                    print("Invalid entries cleaned up successfully")
+                } catch {
+                    print("Error cleaning up invalid entries: \(error)")
+                }
+            }
+            
+            diaryEntries = validEntries
         } catch {
             print("Error fetching diary entries: \(error)")
         }
     }
     
-    func createEntry(loudness: Int16, comfort: Int16, stress: Int16, notes: String) {
+    func createEntry(loudness: Int16, comfort: Int16, stress: Int16, notes: String?) {
         let context = persistenceController.container.viewContext
         let audioManager = UnifiedAudioEngineManager.shared
         
@@ -54,7 +80,7 @@ class DiaryViewModel: ObservableObject {
         entry.loudnessLevel = loudness
         entry.comfortLevel = comfort
         entry.stressLevel = stress
-        entry.notes = notes.isEmpty ? nil : notes
+        entry.notes = notes
         
         // Auto-populate frequency and volume data
         entry.currentFrequency = audioManager.currentFrequency
@@ -68,19 +94,19 @@ class DiaryViewModel: ObservableObject {
         
         do {
             try context.save()
-            fetchEntries()
+            print("DiaryEntry #\(entry.entryNumber) created successfully for \(selectedDate)")
         } catch {
             print("Error saving diary entry: \(error)")
         }
     }
     
-    func updateEntry(_ entry: DiaryEntry, loudness: Int16, comfort: Int16, stress: Int16, notes: String) {
+    func updateEntry(_ entry: DiaryEntry, loudness: Int16, comfort: Int16, stress: Int16, notes: String?) {
         let audioManager = UnifiedAudioEngineManager.shared
         
         entry.loudnessLevel = loudness
         entry.comfortLevel = comfort
         entry.stressLevel = stress
-        entry.notes = notes.isEmpty ? nil : notes
+        entry.notes = notes
         
         // Update frequency and volume data if audio is currently playing
         if audioManager.isFrequencyPlaying {
@@ -90,7 +116,7 @@ class DiaryViewModel: ObservableObject {
         
         do {
             try persistenceController.container.viewContext.save()
-            fetchEntries()
+            print("DiaryEntry updated successfully")
         } catch {
             print("Error updating diary entry: \(error)")
         }
@@ -98,13 +124,45 @@ class DiaryViewModel: ObservableObject {
     
     func deleteEntry(_ entry: DiaryEntry) {
         let context = persistenceController.container.viewContext
+        let entryDate = entry.date
+        
         context.delete(entry)
         
         do {
             try context.save()
-            fetchEntries()
+            
+            // Renumber entries for this date after deletion
+            if let date = entryDate {
+                renumberEntriesForDate(date)
+            }
+            
+            print("DiaryEntry deleted successfully")
         } catch {
             print("Error deleting diary entry: \(error)")
+        }
+    }
+    
+    private func renumberEntriesForDate(_ date: Date) {
+        let context = persistenceController.container.viewContext
+        let startOfDay = Calendar.current.startOfDay(for: date)
+        
+        // Get all entries for this date, sorted by creation order
+        let entriesForDate = diaryEntries
+            .filter { entry in
+                guard let entryDate = entry.date else { return false }
+                return Calendar.current.isDate(entryDate, inSameDayAs: startOfDay)
+            }
+            .sorted { ($0.date ?? Date()) < ($1.date ?? Date()) }
+        
+        // Renumber entries sequentially
+        for (index, entry) in entriesForDate.enumerated() {
+            entry.entryNumber = Int16(index + 1)
+        }
+        
+        do {
+            try context.save()
+        } catch {
+            print("Error renumbering entries: \(error)")
         }
     }
     
@@ -233,7 +291,7 @@ class DiaryViewModel: ObservableObject {
             frequencyGroups[key, default: 0] += 1
         }
         
-        let mostCommon = frequencyGroups.max { $0.value < $1.value }
+        let _ = frequencyGroups.max { $0.value < $1.value }
         return frequencies.reduce(0, +) / Float(frequencies.count) // Return average for now
     }
     

@@ -2,6 +2,12 @@ import AVFoundation
 import Foundation
 import Combine
 
+protocol AudioManagerDelegate: AnyObject {
+    func audioManagerDidUpdateFrequency(_ frequency: Float)
+    func audioManagerDidUpdateVolume(_ volume: Float) 
+    func audioManagerDidUpdatePlayingState(_ isPlaying: Bool)
+}
+
 class UnifiedAudioEngineManager: ObservableObject {
     static let shared = UnifiedAudioEngineManager()
     
@@ -20,6 +26,9 @@ class UnifiedAudioEngineManager: ObservableObject {
     @Published var isFrequencyPlaying = false
     @Published var currentFrequency: Float = 440.0
     @Published var currentFrequencyVolume: Float = 0.5
+    
+    // Delegate
+    weak var delegate: AudioManagerDelegate?
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -162,12 +171,14 @@ extension UnifiedAudioEngineManager {
         
         DispatchQueue.main.async {
             self.isFrequencyPlaying = true
+            self.delegate?.audioManagerDidUpdatePlayingState(true)
         }
     }
     
     func stopFrequencyMatching() {
         DispatchQueue.main.async {
             self.isFrequencyPlaying = false
+            self.delegate?.audioManagerDidUpdatePlayingState(false)
         }
         frequencyTime = 0.0
         stopEngine()
@@ -175,17 +186,27 @@ extension UnifiedAudioEngineManager {
     
     func updateFrequency(_ frequency: Float) {
         let clampedFrequency = max(20, min(16000, frequency))
-        currentFrequency = clampedFrequency
+        
+        DispatchQueue.main.async {
+            self.currentFrequency = clampedFrequency
+        }
         
         // Update the bandpass filter center frequency in real-time
         if let band = frequencyEQ.bands.first {
             band.frequency = clampedFrequency
         }
+        
+        delegate?.audioManagerDidUpdateFrequency(clampedFrequency)
     }
     
     func updateFrequencyVolume(_ volume: Float) {
         let clampedVolume = max(0, min(1, volume))
-        currentFrequencyVolume = clampedVolume
+        
+        DispatchQueue.main.async {
+            self.currentFrequencyVolume = clampedVolume
+        }
+        
+        delegate?.audioManagerDidUpdateVolume(clampedVolume)
     }
     
     func setFrequencyAndVolume(frequency: Float, volume: Float) {
