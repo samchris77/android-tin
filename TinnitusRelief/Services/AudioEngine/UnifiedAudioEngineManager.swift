@@ -1,6 +1,7 @@
 import AVFoundation
 import Foundation
 import Combine
+import QuartzCore
 
 protocol AudioManagerDelegate: AnyObject {
     func audioManagerDidUpdateFrequency(_ frequency: Float)
@@ -27,6 +28,13 @@ class UnifiedAudioEngineManager: ObservableObject {
     @Published var currentFrequency: Float = 440.0
     @Published var currentFrequencyVolume: Float = 0.5
     
+    // Interpolation properties
+    private var targetFrequency: Float = 440.0
+    private var targetVolume: Float = 0.5
+    private var displayLink: CADisplayLink?
+    private var lastUpdateTime: CFTimeInterval = 0
+    private let interpolationSpeed: Float = 8.0 // Higher = faster interpolation
+    
     // Delegate
     weak var delegate: AudioManagerDelegate?
     
@@ -39,6 +47,7 @@ class UnifiedAudioEngineManager: ObservableObject {
     }
     
     deinit {
+        stopInterpolation()
         stopAll()
     }
     
@@ -154,8 +163,84 @@ class UnifiedAudioEngineManager: ObservableObject {
     }
     
     func stopAll() {
+        stopInterpolation()
         stopFrequencyMatching()
         stopEngine()
+    }
+    
+    // MARK: - Audio Parameter Interpolation
+    private func startInterpolation() {
+        guard displayLink == nil else { return }
+        
+        displayLink = CADisplayLink(target: self, selector: #selector(updateInterpolation))
+        displayLink?.preferredFramesPerSecond = 60
+        displayLink?.add(to: .main, forMode: .common)
+        lastUpdateTime = CACurrentMediaTime()
+    }
+    
+    private func stopInterpolation() {
+        displayLink?.invalidate()
+        displayLink = nil
+    }
+    
+    @objc private func updateInterpolation() {
+        let currentTime = CACurrentMediaTime()
+        let deltaTime = Float(currentTime - lastUpdateTime)
+        lastUpdateTime = currentTime
+        
+        guard deltaTime > 0 else { return }
+        
+        // Exponential smoothing for frequency with easing
+        let frequencyDiff = targetFrequency - currentFrequency
+        if abs(frequencyDiff) > 0.1 {
+            let progress = min(1.0, interpolationSpeed * deltaTime)
+            let easedProgress = UnifiedAudioEngineManager.easeOutExpo(progress)
+            let frequencyStep = frequencyDiff * easedProgress
+            let newFrequency = currentFrequency + frequencyStep
+            
+            DispatchQueue.main.async {
+                self.currentFrequency = newFrequency
+            }
+            
+            // Update EQ filter frequency
+            if let band = frequencyEQ.bands.first {
+                band.frequency = newFrequency
+            }
+            delegate?.audioManagerDidUpdateFrequency(newFrequency)
+        }
+        
+        // Exponential smoothing for volume with easing
+        let volumeDiff = targetVolume - currentFrequencyVolume
+        if abs(volumeDiff) > 0.001 {
+            let progress = min(1.0, interpolationSpeed * deltaTime)
+            let easedProgress = UnifiedAudioEngineManager.easeInOutQuad(progress)
+            let volumeStep = volumeDiff * easedProgress
+            let newVolume = currentFrequencyVolume + volumeStep
+            
+            DispatchQueue.main.async {
+                self.currentFrequencyVolume = newVolume
+            }
+            
+            delegate?.audioManagerDidUpdateVolume(newVolume)
+        }
+        
+        // Stop interpolation if we're close enough to targets
+        if abs(frequencyDiff) <= 0.1 && abs(volumeDiff) <= 0.001 {
+            // Snap to final values
+            DispatchQueue.main.async {
+                self.currentFrequency = self.targetFrequency
+                self.currentFrequencyVolume = self.targetVolume
+            }
+            
+            if let band = frequencyEQ.bands.first {
+                band.frequency = targetFrequency
+            }
+            
+            delegate?.audioManagerDidUpdateFrequency(targetFrequency)
+            delegate?.audioManagerDidUpdateVolume(targetVolume)
+            
+            stopInterpolation()
+        }
     }
 }
 
@@ -186,32 +271,45 @@ extension UnifiedAudioEngineManager {
     
     func updateFrequency(_ frequency: Float) {
         let clampedFrequency = max(20, min(16000, frequency))
+        targetFrequency = clampedFrequency
+        startInterpolation()
+    }
+    
+    func updateFrequencyVolume(_ volume: Float) {
+        let clampedVolume = max(0, min(1, volume))
+        targetVolume = clampedVolume
+        startInterpolation()
+    }
+    
+    func setFrequencyAndVolume(frequency: Float, volume: Float) {
+        let clampedFrequency = max(20, min(16000, frequency))
+        let clampedVolume = max(0, min(1, volume))
+        
+        targetFrequency = clampedFrequency
+        targetVolume = clampedVolume
+        startInterpolation()
+    }
+    
+    // For immediate updates during real-time interaction (no interpolation)
+    func setFrequencyAndVolumeImmediate(frequency: Float, volume: Float) {
+        let clampedFrequency = max(20, min(16000, frequency))
+        let clampedVolume = max(0, min(1, volume))
+        
+        targetFrequency = clampedFrequency
+        targetVolume = clampedVolume
         
         DispatchQueue.main.async {
             self.currentFrequency = clampedFrequency
+            self.currentFrequencyVolume = clampedVolume
         }
         
-        // Update the bandpass filter center frequency in real-time
+        // Update EQ filter frequency immediately
         if let band = frequencyEQ.bands.first {
             band.frequency = clampedFrequency
         }
         
         delegate?.audioManagerDidUpdateFrequency(clampedFrequency)
-    }
-    
-    func updateFrequencyVolume(_ volume: Float) {
-        let clampedVolume = max(0, min(1, volume))
-        
-        DispatchQueue.main.async {
-            self.currentFrequencyVolume = clampedVolume
-        }
-        
         delegate?.audioManagerDidUpdateVolume(clampedVolume)
-    }
-    
-    func setFrequencyAndVolume(frequency: Float, volume: Float) {
-        updateFrequency(frequency)
-        updateFrequencyVolume(volume)
     }
 }
 
@@ -231,11 +329,30 @@ extension UnifiedAudioEngineManager {
         return Float((logFreq - minFreq) / (maxFreq - minFreq))
     }
     
+    // Perceptual scaling for volume (logarithmic response that matches human hearing)
     static func volumeFromNormalizedY(_ y: Float) -> Float {
-        return 1.0 - y
+        // Apply ease-out curve for more natural volume perception
+        let linear = 1.0 - y
+        // Use power curve to match human volume perception
+        return pow(linear, 0.5) // Square root curve feels more natural
     }
     
     static func normalizedYFromVolume(_ volume: Float) -> Float {
-        return 1.0 - volume
+        // Inverse of the perceptual scaling
+        let perceputalVolume = pow(volume, 2.0) // Square to invert the square root
+        return 1.0 - perceputalVolume
+    }
+    
+    // MARK: - Easing Functions
+    static func easeInOutQuad(_ t: Float) -> Float {
+        if t < 0.5 {
+            return 2.0 * t * t
+        } else {
+            return -1.0 + (4.0 - 2.0 * t) * t
+        }
+    }
+    
+    static func easeOutExpo(_ t: Float) -> Float {
+        return t == 1.0 ? 1.0 : 1.0 - pow(2.0, -10.0 * t)
     }
 }
