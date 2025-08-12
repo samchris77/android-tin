@@ -37,8 +37,18 @@ TinnitusRelief/                    # Main application source
 │   ├── FrequencyMatching/         # Frequency matching feature
 │   │   ├── FrequencyMatchingView.swift # Main frequency matching UI
 │   │   └── FrequencyControlPoint.swift # Interactive control point
-│   └── Diary/                     # Progress tracking feature
-│       └── DiaryView.swift        # Diary entry and tracking UI
+│   ├── Frequency/                 # Frequency generation and control
+│   │   └── FrequencyView.swift    # Frequency generation interface
+│   ├── Diary/                     # Progress tracking feature
+│   │   ├── DiaryView.swift        # Main diary tracking UI
+│   │   └── DiaryEntryView.swift   # Individual diary entry interface
+│   ├── Profile/                   # User profile and settings
+│   │   ├── ProfileView.swift      # Basic profile interface
+│   │   └── EnhancedProfileView.swift # Enhanced profile with analytics
+│   ├── Therapy/                   # Therapy and treatment features
+│   │   └── TherapyView.swift      # Therapy session management
+│   └── LogSession/                # Session logging functionality
+│       └── LogSessionView.swift   # Session tracking and logging
 │
 ├── ViewModels/                    # Business logic layer
 │   ├── FrequencyMatchingViewModel.swift # Frequency matching logic
@@ -47,6 +57,7 @@ TinnitusRelief/                    # Main application source
 ├── Services/                      # Core services and engines
 │   └── AudioEngine/               # Audio processing services
 │       ├── AudioEngineService.swift # Legacy audio service
+│       ├── AudioManagerDelegate.swift # Audio management delegation
 │       └── UnifiedAudioEngineManager.swift # Unified audio engine (NEW)
 │
 ├── Extensions/                    # Swift extensions
@@ -62,9 +73,12 @@ TinnitusRelief/                    # Main application source
 
 Documentation/                     # Project documentation
 ├── README.md                      # Basic project description
+├── APP_SUMMARY.md                # Application overview and summary
 ├── AUDIO_TESTING.md              # Audio system testing guide
 ├── PROJECT_RECOVERY.md           # Project restoration documentation
-└── PROJECT_STRUCTURE.md         # This documentation file
+├── PROJECT_STRUCTURE.md         # This documentation file
+├── GPT.md                        # GPT-specific documentation
+└── Gemini.md                     # Gemini-specific documentation
 
 build/                            # Build artifacts (generated)
 ```
@@ -91,7 +105,8 @@ The app follows the Model-View-ViewModel architectural pattern:
 - **Home Tab**: Dashboard with quick actions and recent activity
 - **Frequency Tab**: Interactive frequency matching interface
 - **Diary Tab**: Progress tracking and symptom logging
-- **Profile Tab**: User preferences and progress overview
+- **Profile Tab**: User preferences and enhanced analytics
+- **Therapy Tab**: Guided therapy sessions and treatments
 - **Settings Tab**: App configuration and preferences
 
 #### 3. Data Persistence (`Persistence.swift`)
@@ -146,10 +161,11 @@ class UnifiedAudioEngineManager: ObservableObject {
 **Structure:**
 - **HomeView**: Welcome dashboard with quick actions
 - **FrequencyMatchingView**: Interactive frequency matching
-- **DiaryView**: Progress tracking interface
-- **ProfileView**: User information and preferences
+- **DiaryView**: Progress tracking interface with diary entries
+- **ProfileView**: User information with enhanced analytics
+- **TherapyView**: Guided therapy sessions and treatments
 - **SettingsView**: App configuration options
-- **SleepTimerView**: Gradual audio fade-out functionality
+- **LogSessionView**: Session logging and tracking functionality
 
 ### Data Models (`Persistence.swift`)
 - Core Data stack initialization
@@ -191,11 +207,18 @@ class UnifiedAudioEngineManager: ObservableObject {
 |------|---------|-------------|
 | `TinnitusReliefApp.swift` | App entry point | Core Data integration, window configuration |
 | `ContentView.swift` | Root view container | Environment setup, navigation root |
-| `MainTabView.swift` | Tab navigation system | 5-tab structure, home dashboard, settings |
+| `MainTabView.swift` | Tab navigation system | 6-tab structure, home dashboard, therapy, settings |
 | `UnifiedAudioEngineManager.swift` | Audio engine service | Frequency generation, volume mixing, session management |
+| `AudioManagerDelegate.swift` | Audio management delegation | Audio session coordination and callbacks |
 | `FrequencyMatchingView.swift` | Frequency matching UI | Interactive controls, real-time audio feedback |
+| `FrequencyView.swift` | Frequency generation interface | Direct frequency control and adjustment |
 | `FrequencyMatchingViewModel.swift` | Frequency matching logic | Audio parameter management, user interaction handling |
-| `DiaryView.swift` | Progress tracking interface | Symptom logging, trend visualization |
+| `DiaryView.swift` | Main diary interface | Symptom logging, trend visualization |
+| `DiaryEntryView.swift` | Individual diary entries | Single entry creation and editing |
+| `ProfileView.swift` | Basic profile interface | User information and basic settings |
+| `EnhancedProfileView.swift` | Enhanced profile with analytics | Advanced analytics and progress tracking |
+| `TherapyView.swift` | Therapy session management | Guided therapy sessions and treatments |
+| `LogSessionView.swift` | Session logging interface | Session tracking and data logging |
 | `Persistence.swift` | Core Data configuration | Local database setup, privacy compliance |
 | `Color+Extensions.swift` | Color utilities | Brand colors, accessibility colors |
 | `HapticFeedback.swift` | Tactile feedback | User interaction feedback |
