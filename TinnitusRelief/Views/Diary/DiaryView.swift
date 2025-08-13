@@ -6,6 +6,10 @@ struct DiaryView: View {
     @State private var selectedTab = 0
     @State private var refreshTrigger = 0
     @State private var selectedTime = Date()
+    @State private var selectedMonth = Date()
+    
+    private let calendar = Calendar.current
+    private let weekdaySymbols = ["S", "M", "T", "W", "T", "F", "S"]
     
     var body: some View {
         NavigationView {
@@ -130,6 +134,9 @@ struct DiaryView: View {
     private var progressTrackingView: some View {
         ScrollView {
             VStack(spacing: 24) {
+                // Session Calendar
+                sessionCalendarView
+                
                 weeklySummariesView
                 
                 comprehensiveStatsView
@@ -298,6 +305,112 @@ struct DiaryView: View {
         )
     }
     
+    private var sessionCalendarView: some View {
+        VStack(spacing: 16) {
+            // Title
+            HStack {
+                Text("Session Calendar")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                Spacer()
+            }
+            .padding(.horizontal)
+            
+            // Header with month navigation
+            HStack {
+                Button(action: previousMonth) {
+                    Image(systemName: "chevron.left")
+                        .font(.title2)
+                        .foregroundColor(.orange)
+                }
+                
+                Spacer()
+                
+                Text(monthYearString)
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Button(action: nextMonth) {
+                    Image(systemName: "chevron.right")
+                        .font(.title2)
+                        .foregroundColor(.orange)
+                }
+            }
+            .padding(.horizontal)
+            
+            // Weekday headers
+            HStack(spacing: 0) {
+                ForEach(weekdaySymbols, id: \.self) { symbol in
+                    Text(symbol)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.horizontal)
+            
+            // Calendar grid
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 2), count: 7), spacing: 2) {
+                ForEach(calendarDays, id: \.date) { day in
+                    CalendarDayView(
+                        day: day,
+                        sessionMinutes: sessionMinutesForDate(day.date),
+                        isCurrentMonth: day.isCurrentMonth
+                    )
+                }
+            }
+            .padding(.horizontal)
+            
+            // Legend and monthly stats
+            HStack {
+                // Color legend
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Less")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    
+                    HStack(spacing: 2) {
+                        ForEach(0..<5, id: \.self) { intensity in
+                            Rectangle()
+                                .fill(colorForIntensity(intensity))
+                                .frame(width: 12, height: 12)
+                                .cornerRadius(2)
+                        }
+                    }
+                    
+                    Text("More")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                // Monthly total
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("This Month")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    
+                    Text(formatMonthlyTotal())
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.orange)
+                }
+            }
+            .padding(.horizontal)
+        }
+        .padding(.vertical)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.ultraThinMaterial)
+                .shadow(radius: 4, x: 0, y: 2)
+        )
+    }
+    
     private var comprehensiveStatsView: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Overall Statistics")
@@ -398,6 +511,78 @@ struct DiaryView: View {
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
            let rootVC = windowScene.windows.first?.rootViewController {
             rootVC.present(activityVC, animated: true)
+        }
+    }
+    
+    // MARK: - Calendar Methods
+    
+    private var monthYearString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: selectedMonth)
+    }
+    
+    private var calendarDays: [CalendarDay] {
+        guard let monthInterval = calendar.dateInterval(of: .month, for: selectedMonth) else {
+            return []
+        }
+        
+        let monthStart = monthInterval.start
+        
+        // Find the first day of the calendar grid (may be from previous month)
+        let firstWeekday = calendar.component(.weekday, from: monthStart)
+        let daysFromPreviousMonth = (firstWeekday - 1) % 7
+        let gridStart = calendar.date(byAdding: .day, value: -daysFromPreviousMonth, to: monthStart)!
+        
+        var days: [CalendarDay] = []
+        var currentDate = gridStart
+        
+        // Generate 42 days (6 weeks) to fill the calendar grid
+        for _ in 0..<42 {
+            let isCurrentMonth = calendar.isDate(currentDate, equalTo: monthStart, toGranularity: .month)
+            days.append(CalendarDay(date: currentDate, isCurrentMonth: isCurrentMonth))
+            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
+        }
+        
+        return days
+    }
+    
+    private func sessionMinutesForDate(_ date: Date) -> Double {
+        return viewModel.getSessionMinutesForDate(date)
+    }
+    
+    private func colorForIntensity(_ intensity: Int) -> Color {
+        switch intensity {
+        case 0: return Color.gray.opacity(0.1)
+        case 1: return Color.orange.opacity(0.3)
+        case 2: return Color.orange.opacity(0.5)
+        case 3: return Color.orange.opacity(0.7)
+        case 4: return Color.orange
+        default: return Color.orange
+        }
+    }
+    
+    private func formatMonthlyTotal() -> String {
+        let totalMinutes = viewModel.getMonthlySessionMinutes(for: selectedMonth)
+        let hours = Int(totalMinutes) / 60
+        let minutes = Int(totalMinutes) % 60
+        
+        if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        } else {
+            return "\(minutes)m"
+        }
+    }
+    
+    private func previousMonth() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            selectedMonth = calendar.date(byAdding: .month, value: -1, to: selectedMonth) ?? selectedMonth
+        }
+    }
+    
+    private func nextMonth() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            selectedMonth = calendar.date(byAdding: .month, value: 1, to: selectedMonth) ?? selectedMonth
         }
     }
 }
@@ -1065,6 +1250,83 @@ struct ComprehensiveStatCard: View {
                         .stroke(color.opacity(0.3), lineWidth: 1)
                 )
         )
+    }
+}
+
+struct CalendarDay {
+    let date: Date
+    let isCurrentMonth: Bool
+}
+
+struct CalendarDayView: View {
+    let day: CalendarDay
+    let sessionMinutes: Double
+    let isCurrentMonth: Bool
+    
+    private let calendar = Calendar.current
+    
+    var body: some View {
+        VStack(spacing: 2) {
+            Text("\(calendar.component(.day, from: day.date))")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(isCurrentMonth ? .primary : .secondary.opacity(0.5))
+        }
+        .frame(width: 32, height: 32)
+        .background(
+            RoundedRectangle(cornerRadius: 4)
+                .fill(backgroundColorForSession)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(isToday ? Color.orange : Color.clear, lineWidth: 2)
+        )
+        .accessibilityElement()
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityAddTraits(isToday ? .isSelected : [])
+    }
+    
+    private var backgroundColorForSession: Color {
+        guard isCurrentMonth else { return Color.clear }
+        
+        guard sessionMinutes > 0 else { return Color.gray.opacity(0.1) }
+        
+        // Use 0-120 minute scale for color intensity
+        if sessionMinutes <= 30 {
+            return Color.orange.opacity(0.3)
+        } else if sessionMinutes <= 60 {
+            return Color.orange.opacity(0.5)
+        } else if sessionMinutes <= 90 {
+            return Color.orange.opacity(0.7)
+        } else {
+            // For 90+ minutes, gradually increase to full orange at 120 minutes
+            let extraIntensity = min((sessionMinutes - 90) / 30.0, 1.0)
+            return Color.orange.opacity(0.7 + (0.3 * extraIntensity))
+        }
+    }
+    
+    private var isToday: Bool {
+        calendar.isDateInToday(day.date)
+    }
+    
+    private var accessibilityLabel: String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "EEEE, MMMM d"
+        let dateString = dateFormatter.string(from: day.date)
+        
+        let sessionInfo: String
+        if sessionMinutes > 0 {
+            let hours = Int(sessionMinutes) / 60
+            let minutes = Int(sessionMinutes) % 60
+            if hours > 0 {
+                sessionInfo = "\(hours) hour\(hours == 1 ? "" : "s") and \(minutes) minute\(minutes == 1 ? "" : "s") of listening sessions"
+            } else {
+                sessionInfo = "\(minutes) minute\(minutes == 1 ? "" : "s") of listening sessions"
+            }
+        } else {
+            sessionInfo = "No listening sessions"
+        }
+        
+        return "\(dateString), \(sessionInfo)\(isToday ? ", Today" : "")"
     }
 }
 

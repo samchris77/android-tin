@@ -313,4 +313,34 @@ class DiaryViewModel: ObservableObject {
         
         return csvContent
     }
+    
+    // MARK: - Calendar Session Aggregation
+    
+    func getSessionMinutesForDate(_ date: Date) -> Double {
+        let startOfDay = Calendar.current.startOfDay(for: date)
+        let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay) ?? startOfDay
+        
+        let entriesForDate = diaryEntries.filter { entry in
+            guard let entryDate = entry.date else { return false }
+            return entryDate >= startOfDay && entryDate < endOfDay
+        }
+        
+        let totalSeconds = entriesForDate.reduce(0.0) { $0 + $1.sessionDuration }
+        return totalSeconds / 60.0 // Convert to minutes
+    }
+    
+    func getMonthlySessionMinutes(for month: Date) -> Double {
+        let calendar = Calendar.current
+        guard let monthInterval = calendar.dateInterval(of: .month, for: month) else {
+            return 0
+        }
+        
+        let entriesForMonth = diaryEntries.filter { entry in
+            guard let entryDate = entry.date else { return false }
+            return entryDate >= monthInterval.start && entryDate < monthInterval.end
+        }
+        
+        let totalSeconds = entriesForMonth.reduce(0.0) { $0 + $1.sessionDuration }
+        return totalSeconds / 60.0 // Convert to minutes
+    }
 }
