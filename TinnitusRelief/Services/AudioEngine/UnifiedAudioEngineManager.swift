@@ -28,6 +28,12 @@ class UnifiedAudioEngineManager: ObservableObject {
     @Published var currentFrequency: Float = 440.0
     @Published var currentFrequencyVolume: Float = 0.5
     
+    // Session tracking properties
+    @Published var sessionStartTime: Date?
+    @Published var currentSessionDuration: TimeInterval = 0
+    @Published var lastSessionDuration: TimeInterval = 0
+    @Published var totalSessionTime: TimeInterval = 0
+    
     // Interpolation properties
     private var targetFrequency: Float = 440.0
     private var targetVolume: Float = 0.5
@@ -38,16 +44,21 @@ class UnifiedAudioEngineManager: ObservableObject {
     // Delegate
     weak var delegate: AudioManagerDelegate?
     
+    // Session tracking timer
+    private var sessionTimer: Timer?
+    
     private var cancellables = Set<AnyCancellable>()
     
     private init() {
         setupAudioSession()
         setupEngine()
         setupAudioInterruptionHandling()
+        loadSessionData()
     }
     
     deinit {
         stopInterpolation()
+        stopSessionTracking()
         stopAll()
     }
     
@@ -254,6 +265,9 @@ extension UnifiedAudioEngineManager {
             startEngine()
         }
         
+        // Start session tracking
+        startSessionTracking()
+        
         DispatchQueue.main.async {
             self.isFrequencyPlaying = true
             self.delegate?.audioManagerDidUpdatePlayingState(true)
@@ -261,6 +275,9 @@ extension UnifiedAudioEngineManager {
     }
     
     func stopFrequencyMatching() {
+        // Stop session tracking
+        stopSessionTracking()
+        
         DispatchQueue.main.async {
             self.isFrequencyPlaying = false
             self.delegate?.audioManagerDidUpdatePlayingState(false)
@@ -354,5 +371,73 @@ extension UnifiedAudioEngineManager {
     
     static func easeOutExpo(_ t: Float) -> Float {
         return t == 1.0 ? 1.0 : 1.0 - pow(2.0, -10.0 * t)
+    }
+}
+
+// MARK: - Session Tracking
+extension UnifiedAudioEngineManager {
+    private func startSessionTracking() {
+        guard sessionTimer == nil else { return }
+        
+        sessionStartTime = Date()
+        currentSessionDuration = 0
+        
+        sessionTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            self?.updateSessionDuration()
+        }
+    }
+    
+    private func stopSessionTracking() {
+        sessionTimer?.invalidate()
+        sessionTimer = nil
+        
+        if let startTime = sessionStartTime {
+            let duration = Date().timeIntervalSince(startTime)
+            lastSessionDuration = duration
+            totalSessionTime += duration
+            
+            // Save to UserDefaults for persistence
+            UserDefaults.standard.set(lastSessionDuration, forKey: "lastSessionDuration")
+            UserDefaults.standard.set(totalSessionTime, forKey: "totalSessionTime")
+        }
+        
+        sessionStartTime = nil
+        currentSessionDuration = 0
+    }
+    
+    private func updateSessionDuration() {
+        guard let startTime = sessionStartTime else { return }
+        
+        DispatchQueue.main.async {
+            self.currentSessionDuration = Date().timeIntervalSince(startTime)
+        }
+    }
+    
+    func getCurrentSessionInfo() -> (duration: TimeInterval, frequency: Float, volume: Float) {
+        return (currentSessionDuration, currentFrequency, currentFrequencyVolume)
+    }
+    
+    func getLastSessionInfo() -> (duration: TimeInterval, frequency: Float, volume: Float) {
+        return (lastSessionDuration, currentFrequency, currentFrequencyVolume)
+    }
+    
+    func loadSessionData() {
+        lastSessionDuration = UserDefaults.standard.double(forKey: "lastSessionDuration")
+        totalSessionTime = UserDefaults.standard.double(forKey: "totalSessionTime")
+    }
+    
+    func clearLastSession() {
+        lastSessionDuration = 0
+        UserDefaults.standard.set(0, forKey: "lastSessionDuration")
+    }
+    
+    func formatDuration(_ duration: TimeInterval) -> String {
+        if duration < 60 {
+            return String(format: "%.0f sec", duration)
+        } else {
+            let minutes = Int(duration) / 60
+            let seconds = Int(duration) % 60
+            return String(format: "%d min %d sec", minutes, seconds)
+        }
     }
 }

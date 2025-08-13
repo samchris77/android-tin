@@ -88,8 +88,15 @@ struct DiaryView: View {
                 // Always create new entries to support multiple entries per day
                 EntryFormView(
                     entry: nil,
-                    onSave: { loudness, comfort, stress in
-                        viewModel.createEntry(loudness: loudness, comfort: comfort, stress: stress, notes: nil)
+                    onSave: { loudness, comfort, stress, sessionDuration in
+                        viewModel.createEntry(loudness: loudness, comfort: comfort, stress: stress, notes: nil, sessionDuration: sessionDuration)
+                        
+                        // Reset session timer if audio is still playing
+                        let audioManager = UnifiedAudioEngineManager.shared
+                        if audioManager.isFrequencyPlaying {
+                            audioManager.sessionStartTime = Date()
+                            audioManager.currentSessionDuration = 0
+                        }
                         
                         // Wait for database operations to complete, then refresh UI
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -368,15 +375,45 @@ struct DiaryView: View {
 
 struct EntryFormView: View {
     let entry: DiaryEntry?
-    let onSave: (Int16, Int16, Int16) -> Void
+    let onSave: (Int16, Int16, Int16, TimeInterval) -> Void
     let currentDate: Date
     let entryNumber: Int
     
+    @ObservedObject private var audioManager = UnifiedAudioEngineManager.shared
     @State private var loudnessLevel: Int = 5
     @State private var comfortLevel: Int = 5
     @State private var stressLevel: Int = 5
+    @State private var sessionDurationMinutes: Double = 0.0
+    @State private var isManuallyEdited: Bool = false
     @State private var showSuccess: Bool = false
     @State private var submittedEntryNumber: Int = 0
+    
+    // Computed property to determine which duration to display
+    private var effectiveSessionDuration: Double {
+        if !isManuallyEdited && audioManager.isFrequencyPlaying && audioManager.currentSessionDuration > 0 {
+            return round(audioManager.currentSessionDuration / 60)
+        }
+        return sessionDurationMinutes
+    }
+    
+    // Check if we're in live tracking mode
+    private var isLiveTracking: Bool {
+        return !isManuallyEdited && audioManager.isFrequencyPlaying && audioManager.currentSessionDuration > 0
+    }
+    
+    // Toggle between live and manual mode
+    private func toggleMode() {
+        if isLiveTracking {
+            // Switch to manual mode
+            isManuallyEdited = true
+            sessionDurationMinutes = effectiveSessionDuration
+        } else {
+            // Switch back to live mode (if audio is playing)
+            if audioManager.isFrequencyPlaying && audioManager.currentSessionDuration > 0 {
+                isManuallyEdited = false
+            }
+        }
+    }
     
     var body: some View {
         VStack(spacing: 20) {
@@ -404,12 +441,87 @@ struct EntryFormView: View {
                 color: .red
             )
             
+            // Session Duration Input
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("Session Duration")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    if isLiveTracking {
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(Color.green)
+                                .frame(width: 8, height: 8)
+                            Text("Live")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(.green)
+                        }
+                    }
+                }
+                
+                VStack(spacing: 8) {
+                    // Duration display with tap gesture
+                    HStack {
+                        Text("\(Int(effectiveSessionDuration)) minutes")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(isLiveTracking ? .green : .primary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(isLiveTracking ? Color.green.opacity(0.1) : Color.gray.opacity(0.1))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(isLiveTracking ? Color.green.opacity(0.3) : Color.gray.opacity(0.3), lineWidth: 1)
+                                    )
+                            )
+                            .onTapGesture {
+                                toggleMode()
+                            }
+                        
+                        Spacer()
+                    }
+                    
+                    // Show picker only in manual mode or when audio not playing
+                    if !isLiveTracking {
+                        Picker("Minutes", selection: $sessionDurationMinutes) {
+                            ForEach(0...120, id: \.self) { minute in
+                                Text("\(minute)").tag(Double(minute))
+                            }
+                        }
+                        .pickerStyle(.wheel)
+                        .frame(height: 120)
+                        .onChange(of: sessionDurationMinutes) { _ in
+                            isManuallyEdited = true
+                        }
+                    }
+                }
+                
+                Text(isLiveTracking ? 
+                     "Live session - tap time to edit manually" : 
+                     "Tap time to sync with live session (if playing)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(.ultraThinMaterial)
+            )
             
             Button(action: {
                 // Capture the entry number that will be created (current entryNumber)
                 submittedEntryNumber = entryNumber
                 
-                onSave(Int16(loudnessLevel), Int16(comfortLevel), Int16(stressLevel))
+                // Convert minutes to seconds for TimeInterval
+                let durationInSeconds = effectiveSessionDuration * 60
+                onSave(Int16(loudnessLevel), Int16(comfortLevel), Int16(stressLevel), durationInSeconds)
                 
                 // Show success message
                 showSuccess = true
@@ -467,10 +579,35 @@ struct EntryFormView: View {
             .animation(.easeInOut(duration: 0.3), value: showSuccess)
         )
         .onAppear {
-            if let entry = entry {
-                loudnessLevel = Int(entry.loudnessLevel)
-                comfortLevel = Int(entry.comfortLevel)
-                stressLevel = Int(entry.stressLevel)
+            // Check if there's a live session first
+            if audioManager.isFrequencyPlaying && audioManager.currentSessionDuration > 0 {
+                // Live session detected - don't set manual values, let live tracking take over
+                isManuallyEdited = false
+                sessionDurationMinutes = 0.0 // Will be overridden by effectiveSessionDuration
+            } else {
+                // No live session - populate with stored values
+                if let entry = entry {
+                    // Editing existing entry
+                    loudnessLevel = Int(entry.loudnessLevel)
+                    comfortLevel = Int(entry.comfortLevel)
+                    stressLevel = Int(entry.stressLevel)
+                    sessionDurationMinutes = round(entry.sessionDuration / 60)
+                    isManuallyEdited = true // Existing entries are always manual
+                } else {
+                    // New entry - check for previous session duration
+                    if audioManager.lastSessionDuration > 0 {
+                        sessionDurationMinutes = round(audioManager.lastSessionDuration / 60)
+                    } else {
+                        sessionDurationMinutes = 0.0
+                    }
+                    isManuallyEdited = false // Allow live tracking for new entries
+                }
+            }
+        }
+        .onChange(of: audioManager.isFrequencyPlaying) { isPlaying in
+            // Reset manual edit state when audio starts/stops for new entries
+            if entry == nil && !isPlaying {
+                isManuallyEdited = false
             }
         }
     }
@@ -523,6 +660,25 @@ struct DiaryEntryRowView: View {
                                 .fill(Color.red.opacity(0.1))
                         )
                 }
+            }
+            
+            // Session info display
+            HStack {
+                Text(formatSessionDuration(entry.sessionDuration))
+                    .font(.caption)
+                    .foregroundColor(.green)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.green.opacity(0.1))
+                    )
+                
+                Text(formatCreationTime(entry.createdAt))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
             }
             
             // Metrics display
@@ -586,6 +742,26 @@ struct DiaryEntryRowView: View {
     private var isValidEntry: Bool {
         // Check if this is a valid entry (not corrupted data)
         return entry.date != nil && entry.entryNumber > 0
+    }
+    
+    private func formatSessionDuration(_ duration: TimeInterval) -> String {
+        if duration <= 0 {
+            return "No session"
+        }
+        let minutes = Int(duration / 60)
+        let seconds = Int(duration.truncatingRemainder(dividingBy: 60))
+        if minutes > 0 {
+            return "\(minutes)m \(seconds)s"
+        } else {
+            return "\(seconds)s"
+        }
+    }
+    
+    private func formatCreationTime(_ date: Date?) -> String {
+        guard let date = date else { return "Time unknown" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return "Created \(formatter.string(from: date))"
     }
 }
 
