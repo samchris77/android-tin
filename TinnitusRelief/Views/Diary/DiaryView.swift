@@ -5,6 +5,7 @@ struct DiaryView: View {
     @StateObject private var viewModel = DiaryViewModel()
     @State private var selectedTab = 0
     @State private var refreshTrigger = 0
+    @State private var selectedTime = Date()
     
     var body: some View {
         NavigationView {
@@ -41,7 +42,7 @@ struct DiaryView: View {
                 }
             }
             .navigationTitle("Log")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
@@ -60,26 +61,32 @@ struct DiaryView: View {
     }
     
     private var logView: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                VStack(spacing: 8) {
-                    DatePicker("Date", selection: $viewModel.selectedDate, displayedComponents: .date)
-                        .datePickerStyle(.compact)
+        VStack(spacing: 12) {
+                // Compact Header
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        DatePicker("", selection: $viewModel.selectedDate, displayedComponents: .date)
+                            .datePickerStyle(.compact)
+                            .labelsHidden()
+                        DatePicker("", selection: $selectedTime, displayedComponents: .hourAndMinute)
+                            .datePickerStyle(.compact)
+                            .labelsHidden()
+                    }
                     
-                    HStack {
+                    Spacer()
+                    
+                    VStack(alignment: .trailing, spacing: 2) {
                         Text("Entry")
-                            .font(.caption)
+                            .font(.caption2)
                             .foregroundColor(.secondary)
-                        
                         Text("#\(getEntryNumberForDate(viewModel.selectedDate, trigger: refreshTrigger))")
-                            .font(.caption)
-                            .fontWeight(.semibold)
+                            .font(.title3)
+                            .fontWeight(.bold)
                             .foregroundColor(.orange)
-                        
-                        Spacer()
                     }
                 }
-                .padding()
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
                         .fill(.ultraThinMaterial)
@@ -89,7 +96,15 @@ struct DiaryView: View {
                 EntryFormView(
                     entry: nil,
                     onSave: { loudness, comfort, stress, sessionDuration in
-                        viewModel.createEntry(loudness: loudness, comfort: comfort, stress: stress, notes: nil, sessionDuration: sessionDuration)
+                        let combinedDateTime = combineDateAndTime(date: viewModel.selectedDate, time: selectedTime)
+                        viewModel.createEntry(
+                            loudness: loudness, 
+                            comfort: comfort, 
+                            stress: stress, 
+                            notes: nil, 
+                            sessionDuration: sessionDuration,
+                            createdAt: combinedDateTime
+                        )
                         
                         // Reset session timer if audio is still playing
                         let audioManager = UnifiedAudioEngineManager.shared
@@ -108,9 +123,8 @@ struct DiaryView: View {
                     currentDate: viewModel.selectedDate,
                     entryNumber: getEntryNumberForDate(viewModel.selectedDate, trigger: refreshTrigger)
                 )
-            }
-            .padding()
         }
+        .padding()
     }
     
     private var progressTrackingView: some View {
@@ -362,6 +376,21 @@ struct DiaryView: View {
         return entriesForDate.count + 1
     }
     
+    private func combineDateAndTime(date: Date, time: Date) -> Date {
+        let calendar = Calendar.current
+        let dateComponents = calendar.dateComponents([.year, .month, .day], from: date)
+        let timeComponents = calendar.dateComponents([.hour, .minute], from: time)
+        
+        var combined = DateComponents()
+        combined.year = dateComponents.year
+        combined.month = dateComponents.month
+        combined.day = dateComponents.day
+        combined.hour = timeComponents.hour
+        combined.minute = timeComponents.minute
+        
+        return calendar.date(from: combined) ?? Date()
+    }
+    
     private func exportData() {
         let csvContent = viewModel.exportToCSV()
         let activityVC = UIActivityViewController(activityItems: [csvContent], applicationActivities: nil)
@@ -415,8 +444,32 @@ struct EntryFormView: View {
         }
     }
     
+    // Helper function for updating session duration from drag gesture
+    private func updateSessionDuration(from dragValue: DragGesture.Value) {
+        let sensitivity: Double = 0.1
+        let change = -Double(dragValue.translation.height) * sensitivity
+        let newValue = max(0, min(120, sessionDurationMinutes + change))
+        
+        if abs(newValue - sessionDurationMinutes) >= 1.0 {
+            sessionDurationMinutes = round(newValue)
+            isManuallyEdited = true
+            
+            // Haptic feedback
+            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+            impactFeedback.impactOccurred()
+        }
+    }
+    
+    // Computed property for the drag gesture
+    private var sessionDurationDragGesture: some Gesture {
+        DragGesture()
+            .onChanged { value in
+                updateSessionDuration(from: value)
+            }
+    }
+    
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 10) {
             ScaleInputView(
                 title: "Tinnitus Loudness",
                 value: $loudnessLevel,
@@ -441,11 +494,12 @@ struct EntryFormView: View {
                 color: .red
             )
             
-            // Session Duration Input
-            VStack(alignment: .leading, spacing: 12) {
+            // Session Duration Input - Compact
+            VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Session Duration")
-                        .font(.headline)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
                         .foregroundColor(.primary)
                     
                     Spacer()
@@ -454,64 +508,59 @@ struct EntryFormView: View {
                         HStack(spacing: 4) {
                             Circle()
                                 .fill(Color.green)
-                                .frame(width: 8, height: 8)
+                                .frame(width: 6, height: 6)
                             Text("Live")
-                                .font(.caption)
+                                .font(.caption2)
                                 .fontWeight(.medium)
                                 .foregroundColor(.green)
                         }
                     }
                 }
                 
-                VStack(spacing: 8) {
-                    // Duration display with tap gesture
-                    HStack {
-                        Text("\(Int(effectiveSessionDuration)) minutes")
-                            .font(.title2)
+                HStack {
+                    if isLiveTracking {
+                        Text("\(Int(effectiveSessionDuration)) min")
+                            .font(.title3)
                             .fontWeight(.semibold)
-                            .foregroundColor(isLiveTracking ? .green : .primary)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
+                            .foregroundColor(.green)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
                             .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(isLiveTracking ? Color.green.opacity(0.1) : Color.gray.opacity(0.1))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(isLiveTracking ? Color.green.opacity(0.3) : Color.gray.opacity(0.3), lineWidth: 1)
-                                    )
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.green.opacity(0.1))
                             )
                             .onTapGesture {
                                 toggleMode()
                             }
-                        
-                        Spacer()
+                    } else {
+                        Text("\(Int(sessionDurationMinutes)) min")
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.blue.opacity(0.1))
+                            )
+                            .gesture(sessionDurationDragGesture)
                     }
                     
-                    // Show picker only in manual mode or when audio not playing
+                    Spacer()
+                    
                     if !isLiveTracking {
-                        Picker("Minutes", selection: $sessionDurationMinutes) {
-                            ForEach(0...120, id: \.self) { minute in
-                                Text("\(minute)").tag(Double(minute))
+                        Text("Tap for live")
+                            .font(.caption2)
+                            .foregroundColor(.blue)
+                            .onTapGesture {
+                                toggleMode()
                             }
-                        }
-                        .pickerStyle(.wheel)
-                        .frame(height: 120)
-                        .onChange(of: sessionDurationMinutes) { _ in
-                            isManuallyEdited = true
-                        }
                     }
                 }
-                
-                Text(isLiveTracking ? 
-                     "Live session - tap time to edit manually" : 
-                     "Tap time to sync with live session (if playing)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
             }
-            .padding()
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
             .background(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: 10)
                     .fill(.ultraThinMaterial)
             )
             
@@ -532,26 +581,18 @@ struct EntryFormView: View {
                 }
             }) {
                 Text("Submit Entry")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.white)
+                    .font(.system(size: 16, weight: .semibold))
                     .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(
-                        LinearGradient(
-                            colors: [Color.orange, Color.red],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .cornerRadius(12)
-                    .shadow(radius: 4, x: 0, y: 2)
+                    .frame(height: 36)
             }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .tint(.orange)
         }
-        .padding()
+        .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(.ultraThinMaterial)
-                .shadow(radius: 4, x: 0, y: 2)
         )
         .overlay(
             // Success message
@@ -796,54 +837,39 @@ struct ScaleInputView: View {
     let color: Color
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(title)
-                    .font(.headline)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
                     .foregroundColor(.primary)
                 
                 Spacer()
                 
-                Text("\(value)/10")
-                    .font(.system(size: 18, weight: .semibold, design: .monospaced))
+                Text("\(value)")
+                    .font(.title2)
+                    .fontWeight(.semibold)
                     .foregroundColor(color)
+                    .frame(width: 32)
             }
             
-            VStack(spacing: 8) {
-                HStack {
-                    ForEach(1...10, id: \.self) { index in
-                        Circle()
-                            .fill(index <= value ? color : Color.gray.opacity(0.3))
-                            .frame(width: 24, height: 24)
-                            .scaleEffect(index == value ? 1.2 : 1.0)
-                            .onTapGesture {
-                                withAnimation(.spring(response: 0.3)) {
-                                    value = index
-                                }
+            HStack(spacing: 3) {
+                ForEach(1...10, id: \.self) { index in
+                    Circle()
+                        .fill(index <= value ? color : Color.gray.opacity(0.3))
+                        .frame(width: 16, height: 16)
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.2)) {
+                                value = index
                             }
-                        
-                        if index < 10 {
-                            Spacer(minLength: 4)
                         }
-                    }
-                }
-                
-                HStack {
-                    Text(minLabel)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Spacer()
-                    
-                    Text(maxLabel)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                 }
             }
         }
-        .padding()
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 10)
                 .fill(.ultraThinMaterial)
         )
     }
