@@ -1,8 +1,13 @@
 import SwiftUI
+import UserNotifications
 
 struct EnhancedProfileView: View {
     @State private var showingSettings = false
     @State private var showingPrivacy = false
+    @State private var dailyReminderEnabled = false
+    @State private var reminderTime = Date()
+    @State private var showingTimePicker = false
+    @State private var showingPrivacyView = false
     
     var body: some View {
         NavigationView {
@@ -10,18 +15,21 @@ struct EnhancedProfileView: View {
                 VStack(spacing: 24) {
                     profileHeader
                     
-                    progressSection
-                    
                     settingsSection
                     
-                    privacySection
+                    progressSection
                     
                     aboutSection
+                    
+                    privacySection
                 }
                 .padding()
             }
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.large)
+            .sheet(isPresented: $showingPrivacyView) {
+                PrivacyView()
+            }
         }
     }
     
@@ -93,11 +101,11 @@ struct EnhancedProfileView: View {
                         .foregroundColor(.orange)
                     
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Settings")
+                        Text("Daily Reminders")
                             .font(.headline)
                             .foregroundColor(.primary)
                         
-                        Text("Audio, notifications, and preferences")
+                        Text("Set up notifications to track your progress")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -118,44 +126,11 @@ struct EnhancedProfileView: View {
             
             if showingSettings {
                 VStack(spacing: 0) {
-                    Group {
-                        ProfileSettingsRow(
-                            title: "Background Audio",
-                            subtitle: "Continue playing when app is minimized",
-                            icon: "speaker.wave.3",
-                            action: {}
-                        )
-                        
-                        Divider()
-                            .padding(.horizontal)
-                        
-                        ProfileSettingsRow(
-                            title: "Volume Limit",
-                            subtitle: "Safe hearing protection",
-                            icon: "volume.3",
-                            action: {}
-                        )
-                        
-                        Divider()
-                            .padding(.horizontal)
-                        
-                        ProfileSettingsRow(
-                            title: "Daily Reminders",
-                            subtitle: "Track your tinnitus daily",
-                            icon: "bell",
-                            action: {}
-                        )
-                        
-                        Divider()
-                            .padding(.horizontal)
-                        
-                        ProfileSettingsRow(
-                            title: "Therapy Reminders",
-                            subtitle: "Schedule frequency matching sessions",
-                            icon: "clock",
-                            action: {}
-                        )
-                    }
+                    DailyReminderRow(
+                        isEnabled: $dailyReminderEnabled,
+                        reminderTime: $reminderTime,
+                        showingTimePicker: $showingTimePicker
+                    )
                 }
                 .padding(.vertical, 8)
                 .background(
@@ -229,7 +204,9 @@ struct EnhancedProfileView: View {
                             title: "Privacy Policy",
                             subtitle: "Learn how we protect your information",
                             icon: "doc.text",
-                            action: {}
+                            action: {
+                                showingPrivacyView = true
+                            }
                         )
                     }
                 }
@@ -378,6 +355,133 @@ struct ProfileSettingsRow: View {
         .buttonStyle(PlainButtonStyle())
     }
 }
+
+struct DailyReminderRow: View {
+    @Binding var isEnabled: Bool
+    @Binding var reminderTime: Date
+    @Binding var showingTimePicker: Bool
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            Button(action: {
+                showingTimePicker.toggle()
+            }) {
+                HStack(spacing: 16) {
+                    Image(systemName: "bell")
+                        .font(.system(size: 18))
+                        .foregroundColor(.orange)
+                        .frame(width: 24)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Daily Reminders")
+                            .font(.body)
+                            .foregroundColor(.primary)
+                            .multilineTextAlignment(.leading)
+                        
+                        Text(isEnabled ? "Enabled at \(reminderTime, formatter: timeFormatter)" : "Track your tinnitus daily")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.leading)
+                    }
+                    
+                    Spacer()
+                    
+                    Toggle("", isOn: $isEnabled)
+                        .labelsHidden()
+                        .toggleStyle(SwitchToggleStyle(tint: .orange))
+                        .onChange(of: isEnabled) { enabled in
+                            if enabled {
+                                requestNotificationPermission()
+                                scheduleNotification()
+                            } else {
+                                cancelNotifications()
+                            }
+                        }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            if showingTimePicker {
+                VStack(spacing: 16) {
+                    Divider()
+                        .padding(.horizontal)
+                    
+                    DatePicker("Reminder Time", selection: $reminderTime, displayedComponents: .hourAndMinute)
+                        .datePickerStyle(.wheel)
+                        .labelsHidden()
+                        .onChange(of: reminderTime) { _ in
+                            if isEnabled {
+                                scheduleNotification()
+                            }
+                        }
+                        .padding(.horizontal)
+                }
+                .transition(.opacity.combined(with: .scale(scale: 0.95)))
+            }
+        }
+        .animation(.easeInOut(duration: 0.3), value: showingTimePicker)
+        .onAppear {
+            loadReminderSettings()
+        }
+    }
+    
+    private func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+            if !granted {
+                DispatchQueue.main.async {
+                    isEnabled = false
+                }
+            }
+        }
+    }
+    
+    private func scheduleNotification() {
+        cancelNotifications()
+        
+        let content = UNMutableNotificationContent()
+        content.title = "Tinnitus Tracking Reminder"
+        content.body = "Time to track your tinnitus symptoms for today"
+        content.sound = .default
+        
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.hour, .minute], from: reminderTime)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+        
+        let request = UNNotificationRequest(identifier: "dailyTinnitusReminder", content: content, trigger: trigger)
+        
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Failed to schedule notification: \(error)")
+            }
+        }
+        
+        saveReminderSettings()
+    }
+    
+    private func cancelNotifications() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["dailyTinnitusReminder"])
+    }
+    
+    private func saveReminderSettings() {
+        UserDefaults.standard.set(isEnabled, forKey: "dailyReminderEnabled")
+        UserDefaults.standard.set(reminderTime, forKey: "reminderTime")
+    }
+    
+    private func loadReminderSettings() {
+        isEnabled = UserDefaults.standard.bool(forKey: "dailyReminderEnabled")
+        if let savedTime = UserDefaults.standard.object(forKey: "reminderTime") as? Date {
+            reminderTime = savedTime
+        }
+    }
+}
+
+private let timeFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.timeStyle = .short
+    return formatter
+}()
 
 #Preview {
     EnhancedProfileView()
