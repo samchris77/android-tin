@@ -17,8 +17,6 @@ struct EnhancedProfileView: View {
                     
                     settingsSection
                     
-                    progressSection
-                    
                     aboutSection
                     
                     privacySection
@@ -59,36 +57,6 @@ struct EnhancedProfileView: View {
         )
     }
     
-    private var progressSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Your Progress")
-                .font(.headline)
-                .foregroundColor(.primary)
-            
-            VStack(spacing: 12) {
-                ProfileProgressCard(
-                    title: "Days Tracked",
-                    value: "7",
-                    subtitle: "Keep up the good work!",
-                    color: .green
-                )
-                
-                ProfileProgressCard(
-                    title: "Average Severity",
-                    value: "4.2",
-                    subtitle: "Down from last week",
-                    color: .orange
-                )
-                
-                ProfileProgressCard(
-                    title: "Therapy Sessions",
-                    value: "12",
-                    subtitle: "This month",
-                    color: .blue
-                )
-            }
-        }
-    }
     
     private var settingsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -180,16 +148,6 @@ struct EnhancedProfileView: View {
             if showingPrivacy {
                 VStack(spacing: 0) {
                     Group {
-                        ProfileSettingsRow(
-                            title: "Export Data",
-                            subtitle: "Save your progress for healthcare providers",
-                            icon: "square.and.arrow.up",
-                            action: {}
-                        )
-                        
-                        Divider()
-                            .padding(.horizontal)
-                        
                         ProfileSettingsRow(
                             title: "Data Storage",
                             subtitle: "All data stored locally on your device",

@@ -85,7 +85,7 @@ class UnifiedAudioEngineManager: ObservableObject {
             }
             
             let ablPointer = UnsafeMutableAudioBufferListPointer(audioBufferList)
-            let amplitude = self.currentFrequencyVolume * 0.1 // Optimized amplitude for white noise + EQ boost
+            let amplitude = self.currentFrequencyVolume * 0.3 // Further reduced amplitude to minimize background hissing
             
             for buffer in ablPointer {
                 let buf: UnsafeMutableBufferPointer<Float> = UnsafeMutableBufferPointer(buffer)
@@ -99,12 +99,12 @@ class UnifiedAudioEngineManager: ObservableObject {
             return noErr
         }
         
-        // Configure the EQ bandpass filter for targeted frequency emphasis
+        // Configure single-band EQ for focused frequency targeting
         let band = frequencyEQ.bands[0]
         band.filterType = .bandPass
         band.frequency = currentFrequency // Will be updated dynamically
-        band.bandwidth = 1.5 // Octaves - optimized for smooth frequency focus
-        band.gain = 6.0 // Moderate boost to emphasize the target frequency
+        band.bandwidth = 0.8 // Narrow bandwidth for sharp focus
+        band.gain = 10.0 // Strong boost to emphasize the target frequency
         band.bypass = false
         
         // Attach nodes
@@ -125,6 +125,7 @@ class UnifiedAudioEngineManager: ObservableObject {
         
         audioEngine.prepare()
     }
+    
     
     private func setupAudioInterruptionHandling() {
         NotificationCenter.default.addObserver(
@@ -346,18 +347,15 @@ extension UnifiedAudioEngineManager {
         return Float((logFreq - minFreq) / (maxFreq - minFreq))
     }
     
-    // Perceptual scaling for volume (logarithmic response that matches human hearing)
+    // Linear scaling for volume (ensures 50% at center position)
     static func volumeFromNormalizedY(_ y: Float) -> Float {
-        // Apply ease-out curve for more natural volume perception
-        let linear = 1.0 - y
-        // Use power curve to match human volume perception
-        return pow(linear, 0.5) // Square root curve feels more natural
+        // Simple linear mapping: y=0 -> volume=1.0, y=1 -> volume=0.0, y=0.5 -> volume=0.5
+        return 1.0 - y
     }
     
     static func normalizedYFromVolume(_ volume: Float) -> Float {
-        // Inverse of the perceptual scaling
-        let perceputalVolume = pow(volume, 2.0) // Square to invert the square root
-        return 1.0 - perceputalVolume
+        // Inverse of the linear scaling
+        return 1.0 - volume
     }
     
     // MARK: - Easing Functions

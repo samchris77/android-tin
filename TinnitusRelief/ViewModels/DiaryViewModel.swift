@@ -7,8 +7,28 @@ struct WeeklySummary {
     let entryCount: Int
     let avgLoudness: Double
     let avgStress: Double
-    let avgComfort: Double
     let totalListeningTime: TimeInterval
+    
+    // Previous week comparison data
+    let previousWeekLoudness: Double?
+    let previousWeekStress: Double?
+    let previousWeekListeningTime: TimeInterval?
+    
+    // Computed properties for change calculations
+    var loudnessChange: Double? {
+        guard let previous = previousWeekLoudness, previous > 0 else { return nil }
+        return ((avgLoudness - previous) / previous) * 100
+    }
+    
+    var stressChange: Double? {
+        guard let previous = previousWeekStress, previous > 0 else { return nil }
+        return ((avgStress - previous) / previous) * 100
+    }
+    
+    var listeningTimeChange: Double? {
+        guard let previous = previousWeekListeningTime, previous > 0 else { return nil }
+        return ((totalListeningTime - previous) / previous) * 100
+    }
 }
 
 class DiaryViewModel: ObservableObject {
@@ -218,34 +238,131 @@ class DiaryViewModel: ObservableObject {
         let calendar = Calendar.current
         var summaries: [WeeklySummary] = []
         
-        // Group entries by week
-        var weeklyGroups: [String: [DiaryEntry]] = [:]
+        // Group entries by week with date tracking
+        var weeklyGroups: [Date: [DiaryEntry]] = [:]
         
         for entry in diaryEntries {
             guard let date = entry.date else { continue }
             let weekOfYear = calendar.dateInterval(of: .weekOfYear, for: date)
-            let weekKey = weekOfYear?.start.formatted(date: .abbreviated, time: .omitted) ?? ""
+            guard let weekStart = weekOfYear?.start else { continue }
             
-            if weeklyGroups[weekKey] == nil {
-                weeklyGroups[weekKey] = []
+            if weeklyGroups[weekStart] == nil {
+                weeklyGroups[weekStart] = []
             }
-            weeklyGroups[weekKey]?.append(entry)
+            weeklyGroups[weekStart]?.append(entry)
         }
         
-        // Create summaries
-        for (weekKey, entries) in weeklyGroups.sorted(by: { $0.key > $1.key }).prefix(4) {
+        // Generate last 4 weeks, including weeks with no data
+        let currentDate = Date()
+        var weekStarts: [Date] = []
+        
+        for i in 0..<4 {
+            if let weekStart = calendar.dateInterval(of: .weekOfYear, for: calendar.date(byAdding: .weekOfYear, value: -i, to: currentDate) ?? currentDate)?.start {
+                weekStarts.append(weekStart)
+            }
+        }
+        
+        // Sort oldest to newest for left-to-right display
+        weekStarts.sort { $0 < $1 }
+        
+        for weekStart in weekStarts {
+            let entries = weeklyGroups[weekStart] ?? []
             let avgLoudness = entries.isEmpty ? 0 : Double(entries.reduce(0) { $0 + Int($1.loudnessLevel) }) / Double(entries.count)
             let avgStress = entries.isEmpty ? 0 : Double(entries.reduce(0) { $0 + Int($1.stressLevel) }) / Double(entries.count)
-            let avgComfort = entries.isEmpty ? 0 : Double(entries.reduce(0) { $0 + Int($1.comfortLevel) }) / Double(entries.count)
             let totalListenTime = entries.reduce(0.0) { $0 + $1.sessionDuration }
             
+            // Find previous week data (one week earlier)
+            let previousWeekStart = calendar.date(byAdding: .weekOfYear, value: -1, to: weekStart)
+            var previousWeekLoudness: Double? = nil
+            var previousWeekStress: Double? = nil
+            var previousWeekListeningTime: TimeInterval? = nil
+            
+            if let prevWeekStart = previousWeekStart,
+               let prevWeekEntries = weeklyGroups[prevWeekStart], !prevWeekEntries.isEmpty {
+                previousWeekLoudness = Double(prevWeekEntries.reduce(0) { $0 + Int($1.loudnessLevel) }) / Double(prevWeekEntries.count)
+                previousWeekStress = Double(prevWeekEntries.reduce(0) { $0 + Int($1.stressLevel) }) / Double(prevWeekEntries.count)
+                previousWeekListeningTime = prevWeekEntries.reduce(0.0) { $0 + $1.sessionDuration }
+            }
+            
+            let weekKey = weekStart.formatted(date: .abbreviated, time: .omitted)
             let summary = WeeklySummary(
                 weekOf: weekKey,
                 entryCount: entries.count,
                 avgLoudness: avgLoudness,
                 avgStress: avgStress,
-                avgComfort: avgComfort,
-                totalListeningTime: totalListenTime
+                totalListeningTime: totalListenTime,
+                previousWeekLoudness: previousWeekLoudness,
+                previousWeekStress: previousWeekStress,
+                previousWeekListeningTime: previousWeekListeningTime
+            )
+            summaries.append(summary)
+        }
+        
+        return summaries
+    }
+    
+    func getWeeklySummariesForOffset(_ weekOffset: Int) -> [WeeklySummary] {
+        let calendar = Calendar.current
+        var summaries: [WeeklySummary] = []
+        
+        // Group entries by week with date tracking
+        var weeklyGroups: [Date: [DiaryEntry]] = [:]
+        
+        for entry in diaryEntries {
+            guard let date = entry.date else { continue }
+            let weekOfYear = calendar.dateInterval(of: .weekOfYear, for: date)
+            guard let weekStart = weekOfYear?.start else { continue }
+            
+            if weeklyGroups[weekStart] == nil {
+                weeklyGroups[weekStart] = []
+            }
+            weeklyGroups[weekStart]?.append(entry)
+        }
+        
+        // Generate the two weeks to display based on offset
+        let currentDate = Date()
+        var weekStarts: [Date] = []
+        
+        // Get previous week and current week relative to the offset
+        for i in 0..<2 {
+            let weekIndex = weekOffset - 1 + i // -1 for previous week, 0 for current week
+            if let weekStart = calendar.dateInterval(of: .weekOfYear, for: calendar.date(byAdding: .weekOfYear, value: weekIndex, to: currentDate) ?? currentDate)?.start {
+                weekStarts.append(weekStart)
+            }
+        }
+        
+        // Sort oldest to newest for left-to-right display
+        weekStarts.sort { $0 < $1 }
+        
+        for weekStart in weekStarts {
+            let entries = weeklyGroups[weekStart] ?? []
+            let avgLoudness = entries.isEmpty ? 0 : Double(entries.reduce(0) { $0 + Int($1.loudnessLevel) }) / Double(entries.count)
+            let avgStress = entries.isEmpty ? 0 : Double(entries.reduce(0) { $0 + Int($1.stressLevel) }) / Double(entries.count)
+            let totalListenTime = entries.reduce(0.0) { $0 + $1.sessionDuration }
+            
+            // Find previous week data (one week earlier)
+            let previousWeekStart = calendar.date(byAdding: .weekOfYear, value: -1, to: weekStart)
+            var previousWeekLoudness: Double? = nil
+            var previousWeekStress: Double? = nil
+            var previousWeekListeningTime: TimeInterval? = nil
+            
+            if let prevWeekStart = previousWeekStart,
+               let prevWeekEntries = weeklyGroups[prevWeekStart], !prevWeekEntries.isEmpty {
+                previousWeekLoudness = Double(prevWeekEntries.reduce(0) { $0 + Int($1.loudnessLevel) }) / Double(prevWeekEntries.count)
+                previousWeekStress = Double(prevWeekEntries.reduce(0) { $0 + Int($1.stressLevel) }) / Double(prevWeekEntries.count)
+                previousWeekListeningTime = prevWeekEntries.reduce(0.0) { $0 + $1.sessionDuration }
+            }
+            
+            let weekKey = weekStart.formatted(date: .abbreviated, time: .omitted)
+            let summary = WeeklySummary(
+                weekOf: weekKey,
+                entryCount: entries.count,
+                avgLoudness: avgLoudness,
+                avgStress: avgStress,
+                totalListeningTime: totalListenTime,
+                previousWeekLoudness: previousWeekLoudness,
+                previousWeekStress: previousWeekStress,
+                previousWeekListeningTime: previousWeekListeningTime
             )
             summaries.append(summary)
         }
@@ -275,11 +392,6 @@ class DiaryViewModel: ObservableObject {
         return Double(total) / Double(diaryEntries.count)
     }
     
-    func getOverallAverageComfort() -> Double {
-        guard !diaryEntries.isEmpty else { return 0 }
-        let total = diaryEntries.reduce(0) { $0 + Int($1.comfortLevel) }
-        return Double(total) / Double(diaryEntries.count)
-    }
     
     func getMostCommonFrequency() -> Float {
         let frequencies = diaryEntries.compactMap { $0.currentFrequency > 0 ? $0.currentFrequency : nil }
@@ -288,7 +400,7 @@ class DiaryViewModel: ObservableObject {
         // Group frequencies in ranges and find most common
         var frequencyGroups: [String: Int] = [:]
         for freq in frequencies {
-            let key = formatFrequencyRange(freq)
+            let key = formatFrequency(freq)
             frequencyGroups[key, default: 0] += 1
         }
         
@@ -296,21 +408,39 @@ class DiaryViewModel: ObservableObject {
         return frequencies.reduce(0, +) / Float(frequencies.count) // Return average for now
     }
     
-    private func formatFrequencyRange(_ frequency: Float) -> String {
+    func formatFrequency(_ frequency: Float) -> String {
         let rounded = round(frequency / 100) * 100
         return "\(Int(rounded))Hz"
     }
     
-    func exportToCSV() -> String {
-        var csvContent = "Date,Loudness Level,Comfort Level,Stress Level,Notes\n"
+    
+    // MARK: - Calendar Session Aggregation
+    
+    func getSessionMinutesForDate(_ date: Date) -> Double {
+        let startOfDay = Calendar.current.startOfDay(for: date)
+        let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay) ?? startOfDay
         
-        for entry in diaryEntries {
-            let dateString = entry.date?.formatted(date: .numeric, time: .omitted) ?? ""
-            let notes = entry.notes?.replacingOccurrences(of: ",", with: ";") ?? ""
-            
-            csvContent += "\(dateString),\(entry.loudnessLevel),\(entry.comfortLevel),\(entry.stressLevel),\"\(notes)\"\n"
+        let entriesForDate = diaryEntries.filter { entry in
+            guard let entryDate = entry.date else { return false }
+            return entryDate >= startOfDay && entryDate < endOfDay
         }
         
-        return csvContent
+        let totalSeconds = entriesForDate.reduce(0.0) { $0 + $1.sessionDuration }
+        return totalSeconds / 60.0 // Convert to minutes
+    }
+    
+    func getMonthlySessionMinutes(for month: Date) -> Double {
+        let calendar = Calendar.current
+        guard let monthInterval = calendar.dateInterval(of: .month, for: month) else {
+            return 0
+        }
+        
+        let entriesForMonth = diaryEntries.filter { entry in
+            guard let entryDate = entry.date else { return false }
+            return entryDate >= monthInterval.start && entryDate < monthInterval.end
+        }
+        
+        let totalSeconds = entriesForMonth.reduce(0.0) { $0 + $1.sessionDuration }
+        return totalSeconds / 60.0 // Convert to minutes
     }
 }

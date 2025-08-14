@@ -85,16 +85,6 @@ struct ProfileView: View {
                     ) {
                         VStack(spacing: 0) {
                             PreferenceActionRow(
-                                title: "Export Data",
-                                subtitle: "Share your progress with healthcare providers",
-                                icon: "square.and.arrow.up",
-                                action: exportData
-                            )
-                            
-                            Divider()
-                                .padding(.leading, 50)
-                            
-                            PreferenceActionRow(
                                 title: "Data Storage",
                                 subtitle: "All data stored locally on your device",
                                 icon: "externaldrive.fill",
@@ -181,11 +171,6 @@ struct ProfileView: View {
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.large)
         }
-    }
-    
-    private func exportData() {
-        // Export functionality
-        HapticFeedback.success.trigger()
     }
 }
 

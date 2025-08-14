@@ -90,32 +90,28 @@ struct FrequencyMatchingView: View {
     }
     
     private func controlLabels(frame: CGRect) -> some View {
-        GeometryReader { geometry in
-            let safeArea = geometry.safeAreaInsets
+        ZStack {
+            Text("louder")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.orange)
+                .position(x: frame.midX, y: frame.minY - 15)
             
-            ZStack {
-                Text("louder")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.orange)
-                    .position(x: frame.midX, y: safeArea.top + 20)
-                
-                Text("softer")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.orange)
-                    .position(x: frame.midX, y: geometry.size.height - safeArea.bottom + 50)
-                
-                Text("bass")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.orange)
-                    .rotationEffect(.degrees(-90))
-                    .position(x: safeArea.leading + 30, y: frame.midY)
-                
-                Text("treble")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.orange)
-                    .rotationEffect(.degrees(90))
-                    .position(x: geometry.size.width - safeArea.trailing - 30, y: frame.midY)
-            }
+            Text("softer")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.orange)
+                .position(x: frame.midX, y: frame.maxY + 15)
+            
+            Text("bass")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.orange)
+                .rotationEffect(.degrees(-90))
+                .position(x: frame.minX + 25, y: frame.midY)
+            
+            Text("treble")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.orange)
+                .rotationEffect(.degrees(90))
+                .position(x: frame.maxX - 25, y: frame.midY)
         }
     }
     
