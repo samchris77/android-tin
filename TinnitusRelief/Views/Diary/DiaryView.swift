@@ -8,6 +8,8 @@ struct DiaryView: View {
     @State private var selectedTime = Date()
     @State private var selectedMonth = Date()
     @State private var weekOffset = 0 // 0 = current week, -1 = previous week, etc.
+    @State private var showSaveConfirmation = false
+    @State private var lastSavedEntry: (tinnitus: Int, stress: Int, duration: String, entryNumber: Int)?
     
     private let calendar = Calendar.current
     private let weekdaySymbols = ["S", "M", "T", "W", "T", "F", "S"]
@@ -91,6 +93,8 @@ struct DiaryView: View {
                     entry: nil,
                     onSave: { loudness, comfort, stress, sessionDuration in
                         let combinedDateTime = combineDateAndTime(date: viewModel.selectedDate, time: selectedTime)
+                        let entryNumber = getEntryNumberForDate(viewModel.selectedDate, trigger: refreshTrigger)
+                        
                         viewModel.createEntry(
                             loudness: loudness, 
                             comfort: comfort, 
@@ -99,6 +103,24 @@ struct DiaryView: View {
                             sessionDuration: sessionDuration,
                             createdAt: combinedDateTime
                         )
+                        
+                        // Format duration for display
+                        let minutes = Int(sessionDuration / 60)
+                        let durationText = minutes > 0 ? "\(minutes) min" : "0 min"
+                        
+                        // Store saved entry details and show confirmation
+                        lastSavedEntry = (
+                            tinnitus: Int(loudness),
+                            stress: Int(stress), 
+                            duration: durationText,
+                            entryNumber: entryNumber
+                        )
+                        showSaveConfirmation = true
+                        
+                        // Auto-dismiss popup after 3 seconds
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                            showSaveConfirmation = false
+                        }
                         
                         // Reset session timer if audio is still playing
                         let audioManager = UnifiedAudioEngineManager.shared
@@ -119,6 +141,21 @@ struct DiaryView: View {
                 )
         }
         .padding()
+        .overlay(
+            // Save confirmation popup
+            Group {
+                if showSaveConfirmation, let entry = lastSavedEntry {
+                    SaveConfirmationPopup(
+                        entryNumber: entry.entryNumber,
+                        tinnitus: entry.tinnitus,
+                        stress: entry.stress,
+                        duration: entry.duration
+                    )
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                    .animation(.easeInOut(duration: 0.3), value: showSaveConfirmation)
+                }
+            }
+        )
     }
     
     private var progressTrackingView: some View {
@@ -788,11 +825,11 @@ struct DiaryEntryRowView: View {
             }
             
             // Combined session info and metrics
-            HStack {
+            HStack(alignment: .center) {
                 // Session info
                 VStack(alignment: .leading, spacing: 1) {
                     Text(formatSessionDuration(entry.sessionDuration))
-                        .font(.caption)
+                        .font(.subheadline)
                         .foregroundColor(.green)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 1)
@@ -810,14 +847,14 @@ struct DiaryEntryRowView: View {
                         title: "Loudness",
                         value: Int(entry.loudnessLevel),
                         icon: "speaker.wave.2.fill",
-                        color: .orange
+                        color: .orange.opacity(0.6)
                     )
                     
                     MetricView(
                         title: "Stress",
                         value: Int(entry.stressLevel),
                         icon: "exclamationmark.triangle.fill",
-                        color: .red
+                        color: .red.opacity(0.6)
                     )
                 }
             }
@@ -928,7 +965,7 @@ struct MetricView: View {
     var body: some View {
         VStack(spacing: 2) {
             Image(systemName: icon)
-                .font(.system(size: 18))
+                .font(.system(size: 24))
                 .foregroundColor(color)
             
             Text("\(value)/10")
@@ -1247,15 +1284,9 @@ struct CompactStatRow: View {
             
             HStack(spacing: 4) {
                 if let change = changeValue, let improvement = isImprovement, abs(change) >= 5 {
-                    HStack(spacing: 1) {
-                        Image(systemName: improvement ? "arrow.up" : "arrow.down")
-                            .font(.system(size: 8))
-                            .foregroundColor(improvement ? .green : .red)
-                        
-                        Text("\(Int(abs(change)))%")
-                            .font(.system(size: 9))
-                            .foregroundColor(improvement ? .green : .red)
-                    }
+                    Text("\(improvement ? "↑" : "↓")\(Int(abs(change)))%")
+                        .font(.caption2)
+                        .foregroundColor(improvement ? .green : .red)
                 }
                 
                 Text(value)
@@ -1448,6 +1479,67 @@ struct CalendarDayView: View {
         }
         
         return "\(dateString), \(sessionInfo)\(isToday ? ", Today" : "")"
+    }
+}
+
+struct SaveConfirmationPopup: View {
+    let entryNumber: Int
+    let tinnitus: Int
+    let stress: Int
+    let duration: String
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            // Success icon
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 32))
+                .foregroundColor(.green)
+            
+            // Entry saved text
+            Text("Entry #\(entryNumber) Saved")
+                .font(.headline)
+                .fontWeight(.semibold)
+                .foregroundColor(.primary)
+            
+            // Session details
+            VStack(spacing: 4) {
+                HStack(spacing: 16) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "speaker.wave.2.fill")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                        Text("Tinnitus: \(tinnitus)/10")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    HStack(spacing: 4) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.caption)
+                            .foregroundColor(.red)
+                        Text("Stress: \(stress)/10")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                HStack(spacing: 4) {
+                    Image(systemName: "clock.fill")
+                        .font(.caption)
+                        .foregroundColor(.green)
+                    Text("Duration: \(duration)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.ultraThinMaterial)
+                .shadow(radius: 8, x: 0, y: 4)
+        )
+        .frame(maxWidth: 280)
     }
 }
 
