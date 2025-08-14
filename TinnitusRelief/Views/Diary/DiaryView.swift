@@ -570,7 +570,7 @@ struct EntryFormView: View {
     
     // Helper function for updating session duration from drag gesture
     private func updateSessionDuration(from dragValue: DragGesture.Value) {
-        let sensitivity: Double = 0.1
+        let sensitivity: Double = 0.03
         let change = -Double(dragValue.translation.height) * sensitivity
         let newValue = max(0, min(120, sessionDurationMinutes + change))
         
