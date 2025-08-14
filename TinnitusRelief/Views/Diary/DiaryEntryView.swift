@@ -6,7 +6,6 @@ struct DiaryEntryView: View {
     // Entry data
     @State private var loudness: Int = 5
     @State private var stress: Int = 3
-    @State private var comfort: Int = 5
     
     private let currentDate = Date()
     
@@ -28,19 +27,14 @@ struct DiaryEntryView: View {
                     // Main logging sliders
                     VStack(spacing: 16) {
                         SymptomSlider(
-                            title: "Loudness",
+                            title: "Tinnitus Level",
                             value: $loudness,
                             color: .orange
                         )
                         SymptomSlider(
-                            title: "Stress",
+                            title: "Current Stress",
                             value: $stress,
                             color: .red
-                        )
-                        SymptomSlider(
-                            title: "Comfort",
-                            value: $comfort,
-                            color: .blue
                         )
                     }
                     .padding()
@@ -73,7 +67,6 @@ struct DiaryEntryView: View {
             // Reset form for new entry
             loudness = 5
             stress = 3
-            comfort = 5
         }
     }
     
@@ -81,7 +74,7 @@ struct DiaryEntryView: View {
         // Create diary entry with session data
         viewModel.createEntry(
             loudness: Int16(loudness),
-            comfort: Int16(comfort),
+            comfort: Int16(5), // Default comfort value
             stress: Int16(stress),
             notes: nil
         )
@@ -91,7 +84,6 @@ struct DiaryEntryView: View {
         // Reset form
         loudness = 5
         stress = 3
-        comfort = 5
         
         // Fetch updated entries
         viewModel.fetchEntries()
@@ -115,24 +107,82 @@ private struct SymptomSlider: View {
     let color: Color
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title)
-                .font(.headline)
-            
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Slider(
-                    value: .init(
-                        get: { Double(value) },
-                        set: { value = Int($0) }
-                    ),
-                    in: 0...10,
-                    step: 1
-                )
-                .accentColor(color)
+                Text(title)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                Spacer()
                 
                 Text("\(value)")
-                    .font(.system(size: 20, weight: .semibold, design: .monospaced))
-                    .frame(width: 40, alignment: .trailing)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(color)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(color.opacity(0.1))
+                    )
+            }
+            
+            VStack(spacing: 8) {
+                // Custom slider with step marks
+                ZStack(alignment: .leading) {
+                    // Background track
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(height: 6)
+                    
+                    // Active track
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(color)
+                        .frame(width: CGFloat(value) / 10 * 280, height: 6)
+                    
+                    // Slider handle
+                    Circle()
+                        .fill(color)
+                        .frame(width: 20, height: 20)
+                        .shadow(color: color.opacity(0.3), radius: 3, x: 0, y: 2)
+                        .offset(x: CGFloat(value) / 10 * 260)
+                        .gesture(
+                            DragGesture()
+                                .onChanged { gesture in
+                                    let newValue = Int(round(gesture.location.x / 260 * 10))
+                                    value = max(0, min(10, newValue))
+                                }
+                        )
+                }
+                .frame(width: 280, height: 20)
+                
+                // Step marks
+                HStack {
+                    ForEach(0...10, id: \.self) { step in
+                        VStack(spacing: 4) {
+                            Rectangle()
+                                .fill(step == value ? color : Color.gray.opacity(0.4))
+                                .frame(width: 2, height: step % 5 == 0 ? 12 : 8)
+                            
+                            if step % 5 == 0 {
+                                Text("\(step)")
+                                    .font(.caption2)
+                                    .foregroundColor(step == value ? color : .secondary)
+                                    .fontWeight(step == value ? .semibold : .regular)
+                            }
+                        }
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                value = step
+                            }
+                        }
+                        
+                        if step < 10 {
+                            Spacer()
+                        }
+                    }
+                }
+                .frame(width: 280)
             }
         }
     }

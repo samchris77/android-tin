@@ -7,6 +7,7 @@ struct DiaryView: View {
     @State private var refreshTrigger = 0
     @State private var selectedTime = Date()
     @State private var selectedMonth = Date()
+    @State private var weekOffset = 0 // 0 = current week, -1 = previous week, etc.
     
     private let calendar = Calendar.current
     private let weekdaySymbols = ["S", "M", "T", "W", "T", "F", "S"]
@@ -37,7 +38,7 @@ struct DiaryView: View {
                         .tag(2)
                 }
                 .accentColor(.orange)
-                .onChange(of: selectedTab) { newTab in
+                .onChange(of: selectedTab) { _, newTab in
                     // Refresh data when switching to history tab
                     if newTab == 2 {
                         viewModel.fetchEntries()
@@ -47,17 +48,6 @@ struct DiaryView: View {
             }
             .navigationTitle("Log")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button("Export Data") {
-                            exportData()
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                    }
-                }
-            }
         }
         .onAppear {
             viewModel.fetchEntries()
@@ -133,7 +123,7 @@ struct DiaryView: View {
     
     private var progressTrackingView: some View {
         ScrollView {
-            VStack(spacing: 24) {
+            VStack(spacing: 16) {
                 // Session Calendar
                 sessionCalendarView
                 
@@ -142,7 +132,7 @@ struct DiaryView: View {
                 comprehensiveStatsView
                 
             }
-            .padding()
+            .padding(12)
         }
     }
     
@@ -229,58 +219,90 @@ struct DiaryView: View {
     }
     
     private var weeklySummariesView: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Weekly Summaries")
-                .font(.headline)
-                .foregroundColor(.primary)
-            
-            ForEach(viewModel.getWeeklySummaries(), id: \.weekOf) { summary in
-                WeeklySummaryCard(summary: summary)
-            }
-        }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(.ultraThinMaterial)
-                .shadow(radius: 4, x: 0, y: 2)
-        )
-    }
-    
-    private var sessionCalendarView: some View {
-        VStack(spacing: 16) {
-            // Title
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Session Calendar")
+                Text("Weekly Summaries")
                     .font(.headline)
-                    .foregroundColor(.primary)
-                Spacer()
-            }
-            .padding(.horizontal)
-            
-            // Header with month navigation
-            HStack {
-                Button(action: previousMonth) {
-                    Image(systemName: "chevron.left")
-                        .font(.title2)
-                        .foregroundColor(.orange)
-                }
-                
-                Spacer()
-                
-                Text(monthYearString)
-                    .font(.title3)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
                 
                 Spacer()
                 
-                Button(action: nextMonth) {
-                    Image(systemName: "chevron.right")
-                        .font(.title2)
-                        .foregroundColor(.orange)
+                // Week navigation dots
+                HStack(spacing: 4) {
+                    ForEach(-3...0, id: \.self) { offset in
+                        Circle()
+                            .fill(offset == weekOffset ? .orange : Color.secondary.opacity(0.3))
+                            .frame(width: 6, height: 6)
+                    }
                 }
             }
-            .padding(.horizontal)
+            
+            // Two weeks side by side
+            HStack(spacing: 12) {
+                let summaries = viewModel.getWeeklySummariesForOffset(weekOffset)
+                ForEach(Array(summaries.enumerated()), id: \.element.weekOf) { index, summary in
+                    WeeklySummaryCard(
+                        summary: summary,
+                        showChangeIndicators: index == 1 // Only show indicators on the second (right) card
+                    )
+                    .frame(maxWidth: .infinity)
+                }
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(.ultraThinMaterial)
+        )
+        .gesture(
+            DragGesture()
+                .onEnded { gesture in
+                    let threshold: CGFloat = 50
+                    if gesture.translation.width > threshold && weekOffset > -3 {
+                        withAnimation(.easeInOut) {
+                            weekOffset -= 1 // Swipe right to go back in time
+                        }
+                    } else if gesture.translation.width < -threshold && weekOffset < 0 {
+                        withAnimation(.easeInOut) {
+                            weekOffset += 1 // Swipe left to go forward in time
+                        }
+                    }
+                }
+        )
+    }
+    
+    private var sessionCalendarView: some View {
+        VStack(spacing: 12) {
+            // Header with title and month navigation
+            HStack {
+                Text("Session Calendar")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                HStack(spacing: 16) {
+                    Button(action: previousMonth) {
+                        Image(systemName: "chevron.left")
+                            .font(.title3)
+                            .foregroundColor(.orange)
+                    }
+                    
+                    Text(monthYearString)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                    
+                    Button(action: nextMonth) {
+                        Image(systemName: "chevron.right")
+                            .font(.title3)
+                            .foregroundColor(.orange)
+                    }
+                }
+            }
+            .padding(.horizontal, 12)
             
             // Weekday headers
             HStack(spacing: 0) {
@@ -292,10 +314,10 @@ struct DiaryView: View {
                         .frame(maxWidth: .infinity)
                 }
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 12)
             
             // Calendar grid
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 2), count: 7), spacing: 2) {
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(43), spacing: 4), count: 7), spacing: 4) {
                 ForEach(calendarDays, id: \.date) { day in
                     CalendarDayView(
                         day: day,
@@ -304,21 +326,21 @@ struct DiaryView: View {
                     )
                 }
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 12)
             
-            // Legend and monthly stats
+            // Compact legend and monthly stats
             HStack {
                 // Color legend
-                VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 8) {
                     Text("Less")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                     
-                    HStack(spacing: 2) {
+                    HStack(spacing: 1) {
                         ForEach(0..<5, id: \.self) { intensity in
                             Rectangle()
                                 .fill(colorForIntensity(intensity))
-                                .frame(width: 12, height: 12)
+                                .frame(width: 10, height: 10)
                                 .cornerRadius(2)
                         }
                     }
@@ -331,82 +353,90 @@ struct DiaryView: View {
                 Spacer()
                 
                 // Monthly total
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text("This Month")
+                HStack(spacing: 6) {
+                    Text("This Month:")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                     
                     Text(formatMonthlyTotal())
-                        .font(.headline)
+                        .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundColor(.orange)
                 }
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 12)
         }
-        .padding(.vertical)
+        .padding(12)
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 12)
                 .fill(.ultraThinMaterial)
-                .shadow(radius: 4, x: 0, y: 2)
         )
     }
     
     private var comprehensiveStatsView: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Overall Statistics")
                 .font(.headline)
+                .fontWeight(.semibold)
                 .foregroundColor(.primary)
             
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 16) {
-                ComprehensiveStatCard(
-                    title: "Total Listening Time",
-                    value: formatTimeInterval(viewModel.getTotalListeningTime()),
-                    subtitle: "All sessions combined",
-                    color: .green
-                )
-                
-                ComprehensiveStatCard(
-                    title: "Average Session",
-                    value: formatTimeInterval(viewModel.getAverageListeningTime()),
-                    subtitle: "Per listening session",
-                    color: .blue
-                )
-                
-                ComprehensiveStatCard(
-                    title: "Overall Avg Stress",
-                    value: String(format: "%.1f/10", viewModel.getOverallAverageStress()),
-                    subtitle: "Across all entries",
-                    color: .red
-                )
-                
-                ComprehensiveStatCard(
-                    title: "Overall Avg Loudness",
-                    value: String(format: "%.1f/10", viewModel.getOverallAverageLoudness()),
-                    subtitle: "Across all entries",
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 8),
+                GridItem(.flexible(), spacing: 8)
+            ], spacing: 8) {
+                EnhancedStatCard(
+                    icon: "speaker.wave.2.fill",
+                    title: "Avg Tinnitus",
+                    value: String(format: "%.1f", viewModel.getOverallAverageLoudness()),
+                    unit: "/10",
                     color: .orange
                 )
                 
-                ComprehensiveStatCard(
-                    title: "Overall Avg Comfort",
-                    value: String(format: "%.1f/10", viewModel.getOverallAverageComfort()),
-                    subtitle: "Across all entries",
+                EnhancedStatCard(
+                    icon: "exclamationmark.triangle.fill",
+                    title: "Avg Stress",
+                    value: String(format: "%.1f", viewModel.getOverallAverageStress()),
+                    unit: "/10",
+                    color: .red
+                )
+                
+                EnhancedStatCard(
+                    icon: "clock.fill",
+                    title: "Total Time",
+                    value: formatTimeInterval(viewModel.getTotalListeningTime()),
+                    unit: "",
+                    color: .green
+                )
+                
+                EnhancedStatCard(
+                    icon: "chart.bar.fill",
+                    title: "Avg Session",
+                    value: formatTimeInterval(viewModel.getAverageListeningTime()),
+                    unit: "",
                     color: .blue
                 )
                 
-                ComprehensiveStatCard(
+                EnhancedStatCard(
+                    icon: "list.bullet",
                     title: "Total Entries",
                     value: "\(viewModel.diaryEntries.count)",
-                    subtitle: "Diary entries logged",
+                    unit: "",
                     color: .purple
+                )
+                
+                EnhancedStatCard(
+                    icon: "waveform",
+                    title: "Most Used",
+                    value: viewModel.formatFrequency(viewModel.getMostCommonFrequency()),
+                    unit: "",
+                    color: .indigo
                 )
             }
         }
-        .padding()
+        .padding(12)
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 12)
                 .fill(.ultraThinMaterial)
-                .shadow(radius: 4, x: 0, y: 2)
         )
     }
     
@@ -445,15 +475,6 @@ struct DiaryView: View {
         return calendar.date(from: combined) ?? Date()
     }
     
-    private func exportData() {
-        let csvContent = viewModel.exportToCSV()
-        let activityVC = UIActivityViewController(activityItems: [csvContent], applicationActivities: nil)
-        
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let rootVC = windowScene.windows.first?.rootViewController {
-            rootVC.present(activityVC, animated: true)
-        }
-    }
     
     // MARK: - Calendar Methods
     
@@ -536,7 +557,6 @@ struct EntryFormView: View {
     
     @ObservedObject private var audioManager = UnifiedAudioEngineManager.shared
     @State private var loudnessLevel: Int = 5
-    @State private var comfortLevel: Int = 5
     @State private var stressLevel: Int = 5
     @State private var sessionDurationMinutes: Double = 0.0
     @State private var isManuallyEdited: Bool = false
@@ -595,19 +615,14 @@ struct EntryFormView: View {
     var body: some View {
         VStack(spacing: 16) {
             SymptomSlider(
-                title: "Loudness",
+                title: "Tinnitus Level",
                 value: $loudnessLevel,
                 color: .orange
             )
             SymptomSlider(
-                title: "Stress",
+                title: "Current Stress",
                 value: $stressLevel,
                 color: .red
-            )
-            SymptomSlider(
-                title: "Comfort",
-                value: $comfortLevel,
-                color: .blue
             )
             
             // Session Duration Input - Compact
@@ -683,11 +698,10 @@ struct EntryFormView: View {
             Button(action: {
                 // Convert minutes to seconds for TimeInterval
                 let durationInSeconds = effectiveSessionDuration * 60
-                onSave(Int16(loudnessLevel), Int16(comfortLevel), Int16(stressLevel), durationInSeconds)
+                onSave(Int16(loudnessLevel), Int16(5), Int16(stressLevel), durationInSeconds) // Default comfort value
                 
                 // Reset form
                 loudnessLevel = 5
-                comfortLevel = 5
                 stressLevel = 5
                 sessionDurationMinutes = 0.0
                 isManuallyEdited = false
@@ -720,7 +734,6 @@ struct EntryFormView: View {
                 if let entry = entry {
                     // Editing existing entry
                     loudnessLevel = Int(entry.loudnessLevel)
-                    comfortLevel = Int(entry.comfortLevel)
                     stressLevel = Int(entry.stressLevel)
                     sessionDurationMinutes = round(entry.sessionDuration / 60)
                     isManuallyEdited = true // Existing entries are always manual
@@ -735,7 +748,7 @@ struct EntryFormView: View {
                 }
             }
         }
-        .onChange(of: audioManager.isFrequencyPlaying) { isPlaying in
+        .onChange(of: audioManager.isFrequencyPlaying) { _, isPlaying in
             // Reset manual edit state when audio starts/stops for new entries
             if entry == nil && !isPlaying {
                 isManuallyEdited = false
@@ -753,8 +766,8 @@ struct DiaryEntryRowView: View {
     
     var body: some View {
         if isValidEntry {
-            VStack(alignment: .leading, spacing: 6) {
-            // Header with entry number only
+            VStack(alignment: .leading, spacing: 4) {
+            // Header with entry number and created time
             HStack {
                 Text("#\(entry.entryNumber)")
                     .font(.caption)
@@ -767,13 +780,17 @@ struct DiaryEntryRowView: View {
                             .fill(Color.orange.opacity(0.1))
                     )
                 
+                Text(formatCreationTime(entry.createdAt))
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                
                 Spacer()
             }
             
             // Combined session info and metrics
             HStack {
                 // Session info
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 1) {
                     Text(formatSessionDuration(entry.sessionDuration))
                         .font(.caption)
                         .foregroundColor(.green)
@@ -783,10 +800,6 @@ struct DiaryEntryRowView: View {
                             RoundedRectangle(cornerRadius: 3)
                                 .fill(Color.green.opacity(0.1))
                         )
-                    
-                    Text(formatCreationTime(entry.createdAt))
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
                 }
                 
                 Spacer()
@@ -798,13 +811,6 @@ struct DiaryEntryRowView: View {
                         value: Int(entry.loudnessLevel),
                         icon: "speaker.wave.2.fill",
                         color: .orange
-                    )
-                    
-                    MetricView(
-                        title: "Comfort", 
-                        value: Int(entry.comfortLevel),
-                        icon: "heart.fill",
-                        color: .blue
                     )
                     
                     MetricView(
@@ -825,9 +831,9 @@ struct DiaryEntryRowView: View {
                     .padding(.top, 4)
             }
         }
-        .frame(height: 70)
+        .frame(height: 60)
         .padding(.horizontal, 12)
-        .padding(.vertical, 4)
+        .padding(.vertical, 3)
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(.ultraThinMaterial)
@@ -860,15 +866,14 @@ struct DiaryEntryRowView: View {
     }
     
     private func formatSessionDuration(_ duration: TimeInterval) -> String {
-        if duration <= 0 {
-            return "No session"
-        }
         let minutes = Int(duration / 60)
         let seconds = Int(duration.truncatingRemainder(dividingBy: 60))
         if minutes > 0 {
             return "\(minutes)m \(seconds)s"
-        } else {
+        } else if duration > 0 {
             return "\(seconds)s"
+        } else {
+            return "0 min"
         }
     }
     
@@ -923,7 +928,7 @@ struct MetricView: View {
     var body: some View {
         VStack(spacing: 2) {
             Image(systemName: icon)
-                .font(.system(size: 14))
+                .font(.system(size: 18))
                 .foregroundColor(color)
             
             Text("\(value)/10")
@@ -985,24 +990,82 @@ private struct SymptomSlider: View {
     let color: Color
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title)
-                .font(.headline)
-            
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Slider(
-                    value: .init(
-                        get: { Double(value) },
-                        set: { value = Int($0) }
-                    ),
-                    in: 0...10,
-                    step: 1
-                )
-                .accentColor(color)
+                Text(title)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                Spacer()
                 
                 Text("\(value)")
-                    .font(.system(size: 20, weight: .semibold, design: .monospaced))
-                    .frame(width: 40, alignment: .trailing)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(color)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(color.opacity(0.1))
+                    )
+            }
+            
+            VStack(spacing: 8) {
+                // Custom slider with step marks
+                ZStack(alignment: .leading) {
+                    // Background track
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(height: 6)
+                    
+                    // Active track
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(color)
+                        .frame(width: CGFloat(value) / 10 * 280, height: 6)
+                    
+                    // Slider handle
+                    Circle()
+                        .fill(color)
+                        .frame(width: 20, height: 20)
+                        .shadow(color: color.opacity(0.3), radius: 3, x: 0, y: 2)
+                        .offset(x: CGFloat(value) / 10 * 260)
+                        .gesture(
+                            DragGesture()
+                                .onChanged { gesture in
+                                    let newValue = Int(round(gesture.location.x / 260 * 10))
+                                    value = max(0, min(10, newValue))
+                                }
+                        )
+                }
+                .frame(width: 280, height: 20)
+                
+                // Step marks
+                HStack {
+                    ForEach(0...10, id: \.self) { step in
+                        VStack(spacing: 4) {
+                            Rectangle()
+                                .fill(step == value ? color : Color.gray.opacity(0.4))
+                                .frame(width: 2, height: step % 5 == 0 ? 12 : 8)
+                            
+                            if step % 5 == 0 {
+                                Text("\(step)")
+                                    .font(.caption2)
+                                    .foregroundColor(step == value ? color : .secondary)
+                                    .fontWeight(step == value ? .semibold : .regular)
+                            }
+                        }
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                value = step
+                            }
+                        }
+                        
+                        if step < 10 {
+                            Spacer()
+                        }
+                    }
+                }
+                .frame(width: 280)
             }
         }
     }
@@ -1077,57 +1140,71 @@ struct EmptyHistoryView: View {
 
 struct WeeklySummaryCard: View {
     let summary: WeeklySummary
+    let showChangeIndicators: Bool
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
+        VStack(alignment: .leading, spacing: 8) {
+            // Compact header
+            VStack(alignment: .leading, spacing: 2) {
                 Text("Week of \(summary.weekOf)")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                
-                Spacer()
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.secondary)
                 
                 Text("\(summary.entryCount) entries")
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundColor(.secondary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color.gray.opacity(0.1))
-                    )
             }
             
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 12) {
-                SummaryStatView(
-                    title: "Avg Loudness",
-                    value: String(format: "%.1f", summary.avgLoudness),
-                    color: .orange
-                )
-                
-                SummaryStatView(
-                    title: "Avg Stress",
-                    value: String(format: "%.1f", summary.avgStress),
-                    color: .red
-                )
-                
-                SummaryStatView(
-                    title: "Avg Comfort",
-                    value: String(format: "%.1f", summary.avgComfort),
-                    color: .blue
-                )
-                
-                SummaryStatView(
-                    title: "Listen Time",
-                    value: formatListenTime(summary.totalListeningTime),
-                    color: .green
-                )
+            // Compact stats or no data message
+            if summary.entryCount > 0 {
+                VStack(spacing: 6) {
+                    CompactStatRow(
+                        icon: "speaker.wave.2.fill",
+                        title: "Tinnitus",
+                        value: String(format: "%.1f", summary.avgLoudness),
+                        color: .orange,
+                        changeValue: showChangeIndicators ? summary.loudnessChange : nil,
+                        isImprovement: showChangeIndicators ? summary.loudnessChange.map { $0 < 0 } : nil // Lower tinnitus is improvement
+                    )
+                    
+                    CompactStatRow(
+                        icon: "exclamationmark.triangle.fill",
+                        title: "Stress",
+                        value: String(format: "%.1f", summary.avgStress),
+                        color: .red,
+                        changeValue: showChangeIndicators ? summary.stressChange : nil,
+                        isImprovement: showChangeIndicators ? summary.stressChange.map { $0 < 0 } : nil // Lower stress is improvement
+                    )
+                    
+                    CompactStatRow(
+                        icon: "clock.fill",
+                        title: "Listen",
+                        value: formatListenTime(summary.totalListeningTime),
+                        color: .green,
+                        changeValue: showChangeIndicators ? summary.listeningTimeChange : nil,
+                        isImprovement: showChangeIndicators ? summary.listeningTimeChange.map { $0 > 0 } : nil // More listening time is improvement
+                    )
+                }
+            } else {
+                // No data message
+                VStack(spacing: 4) {
+                    Image(systemName: "chart.bar.doc.horizontal")
+                        .font(.title2)
+                        .foregroundColor(.secondary)
+                    
+                    Text("No data")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .fontWeight(.medium)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
             }
         }
-        .padding()
+        .padding(8)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 8)
                 .fill(.ultraThinMaterial)
         )
     }
@@ -1135,6 +1212,102 @@ struct WeeklySummaryCard: View {
     private func formatListenTime(_ timeInterval: TimeInterval) -> String {
         let minutes = Int(timeInterval / 60)
         return "\(minutes)m"
+    }
+}
+
+struct CompactStatRow: View {
+    let icon: String
+    let title: String
+    let value: String
+    let color: Color
+    let changeValue: Double?
+    let isImprovement: Bool?
+    
+    init(icon: String, title: String, value: String, color: Color, changeValue: Double? = nil, isImprovement: Bool? = nil) {
+        self.icon = icon
+        self.title = title
+        self.value = value
+        self.color = color
+        self.changeValue = changeValue
+        self.isImprovement = isImprovement
+    }
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.caption)
+                .foregroundColor(color)
+                .frame(width: 12)
+            
+            Text(title)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+            
+            Spacer()
+            
+            HStack(spacing: 4) {
+                if let change = changeValue, let improvement = isImprovement, abs(change) >= 5 {
+                    HStack(spacing: 1) {
+                        Image(systemName: improvement ? "arrow.up" : "arrow.down")
+                            .font(.system(size: 8))
+                            .foregroundColor(improvement ? .green : .red)
+                        
+                        Text("\(Int(abs(change)))%")
+                            .font(.system(size: 9))
+                            .foregroundColor(improvement ? .green : .red)
+                    }
+                }
+                
+                Text(value)
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(color)
+            }
+        }
+    }
+}
+
+struct EnhancedStatCard: View {
+    let icon: String
+    let title: String
+    let value: String
+    let unit: String
+    let color: Color
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Image(systemName: icon)
+                    .font(.caption)
+                    .foregroundColor(color)
+                
+                Spacer()
+            }
+            
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(value)
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(color)
+                
+                if !unit.isEmpty {
+                    Text(unit)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            Text(title)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(color.opacity(0.05))
+        )
     }
 }
 
@@ -1217,9 +1390,9 @@ struct CalendarDayView: View {
         VStack(spacing: 2) {
             Text("\(calendar.component(.day, from: day.date))")
                 .font(.system(size: 14, weight: .medium))
-                .foregroundColor(isCurrentMonth ? .primary : .secondary.opacity(0.5))
+                .foregroundColor(isCurrentMonth ? .secondary.opacity(0.7) : .secondary.opacity(0.3))
         }
-        .frame(width: 32, height: 32)
+        .frame(width: 43, height: 43)
         .background(
             RoundedRectangle(cornerRadius: 4)
                 .fill(backgroundColorForSession)

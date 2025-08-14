@@ -149,16 +149,6 @@ struct EnhancedProfileView: View {
                 VStack(spacing: 0) {
                     Group {
                         ProfileSettingsRow(
-                            title: "Export Data",
-                            subtitle: "Save your progress for healthcare providers",
-                            icon: "square.and.arrow.up",
-                            action: {}
-                        )
-                        
-                        Divider()
-                            .padding(.horizontal)
-                        
-                        ProfileSettingsRow(
                             title: "Data Storage",
                             subtitle: "All data stored locally on your device",
                             icon: "externaldrive",
