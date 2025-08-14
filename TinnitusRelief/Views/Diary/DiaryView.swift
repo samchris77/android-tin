@@ -17,38 +17,57 @@ struct DiaryView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
+                // Static navigation row
+                HStack(spacing: 0) {
+                    Button(action: { navigateTo(0) }) {
+                        Text("Add")
+                            .font(.system(size: 16, weight: selectedTab == 0 ? .semibold : .medium))
+                            .foregroundColor(selectedTab == 0 ? .primary : .secondary)
+                            .animation(nil, value: selectedTab)
+                    }
+                    .frame(maxWidth: .infinity)
+                    
+                    Button(action: { navigateTo(1) }) {
+                        Text("Progress Tracking")
+                            .font(.system(size: 16, weight: selectedTab == 1 ? .semibold : .medium))
+                            .foregroundColor(selectedTab == 1 ? .primary : .secondary)
+                            .animation(nil, value: selectedTab)
+                    }
+                    .frame(maxWidth: .infinity)
+                    
+                    Button(action: { navigateTo(2) }) {
+                        Text("History")
+                            .font(.system(size: 16, weight: selectedTab == 2 ? .semibold : .medium))
+                            .foregroundColor(selectedTab == 2 ? .primary : .secondary)
+                            .animation(nil, value: selectedTab)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color.gray.opacity(0.05))
+                
+                // Swipeable TabView
                 TabView(selection: $selectedTab) {
                     logView
-                        .tabItem {
-                            Image(systemName: "plus.circle")
-                            Text("Add")
-                        }
                         .tag(0)
                     
                     progressTrackingView
-                        .tabItem {
-                            Image(systemName: "chart.line.uptrend.xyaxis")
-                            Text("Progress Tracking")
-                        }
                         .tag(1)
                     
                     historyView
-                        .tabItem {
-                            Image(systemName: "clock")
-                            Text("History")
-                        }
                         .tag(2)
                 }
-                .accentColor(.orange)
+                .tabViewStyle(.page(indexDisplayMode: .never))
                 .onChange(of: selectedTab) { _, newTab in
-                    // Refresh data when switching to history tab
-                    if newTab == 2 {
-                        viewModel.fetchEntries()
-                        refreshTrigger += 1
+                    // Reset Progress page to current month and week when user returns
+                    if newTab == 1 {
+                        selectedMonth = Date()
+                        weekOffset = 0
                     }
                 }
             }
-            .navigationTitle("Log")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
         }
         .onAppear {
@@ -85,7 +104,7 @@ struct DiaryView: View {
                 .padding(.vertical, 12)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(.ultraThinMaterial)
+                        .fill(Color.gray.opacity(0.1))
                 )
                 
                 // Always create new entries to support multiple entries per day
@@ -208,7 +227,6 @@ struct DiaryView: View {
                 .padding()
             }
         }
-        .id(refreshTrigger) // Make view reactive to refresh trigger
     }
     
     private var weeklyStatsView: some View {
@@ -406,7 +424,8 @@ struct DiaryView: View {
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(.ultraThinMaterial)
+                .fill(Color.gray.opacity(0.1))
+                .shadow(radius: 2, x: 0, y: 1)
         )
     }
     
@@ -584,6 +603,25 @@ struct DiaryView: View {
             selectedMonth = calendar.date(byAdding: .month, value: 1, to: selectedMonth) ?? selectedMonth
         }
     }
+    
+    private func isSelected(_ tab: String) -> Bool {
+        let tabs = ["Add", "Progress Tracking", "History"]
+        return selectedTab == tabs.firstIndex(of: tab)
+    }
+    
+    private func navigateTo(_ tab: Int) {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            selectedTab = tab
+        }
+        
+        // Delay data refresh to avoid animation conflicts
+        if tab == 2 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                viewModel.fetchEntries()
+                refreshTrigger += 1
+            }
+        }
+    }
 }
 
 struct EntryFormView: View {
@@ -627,8 +665,8 @@ struct EntryFormView: View {
     
     // Helper function for updating session duration from drag gesture
     private func updateSessionDuration(from dragValue: DragGesture.Value) {
-        let sensitivity: Double = 0.03
-        let change = -Double(dragValue.translation.height) * sensitivity
+        let sensitivity: Double = 0.02
+        let change = Double(dragValue.translation.height) * sensitivity
         let newValue = max(0, min(120, sessionDurationMinutes + change))
         
         if abs(newValue - sessionDurationMinutes) >= 1.0 {
@@ -691,37 +729,41 @@ struct EntryFormView: View {
                             .font(.title3)
                             .fontWeight(.semibold)
                             .foregroundColor(.green)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(Color.green.opacity(0.1))
-                            )
-                            .onTapGesture {
-                                toggleMode()
-                            }
                     } else {
-                        Text("\(Int(sessionDurationMinutes)) min")
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(Color.blue.opacity(0.1))
-                            )
-                            .gesture(sessionDurationDragGesture)
+                        VStack(spacing: 2) {
+                            Image(systemName: "chevron.up")
+                                .font(.caption2)
+                                .foregroundColor(.gray.opacity(0.6))
+                            
+                            Text("\(Int(sessionDurationMinutes)) min")
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.blue.opacity(0.1))
+                                )
+                            
+                            Image(systemName: "chevron.down")
+                                .font(.caption2)
+                                .foregroundColor(.gray.opacity(0.6))
+                        }
+                        .gesture(sessionDurationDragGesture)
                     }
                     
                     Spacer()
                     
-                    if !isLiveTracking {
-                        Text("Tap for live")
-                            .font(.caption2)
-                            .foregroundColor(.blue)
-                            .onTapGesture {
-                                toggleMode()
-                            }
+                    Button(action: toggleMode) {
+                        HStack(spacing: 6) {
+                            Image(systemName: isLiveTracking ? "largecircle.fill.circle" : "circle")
+                                .font(.body)
+                                .foregroundColor(isLiveTracking ? .green : .gray)
+                            
+                            Text("Live")
+                                .font(.body)
+                                .foregroundColor(.primary)
+                        }
                     }
                 }
             }
@@ -1284,9 +1326,9 @@ struct CompactStatRow: View {
             
             HStack(spacing: 4) {
                 if let change = changeValue, let improvement = isImprovement, abs(change) >= 5 {
-                    Text("\(improvement ? "↑" : "↓")\(Int(abs(change)))%")
-                        .font(.caption2)
-                        .foregroundColor(improvement ? .green : .red)
+                    Text("\(change > 0 ? "↑" : "↓")\(Int(abs(change)))%")
+                        .font(.system(size: 10))
+                        .foregroundColor(improvement ? Color.green.opacity(0.6) : Color.red.opacity(0.6))
                 }
                 
                 Text(value)
