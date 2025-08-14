@@ -70,13 +70,14 @@ class DiaryViewModel: ObservableObject {
         }
     }
     
-    func createEntry(loudness: Int16, comfort: Int16, stress: Int16, notes: String?) {
+    func createEntry(loudness: Int16, comfort: Int16, stress: Int16, notes: String?, sessionDuration: TimeInterval? = nil, createdAt: Date? = nil) {
         let context = persistenceController.container.viewContext
         let audioManager = UnifiedAudioEngineManager.shared
         
         let entry = DiaryEntry(context: context)
         entry.id = UUID()
         entry.date = Calendar.current.startOfDay(for: selectedDate)
+        entry.createdAt = createdAt ?? Date() // Use provided time or current time
         entry.loudnessLevel = loudness
         entry.comfortLevel = comfort
         entry.stressLevel = stress
@@ -86,8 +87,8 @@ class DiaryViewModel: ObservableObject {
         entry.currentFrequency = audioManager.currentFrequency
         entry.currentVolume = audioManager.currentFrequencyVolume
         
-        // Calculate session duration (placeholder for now - would need session tracking)
-        entry.sessionDuration = 0.0
+        // Use provided session duration, or fall back to tracked duration from audio manager
+        entry.sessionDuration = sessionDuration ?? audioManager.lastSessionDuration
         
         // Calculate entry number for this date
         entry.entryNumber = Int16(getNextEntryNumberForDate(selectedDate))

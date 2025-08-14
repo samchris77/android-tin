@@ -5,6 +5,7 @@ struct DiaryView: View {
     @StateObject private var viewModel = DiaryViewModel()
     @State private var selectedTab = 0
     @State private var refreshTrigger = 0
+    @State private var selectedTime = Date()
     
     var body: some View {
         NavigationView {
@@ -41,7 +42,7 @@ struct DiaryView: View {
                 }
             }
             .navigationTitle("Log")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
@@ -60,26 +61,32 @@ struct DiaryView: View {
     }
     
     private var logView: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                VStack(spacing: 8) {
-                    DatePicker("Date", selection: $viewModel.selectedDate, displayedComponents: .date)
-                        .datePickerStyle(.compact)
+        VStack(spacing: 12) {
+                // Compact Header
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        DatePicker("", selection: $viewModel.selectedDate, displayedComponents: .date)
+                            .datePickerStyle(.compact)
+                            .labelsHidden()
+                        DatePicker("", selection: $selectedTime, displayedComponents: .hourAndMinute)
+                            .datePickerStyle(.compact)
+                            .labelsHidden()
+                    }
                     
-                    HStack {
+                    Spacer()
+                    
+                    VStack(alignment: .trailing, spacing: 2) {
                         Text("Entry")
-                            .font(.caption)
+                            .font(.caption2)
                             .foregroundColor(.secondary)
-                        
                         Text("#\(getEntryNumberForDate(viewModel.selectedDate, trigger: refreshTrigger))")
-                            .font(.caption)
-                            .fontWeight(.semibold)
+                            .font(.title3)
+                            .fontWeight(.bold)
                             .foregroundColor(.orange)
-                        
-                        Spacer()
                     }
                 }
-                .padding()
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
                         .fill(.ultraThinMaterial)
@@ -88,8 +95,23 @@ struct DiaryView: View {
                 // Always create new entries to support multiple entries per day
                 EntryFormView(
                     entry: nil,
-                    onSave: { loudness, comfort, stress in
-                        viewModel.createEntry(loudness: loudness, comfort: comfort, stress: stress, notes: nil)
+                    onSave: { loudness, comfort, stress, sessionDuration in
+                        let combinedDateTime = combineDateAndTime(date: viewModel.selectedDate, time: selectedTime)
+                        viewModel.createEntry(
+                            loudness: loudness, 
+                            comfort: comfort, 
+                            stress: stress, 
+                            notes: nil, 
+                            sessionDuration: sessionDuration,
+                            createdAt: combinedDateTime
+                        )
+                        
+                        // Reset session timer if audio is still playing
+                        let audioManager = UnifiedAudioEngineManager.shared
+                        if audioManager.isFrequencyPlaying {
+                            audioManager.sessionStartTime = Date()
+                            audioManager.currentSessionDuration = 0
+                        }
                         
                         // Wait for database operations to complete, then refresh UI
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -101,9 +123,8 @@ struct DiaryView: View {
                     currentDate: viewModel.selectedDate,
                     entryNumber: getEntryNumberForDate(viewModel.selectedDate, trigger: refreshTrigger)
                 )
-            }
-            .padding()
         }
+        .padding()
     }
     
     private var progressTrackingView: some View {
@@ -355,6 +376,21 @@ struct DiaryView: View {
         return entriesForDate.count + 1
     }
     
+    private func combineDateAndTime(date: Date, time: Date) -> Date {
+        let calendar = Calendar.current
+        let dateComponents = calendar.dateComponents([.year, .month, .day], from: date)
+        let timeComponents = calendar.dateComponents([.hour, .minute], from: time)
+        
+        var combined = DateComponents()
+        combined.year = dateComponents.year
+        combined.month = dateComponents.month
+        combined.day = dateComponents.day
+        combined.hour = timeComponents.hour
+        combined.minute = timeComponents.minute
+        
+        return calendar.date(from: combined) ?? Date()
+    }
+    
     private func exportData() {
         let csvContent = viewModel.exportToCSV()
         let activityVC = UIActivityViewController(activityItems: [csvContent], applicationActivities: nil)
@@ -368,18 +404,72 @@ struct DiaryView: View {
 
 struct EntryFormView: View {
     let entry: DiaryEntry?
-    let onSave: (Int16, Int16, Int16) -> Void
+    let onSave: (Int16, Int16, Int16, TimeInterval) -> Void
     let currentDate: Date
     let entryNumber: Int
     
+    @ObservedObject private var audioManager = UnifiedAudioEngineManager.shared
     @State private var loudnessLevel: Int = 5
     @State private var comfortLevel: Int = 5
     @State private var stressLevel: Int = 5
+    @State private var sessionDurationMinutes: Double = 0.0
+    @State private var isManuallyEdited: Bool = false
     @State private var showSuccess: Bool = false
     @State private var submittedEntryNumber: Int = 0
     
+    // Computed property to determine which duration to display
+    private var effectiveSessionDuration: Double {
+        if !isManuallyEdited && audioManager.isFrequencyPlaying && audioManager.currentSessionDuration > 0 {
+            return round(audioManager.currentSessionDuration / 60)
+        }
+        return sessionDurationMinutes
+    }
+    
+    // Check if we're in live tracking mode
+    private var isLiveTracking: Bool {
+        return !isManuallyEdited && audioManager.isFrequencyPlaying && audioManager.currentSessionDuration > 0
+    }
+    
+    // Toggle between live and manual mode
+    private func toggleMode() {
+        if isLiveTracking {
+            // Switch to manual mode
+            isManuallyEdited = true
+            sessionDurationMinutes = effectiveSessionDuration
+        } else {
+            // Switch back to live mode (if audio is playing)
+            if audioManager.isFrequencyPlaying && audioManager.currentSessionDuration > 0 {
+                isManuallyEdited = false
+            }
+        }
+    }
+    
+    // Helper function for updating session duration from drag gesture
+    private func updateSessionDuration(from dragValue: DragGesture.Value) {
+        let sensitivity: Double = 0.1
+        let change = -Double(dragValue.translation.height) * sensitivity
+        let newValue = max(0, min(120, sessionDurationMinutes + change))
+        
+        if abs(newValue - sessionDurationMinutes) >= 1.0 {
+            sessionDurationMinutes = round(newValue)
+            isManuallyEdited = true
+            
+            // Haptic feedback
+            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+            impactFeedback.impactOccurred()
+        }
+    }
+    
+    // Computed property for the drag gesture
+    private var sessionDurationDragGesture: some Gesture {
+        DragGesture()
+            .onChanged { value in
+                updateSessionDuration(from: value)
+            }
+    }
+    
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 10) {
             ScaleInputView(
                 title: "Tinnitus Loudness",
                 value: $loudnessLevel,
@@ -404,12 +494,83 @@ struct EntryFormView: View {
                 color: .red
             )
             
+            // Session Duration Input - Compact
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Session Duration")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    if isLiveTracking {
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(Color.green)
+                                .frame(width: 6, height: 6)
+                            Text("Live")
+                                .font(.caption2)
+                                .fontWeight(.medium)
+                                .foregroundColor(.green)
+                        }
+                    }
+                }
+                
+                HStack {
+                    if isLiveTracking {
+                        Text("\(Int(effectiveSessionDuration)) min")
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.green)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.green.opacity(0.1))
+                            )
+                            .onTapGesture {
+                                toggleMode()
+                            }
+                    } else {
+                        Text("\(Int(sessionDurationMinutes)) min")
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.blue.opacity(0.1))
+                            )
+                            .gesture(sessionDurationDragGesture)
+                    }
+                    
+                    Spacer()
+                    
+                    if !isLiveTracking {
+                        Text("Tap for live")
+                            .font(.caption2)
+                            .foregroundColor(.blue)
+                            .onTapGesture {
+                                toggleMode()
+                            }
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(.ultraThinMaterial)
+            )
             
             Button(action: {
                 // Capture the entry number that will be created (current entryNumber)
                 submittedEntryNumber = entryNumber
                 
-                onSave(Int16(loudnessLevel), Int16(comfortLevel), Int16(stressLevel))
+                // Convert minutes to seconds for TimeInterval
+                let durationInSeconds = effectiveSessionDuration * 60
+                onSave(Int16(loudnessLevel), Int16(comfortLevel), Int16(stressLevel), durationInSeconds)
                 
                 // Show success message
                 showSuccess = true
@@ -420,26 +581,18 @@ struct EntryFormView: View {
                 }
             }) {
                 Text("Submit Entry")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.white)
+                    .font(.system(size: 16, weight: .semibold))
                     .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(
-                        LinearGradient(
-                            colors: [Color.orange, Color.red],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .cornerRadius(12)
-                    .shadow(radius: 4, x: 0, y: 2)
+                    .frame(height: 36)
             }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .tint(.orange)
         }
-        .padding()
+        .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(.ultraThinMaterial)
-                .shadow(radius: 4, x: 0, y: 2)
         )
         .overlay(
             // Success message
@@ -467,10 +620,35 @@ struct EntryFormView: View {
             .animation(.easeInOut(duration: 0.3), value: showSuccess)
         )
         .onAppear {
-            if let entry = entry {
-                loudnessLevel = Int(entry.loudnessLevel)
-                comfortLevel = Int(entry.comfortLevel)
-                stressLevel = Int(entry.stressLevel)
+            // Check if there's a live session first
+            if audioManager.isFrequencyPlaying && audioManager.currentSessionDuration > 0 {
+                // Live session detected - don't set manual values, let live tracking take over
+                isManuallyEdited = false
+                sessionDurationMinutes = 0.0 // Will be overridden by effectiveSessionDuration
+            } else {
+                // No live session - populate with stored values
+                if let entry = entry {
+                    // Editing existing entry
+                    loudnessLevel = Int(entry.loudnessLevel)
+                    comfortLevel = Int(entry.comfortLevel)
+                    stressLevel = Int(entry.stressLevel)
+                    sessionDurationMinutes = round(entry.sessionDuration / 60)
+                    isManuallyEdited = true // Existing entries are always manual
+                } else {
+                    // New entry - check for previous session duration
+                    if audioManager.lastSessionDuration > 0 {
+                        sessionDurationMinutes = round(audioManager.lastSessionDuration / 60)
+                    } else {
+                        sessionDurationMinutes = 0.0
+                    }
+                    isManuallyEdited = false // Allow live tracking for new entries
+                }
+            }
+        }
+        .onChange(of: audioManager.isFrequencyPlaying) { isPlaying in
+            // Reset manual edit state when audio starts/stops for new entries
+            if entry == nil && !isPlaying {
+                isManuallyEdited = false
             }
         }
     }
@@ -523,6 +701,25 @@ struct DiaryEntryRowView: View {
                                 .fill(Color.red.opacity(0.1))
                         )
                 }
+            }
+            
+            // Session info display
+            HStack {
+                Text(formatSessionDuration(entry.sessionDuration))
+                    .font(.caption)
+                    .foregroundColor(.green)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.green.opacity(0.1))
+                    )
+                
+                Text(formatCreationTime(entry.createdAt))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
             }
             
             // Metrics display
@@ -587,6 +784,26 @@ struct DiaryEntryRowView: View {
         // Check if this is a valid entry (not corrupted data)
         return entry.date != nil && entry.entryNumber > 0
     }
+    
+    private func formatSessionDuration(_ duration: TimeInterval) -> String {
+        if duration <= 0 {
+            return "No session"
+        }
+        let minutes = Int(duration / 60)
+        let seconds = Int(duration.truncatingRemainder(dividingBy: 60))
+        if minutes > 0 {
+            return "\(minutes)m \(seconds)s"
+        } else {
+            return "\(seconds)s"
+        }
+    }
+    
+    private func formatCreationTime(_ date: Date?) -> String {
+        guard let date = date else { return "Time unknown" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return "Created \(formatter.string(from: date))"
+    }
 }
 
 struct MetricView: View {
@@ -620,54 +837,39 @@ struct ScaleInputView: View {
     let color: Color
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(title)
-                    .font(.headline)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
                     .foregroundColor(.primary)
                 
                 Spacer()
                 
-                Text("\(value)/10")
-                    .font(.system(size: 18, weight: .semibold, design: .monospaced))
+                Text("\(value)")
+                    .font(.title2)
+                    .fontWeight(.semibold)
                     .foregroundColor(color)
+                    .frame(width: 32)
             }
             
-            VStack(spacing: 8) {
-                HStack {
-                    ForEach(1...10, id: \.self) { index in
-                        Circle()
-                            .fill(index <= value ? color : Color.gray.opacity(0.3))
-                            .frame(width: 24, height: 24)
-                            .scaleEffect(index == value ? 1.2 : 1.0)
-                            .onTapGesture {
-                                withAnimation(.spring(response: 0.3)) {
-                                    value = index
-                                }
+            HStack(spacing: 3) {
+                ForEach(1...10, id: \.self) { index in
+                    Circle()
+                        .fill(index <= value ? color : Color.gray.opacity(0.3))
+                        .frame(width: 16, height: 16)
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.2)) {
+                                value = index
                             }
-                        
-                        if index < 10 {
-                            Spacer(minLength: 4)
                         }
-                    }
-                }
-                
-                HStack {
-                    Text(minLabel)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Spacer()
-                    
-                    Text(maxLabel)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                 }
             }
         }
-        .padding()
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 10)
                 .fill(.ultraThinMaterial)
         )
     }
