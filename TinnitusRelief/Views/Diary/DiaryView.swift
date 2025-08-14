@@ -141,79 +141,16 @@ struct DiaryView: View {
                 
                 comprehensiveStatsView
                 
-                if #available(iOS 16.0, *) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Loudness Trend (Last 30 Days)")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        
-                        Chart(recentEntries) { entry in
-                            LineMark(
-                                x: .value("Date", entry.date ?? Date()),
-                                y: .value("Loudness", entry.loudnessLevel)
-                            )
-                            .foregroundStyle(Color.orange)
-                            .lineStyle(StrokeStyle(lineWidth: 3))
-                        }
-                        .frame(height: 200)
-                        .chartYAxis {
-                            AxisMarks(values: Array(1...10)) { value in
-                                AxisValueLabel {
-                                    if let intValue = value.as(Int.self) {
-                                        Text("\(intValue)")
-                                    }
-                                }
-                                AxisGridLine()
-                            }
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(.ultraThinMaterial)
-                                .padding(-12)
-                        )
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Stress Level Trend (Last 30 Days)")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        
-                        Chart(recentEntries) { entry in
-                            LineMark(
-                                x: .value("Date", entry.date ?? Date()),
-                                y: .value("Stress", entry.stressLevel)
-                            )
-                            .foregroundStyle(Color.red)
-                            .lineStyle(StrokeStyle(lineWidth: 3))
-                        }
-                        .frame(height: 200)
-                        .chartYAxis {
-                            AxisMarks(values: Array(1...10)) { value in
-                                AxisValueLabel {
-                                    if let intValue = value.as(Int.self) {
-                                        Text("\(intValue)")
-                                    }
-                                }
-                                AxisGridLine()
-                            }
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(.ultraThinMaterial)
-                                .padding(-12)
-                        )
-                    }
-                } else {
-                    Text("Charts require iOS 16.0 or later")
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, maxHeight: 200)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(.ultraThinMaterial)
-                        )
-                }
             }
             .padding()
+        }
+    }
+    
+    private var groupedEntries: [Date: [DiaryEntry]] {
+        let calendar = Calendar.current
+        return Dictionary(grouping: viewModel.diaryEntries) { entry in
+            guard let date = entry.date else { return Date() }
+            return calendar.startOfDay(for: date)
         }
     }
     
@@ -223,16 +160,20 @@ struct DiaryView: View {
                 EmptyHistoryView()
                     .padding()
             } else {
-                LazyVStack(spacing: 12) {
-                    ForEach(viewModel.diaryEntries, id: \.id) { entry in
-                        DiaryEntryRowView(entry: entry) {
-                            viewModel.deleteEntry(entry)
-                            
-                            // Wait for database operations to complete, then refresh UI
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                viewModel.fetchEntries()
-                                refreshTrigger += 1 // Force UI update after data is ready
-                                print("UI refresh triggered after delete - refreshTrigger: \(refreshTrigger)")
+                LazyVStack(spacing: 8) {
+                    ForEach(groupedEntries.keys.sorted(by: >), id: \.self) { date in
+                        DateSeparatorView(date: date)
+                        
+                        ForEach(groupedEntries[date] ?? [], id: \.id) { entry in
+                            DiaryEntryRowView(entry: entry) {
+                                viewModel.deleteEntry(entry)
+                                
+                                // Wait for database operations to complete, then refresh UI
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                    viewModel.fetchEntries()
+                                    refreshTrigger += 1 // Force UI update after data is ready
+                                    print("UI refresh triggered after delete - refreshTrigger: \(refreshTrigger)")
+                                }
                             }
                         }
                     }
@@ -599,8 +540,6 @@ struct EntryFormView: View {
     @State private var stressLevel: Int = 5
     @State private var sessionDurationMinutes: Double = 0.0
     @State private var isManuallyEdited: Bool = false
-    @State private var showSuccess: Bool = false
-    @State private var submittedEntryNumber: Int = 0
     
     // Computed property to determine which duration to display
     private var effectiveSessionDuration: Double {
@@ -654,29 +593,21 @@ struct EntryFormView: View {
     }
     
     var body: some View {
-        VStack(spacing: 10) {
-            ScaleInputView(
-                title: "Tinnitus Loudness",
+        VStack(spacing: 16) {
+            SymptomSlider(
+                title: "Loudness",
                 value: $loudnessLevel,
-                minLabel: "Silent",
-                maxLabel: "Very Loud",
                 color: .orange
             )
-            
-            ScaleInputView(
-                title: "Comfort Level",
-                value: $comfortLevel,
-                minLabel: "Very Uncomfortable",
-                maxLabel: "Very Comfortable",
-                color: .blue
-            )
-            
-            ScaleInputView(
-                title: "Stress Level",
+            SymptomSlider(
+                title: "Stress",
                 value: $stressLevel,
-                minLabel: "No Stress",
-                maxLabel: "Very Stressed",
                 color: .red
+            )
+            SymptomSlider(
+                title: "Comfort",
+                value: $comfortLevel,
+                color: .blue
             )
             
             // Session Duration Input - Compact
@@ -750,59 +681,33 @@ struct EntryFormView: View {
             )
             
             Button(action: {
-                // Capture the entry number that will be created (current entryNumber)
-                submittedEntryNumber = entryNumber
-                
                 // Convert minutes to seconds for TimeInterval
                 let durationInSeconds = effectiveSessionDuration * 60
                 onSave(Int16(loudnessLevel), Int16(comfortLevel), Int16(stressLevel), durationInSeconds)
                 
-                // Show success message
-                showSuccess = true
-                
-                // Hide success message after 3 seconds
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                    showSuccess = false
-                }
+                // Reset form
+                loudnessLevel = 5
+                comfortLevel = 5
+                stressLevel = 5
+                sessionDurationMinutes = 0.0
+                isManuallyEdited = false
             }) {
-                Text("Submit Entry")
-                    .font(.system(size: 16, weight: .semibold))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 36)
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                    Text("Save Entry")
+                }
+                .font(.headline)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.orange)
+                .cornerRadius(12)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .tint(.orange)
         }
-        .padding(16)
+        .padding()
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(.ultraThinMaterial)
-        )
-        .overlay(
-            // Success message
-            VStack {
-                if showSuccess {
-                    VStack(spacing: 8) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(.green)
-                        
-                        Text("Entry #\(submittedEntryNumber) for \(formatDate(currentDate)) submitted")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.primary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding(16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(.ultraThinMaterial)
-                            .shadow(radius: 8)
-                    )
-                    .transition(.opacity.combined(with: .scale))
-                }
-            }
-            .animation(.easeInOut(duration: 0.3), value: showSuccess)
         )
         .onAppear {
             // Check if there's a live session first
@@ -838,11 +743,6 @@ struct EntryFormView: View {
         }
     }
     
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d, yyyy"
-        return formatter.string(from: date)
-    }
 }
 
 struct DiaryEntryRowView: View {
@@ -853,13 +753,9 @@ struct DiaryEntryRowView: View {
     
     var body: some View {
         if isValidEntry {
-            VStack(alignment: .leading, spacing: 12) {
-            // Header with date and entry number
+            VStack(alignment: .leading, spacing: 6) {
+            // Header with entry number only
             HStack {
-                Text(formatEntryDate(entry.date))
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                
                 Text("#\(entry.entryNumber)")
                     .font(.caption)
                     .fontWeight(.semibold)
@@ -872,63 +768,52 @@ struct DiaryEntryRowView: View {
                     )
                 
                 Spacer()
-                
-                // Delete Button
-                Button(action: {
-                    showingDeleteAlert = true
-                }) {
-                    Image(systemName: "trash")
-                        .font(.system(size: 14))
-                        .foregroundColor(.red)
-                        .padding(8)
-                        .background(
-                            Circle()
-                                .fill(Color.red.opacity(0.1))
-                        )
-                }
             }
             
-            // Session info display
+            // Combined session info and metrics
             HStack {
-                Text(formatSessionDuration(entry.sessionDuration))
-                    .font(.caption)
-                    .foregroundColor(.green)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color.green.opacity(0.1))
-                    )
-                
-                Text(formatCreationTime(entry.createdAt))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                // Session info
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(formatSessionDuration(entry.sessionDuration))
+                        .font(.caption)
+                        .foregroundColor(.green)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 1)
+                        .background(
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(Color.green.opacity(0.1))
+                        )
+                    
+                    Text(formatCreationTime(entry.createdAt))
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
                 
                 Spacer()
-            }
-            
-            // Metrics display
-            HStack(spacing: 20) {
-                MetricView(
-                    title: "Loudness",
-                    value: Int(entry.loudnessLevel),
-                    icon: "speaker.wave.2.fill",
-                    color: .orange
-                )
                 
-                MetricView(
-                    title: "Comfort", 
-                    value: Int(entry.comfortLevel),
-                    icon: "heart.fill",
-                    color: .blue
-                )
-                
-                MetricView(
-                    title: "Stress",
-                    value: Int(entry.stressLevel),
-                    icon: "exclamationmark.triangle.fill",
-                    color: .red
-                )
+                // Metrics display
+                HStack(spacing: 12) {
+                    MetricView(
+                        title: "Loudness",
+                        value: Int(entry.loudnessLevel),
+                        icon: "speaker.wave.2.fill",
+                        color: .orange
+                    )
+                    
+                    MetricView(
+                        title: "Comfort", 
+                        value: Int(entry.comfortLevel),
+                        icon: "heart.fill",
+                        color: .blue
+                    )
+                    
+                    MetricView(
+                        title: "Stress",
+                        value: Int(entry.stressLevel),
+                        icon: "exclamationmark.triangle.fill",
+                        color: .red
+                    )
+                }
             }
             
             // Optional notes display
@@ -940,13 +825,17 @@ struct DiaryEntryRowView: View {
                     .padding(.top, 4)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .frame(height: 70)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 4)
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(.ultraThinMaterial)
                 .shadow(radius: 2, x: 0, y: 1)
         )
+        .onTapGesture {
+            showingDeleteAlert = true
+        }
         .alert("Delete Entry", isPresented: $showingDeleteAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive) {
@@ -991,6 +880,40 @@ struct DiaryEntryRowView: View {
     }
 }
 
+struct DateSeparatorView: View {
+    let date: Date
+    
+    var body: some View {
+        HStack {
+            VStack {
+                Divider()
+            }
+            
+            Text(formatSeparatorDate(date))
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(.ultraThinMaterial)
+                )
+            
+            VStack {
+                Divider()
+            }
+        }
+        .padding(.horizontal)
+    }
+    
+    private func formatSeparatorDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, yyyy"
+        return formatter.string(from: date)
+    }
+}
+
 struct MetricView: View {
     let title: String
     let value: Int
@@ -998,18 +921,14 @@ struct MetricView: View {
     let color: Color
     
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 2) {
             Image(systemName: icon)
-                .font(.system(size: 16))
+                .font(.system(size: 14))
                 .foregroundColor(color)
             
             Text("\(value)/10")
-                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
                 .foregroundColor(.primary)
-            
-            Text(title)
-                .font(.caption2)
-                .foregroundColor(.secondary)
         }
     }
 }
@@ -1057,6 +976,35 @@ struct ScaleInputView: View {
             RoundedRectangle(cornerRadius: 10)
                 .fill(.ultraThinMaterial)
         )
+    }
+}
+
+private struct SymptomSlider: View {
+    let title: String
+    @Binding var value: Int
+    let color: Color
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.headline)
+            
+            HStack {
+                Slider(
+                    value: .init(
+                        get: { Double(value) },
+                        set: { value = Int($0) }
+                    ),
+                    in: 0...10,
+                    step: 1
+                )
+                .accentColor(color)
+                
+                Text("\(value)")
+                    .font(.system(size: 20, weight: .semibold, design: .monospaced))
+                    .frame(width: 40, alignment: .trailing)
+            }
+        }
     }
 }
 

@@ -4,8 +4,9 @@ struct DiaryEntryView: View {
     @StateObject private var viewModel = DiaryViewModel()
     
     // Entry data
-    @State private var severity: Double = 5.0
-    @State private var hasUnsavedChanges = false
+    @State private var loudness: Int = 5
+    @State private var stress: Int = 3
+    @State private var comfort: Int = 5
     
     private let currentDate = Date()
     
@@ -13,78 +14,56 @@ struct DiaryEntryView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 32) {
-                    // Header with current date
-                    VStack(spacing: 8) {
-                        Text("New Log Entry")
+                    // Header Section
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Log Your Session")
                             .font(.largeTitle)
                             .fontWeight(.bold)
-                            .foregroundColor(.primary)
-                        
-                        Text(DateFormatter.entryDateFormatter.string(from: currentDate))
-                            .font(.title3)
-                            .foregroundColor(.orange)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 8)
-                            .background(
-                                Capsule()
-                                    .fill(.orange.opacity(0.1))
-                            )
+                        Text(Date().formatted(date: .abbreviated, time: .omitted))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
                     }
-                    .padding(.top, 20)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     
-                    // Severity slider
-                    VStack(alignment: .leading, spacing: 20) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Tinnitus Severity")
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.primary)
-                            
-                            Text("How loud is your tinnitus right now?")
-                                .font(.body)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        VStack(spacing: 16) {
-                            // Severity value display
-                            Text("\(Int(severity))/10")
-                                .font(.system(size: 48, weight: .light, design: .monospaced))
-                                .foregroundColor(severityColor(for: severity))
-                                .animation(.easeInOut(duration: 0.2), value: severity)
-                            
-                            // Slider
-                            VStack(spacing: 12) {
-                                Slider(value: $severity, in: 0...10, step: 1)
-                                    .accentColor(severityColor(for: severity))
-                                    .onChange(of: severity) { _ in
-                                        HapticFeedback.light.trigger()
-                                        hasUnsavedChanges = true
-                                    }
-                                
-                                HStack {
-                                    Text("Mild")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    
-                                    Spacer()
-                                    
-                                    Text("Severe")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            .padding(.horizontal, 8)
-                        }
-                        .padding(24)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(.ultraThinMaterial)
-                                .shadow(radius: 2, x: 0, y: 1)
+                    // Main logging sliders
+                    VStack(spacing: 16) {
+                        SymptomSlider(
+                            title: "Loudness",
+                            value: $loudness,
+                            color: .orange
+                        )
+                        SymptomSlider(
+                            title: "Stress",
+                            value: $stress,
+                            color: .red
+                        )
+                        SymptomSlider(
+                            title: "Comfort",
+                            value: $comfort,
+                            color: .blue
                         )
                     }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(.ultraThinMaterial)
+                    )
                     
+                    // Save Button
+                    Button(action: saveEntry) {
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                            Text("Save Entry")
+                        }
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.orange)
+                        .cornerRadius(12)
+                    }
                     
-                    Spacer(minLength: 100) // Space for auto-save indicator
+                    Spacer(minLength: 20)
                 }
                 .padding(.horizontal, 20)
             }
@@ -92,74 +71,30 @@ struct DiaryEntryView: View {
         }
         .onAppear {
             // Reset form for new entry
-            severity = 5.0
-            hasUnsavedChanges = false
+            loudness = 5
+            stress = 3
+            comfort = 5
         }
-        .onDisappear {
-            // Auto-save when navigating away
-            if hasUnsavedChanges {
-                saveEntry()
-            }
-        }
-        .overlay(
-            // Auto-save indicator
-            VStack {
-                Spacer()
-                
-                if hasUnsavedChanges {
-                    HStack {
-                        Image(systemName: "square.and.arrow.down")
-                            .foregroundColor(.orange)
-                        
-                        Text("Changes will be saved automatically")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(
-                        Capsule()
-                            .fill(.ultraThinMaterial)
-                            .shadow(radius: 4, x: 0, y: 2)
-                    )
-                    .padding(.bottom, 100) // Above tab bar
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
-                }
-            }
-            .animation(.easeInOut(duration: 0.3), value: hasUnsavedChanges)
-        )
     }
     
     private func saveEntry() {
-        guard hasUnsavedChanges else { return }
-        
-        // Save via view model with Core Data
-        viewModel.addEntry(
-            date: currentDate,
-            severity: Int(severity),
+        // Create diary entry with session data
+        viewModel.createEntry(
+            loudness: Int16(loudness),
+            comfort: Int16(comfort),
+            stress: Int16(stress),
             notes: nil
         )
         
-        // Provide haptic feedback
         HapticFeedback.success.trigger()
         
-        // Reset state
-        hasUnsavedChanges = false
-    }
-    
-    private func severityColor(for value: Double) -> Color {
-        switch value {
-        case 0...2:
-            return .green
-        case 3...4:
-            return .blue
-        case 5...6:
-            return .orange
-        case 7...8:
-            return .red
-        default:
-            return .purple
-        }
+        // Reset form
+        loudness = 5
+        stress = 3
+        comfort = 5
+        
+        // Fetch updated entries
+        viewModel.fetchEntries()
     }
 }
 
@@ -172,6 +107,35 @@ extension DateFormatter {
         formatter.timeStyle = .none
         return formatter
     }()
+}
+
+private struct SymptomSlider: View {
+    let title: String
+    @Binding var value: Int
+    let color: Color
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.headline)
+            
+            HStack {
+                Slider(
+                    value: .init(
+                        get: { Double(value) },
+                        set: { value = Int($0) }
+                    ),
+                    in: 0...10,
+                    step: 1
+                )
+                .accentColor(color)
+                
+                Text("\(value)")
+                    .font(.system(size: 20, weight: .semibold, design: .monospaced))
+                    .frame(width: 40, alignment: .trailing)
+            }
+        }
+    }
 }
 
 #Preview {
