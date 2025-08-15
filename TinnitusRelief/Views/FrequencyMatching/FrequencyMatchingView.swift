@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct FrequencyMatchingView: View {
-    @StateObject private var viewModel = FrequencyMatchingViewModel()
+    @ObservedObject var viewModel: FrequencyMatchingViewModel
     @Binding var selectedTab: Int
     
     var body: some View {
@@ -13,6 +13,17 @@ struct FrequencyMatchingView: View {
             }
         }
         .navigationBarHidden(true)
+        .onAppear {
+            print("🖼️ FrequencyMatchingView onAppear called")
+            // Backup loading mechanism if ViewModel wasn't recreated
+            let savedState = UnifiedAudioEngineManager.shared.loadAudioState()
+            if viewModel.controlPosition == CGPoint(x: 0.5, y: 0.5) && (savedState.position != CGPoint(x: 0.5, y: 0.5)) {
+                print("🔄 Backup loading - ViewModel wasn't recreated, manually loading saved state")
+                viewModel.controlPosition = savedState.position
+                UnifiedAudioEngineManager.shared.updateFrequency(savedState.frequency)
+                UnifiedAudioEngineManager.shared.updateFrequencyVolume(savedState.volume)
+            }
+        }
     }
     
     private var backgroundView: some View {
@@ -118,5 +129,5 @@ struct FrequencyMatchingView: View {
 }
 
 #Preview {
-    FrequencyMatchingView(selectedTab: .constant(1))
+    FrequencyMatchingView(viewModel: FrequencyMatchingViewModel(), selectedTab: .constant(1))
 }

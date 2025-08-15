@@ -1,5 +1,200 @@
 import SwiftUI
 import UserNotifications
+import CoreData
+
+// MARK: - Tutorial System
+
+enum TutorialStep: Int, CaseIterable {
+    case welcome = 0
+    case frequencyDemo
+    case logDemo
+    case progressDemo
+    case historyDemo
+    case profileDemo
+    
+    var title: String {
+        switch self {
+        case .welcome:
+            return "Welcome to Tinnitus Relief"
+        case .frequencyDemo:
+            return "Match Your Tinnitus Frequency"
+        case .logDemo:
+            return "Track Your Progress"
+        case .progressDemo:
+            return "View Your Progress"
+        case .historyDemo:
+            return "Review Your History"
+        case .profileDemo:
+            return "Setup Reminders"
+        }
+    }
+    
+    var description: String {
+        switch self {
+        case .welcome:
+            return "This app helps reduce your tinnitus through sound therapy. Set volume to 70% of your tinnitus loudness and listen for about 2 hours daily for best results."
+        case .frequencyDemo:
+            return "Match your tinnitus frequency and volume levels to reduce tinnitus symptoms."
+        case .logDemo:
+            return "Add entries, tinnitus loudness and stress levels, and therapy duration to track improvement over time."
+        case .progressDemo:
+            return "View your therapy progress with weekly summaries, session calendar, and comprehensive statistics to track your improvement."
+        case .historyDemo:
+            return "Review all your individual session entries to see your detailed therapy history and symptom patterns over time."
+        case .profileDemo:
+            return "Set up daily reminders to help you maintain a consistent therapy routine for maximum effectiveness."
+        }
+    }
+    
+    var buttonText: String {
+        switch self {
+        case .welcome, .frequencyDemo, .logDemo, .progressDemo, .historyDemo:
+            return "Next"
+        case .profileDemo:
+            return "Start Therapy"
+        }
+    }
+    
+    var hasSkipOption: Bool {
+        switch self {
+        case .welcome:
+            return true
+        default:
+            return false
+        }
+    }
+    
+    var targetTab: Int? {
+        switch self {
+        case .welcome:
+            return nil // Stay on current tab
+        case .frequencyDemo:
+            return 0 // Frequency tab
+        case .logDemo, .progressDemo, .historyDemo:
+            return 1 // Log tab (with different internal tabs)
+        case .profileDemo:
+            return 2 // Profile tab
+        }
+    }
+}
+
+class TutorialManager: ObservableObject {
+    @Published var isShowingTutorial: Bool = false
+    @Published var currentStep: TutorialStep = .welcome
+    
+    private let persistenceController: PersistenceController
+    private var onTabChange: ((Int) -> Void)?
+    private var onDiaryTabChange: ((Int) -> Void)?
+    
+    init(persistenceController: PersistenceController) {
+        self.persistenceController = persistenceController
+        checkOnboardingStatus()
+    }
+    
+    func setTabChangeCallback(_ callback: @escaping (Int) -> Void) {
+        self.onTabChange = callback
+    }
+    
+    func setDiaryTabChangeCallback(_ callback: @escaping (Int) -> Void) {
+        self.onDiaryTabChange = callback
+    }
+    
+    func checkOnboardingStatus() {
+        let context = persistenceController.container.viewContext
+        let request: NSFetchRequest<UserProfile> = UserProfile.fetchRequest()
+        
+        do {
+            let profiles = try context.fetch(request)
+            if let profile = profiles.first {
+                isShowingTutorial = !profile.hasCompletedOnboarding
+            } else {
+                let newProfile = UserProfile(context: context)
+                newProfile.hasCompletedOnboarding = false
+                newProfile.id = UUID()
+                try context.save()
+                isShowingTutorial = true
+            }
+        } catch {
+            print("Error checking onboarding status: \(error)")
+            isShowingTutorial = true
+        }
+    }
+    
+    func nextStep() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            let nextStepRawValue = currentStep.rawValue + 1
+            if let nextStep = TutorialStep(rawValue: nextStepRawValue) {
+                currentStep = nextStep
+                // Navigate to appropriate tab if needed
+                if let targetTab = nextStep.targetTab {
+                    onTabChange?(targetTab)
+                }
+                
+                // Handle DiaryView internal tab navigation with delay to ensure DiaryView is loaded
+                switch nextStep {
+                case .logDemo, .progressDemo, .historyDemo:
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        switch nextStep {
+                        case .logDemo:
+                            self.onDiaryTabChange?(0) // Add tab
+                        case .progressDemo:
+                            self.onDiaryTabChange?(1) // Progress Tracking tab
+                        case .historyDemo:
+                            self.onDiaryTabChange?(2) // History tab
+                        default:
+                            break
+                        }
+                    }
+                default:
+                    break
+                }
+            } else {
+                completeTutorial()
+            }
+        }
+    }
+    
+    func skipTutorial() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            completeTutorial()
+        }
+    }
+    
+    func completeTutorial() {
+        let context = persistenceController.container.viewContext
+        let request: NSFetchRequest<UserProfile> = UserProfile.fetchRequest()
+        
+        do {
+            let profiles = try context.fetch(request)
+            if let profile = profiles.first {
+                profile.hasCompletedOnboarding = true
+                try context.save()
+            }
+        } catch {
+            print("Error completing tutorial: \(error)")
+        }
+        
+        isShowingTutorial = false
+    }
+    
+    func resetTutorial() {
+        let context = persistenceController.container.viewContext
+        let request: NSFetchRequest<UserProfile> = UserProfile.fetchRequest()
+        
+        do {
+            let profiles = try context.fetch(request)
+            if let profile = profiles.first {
+                profile.hasCompletedOnboarding = false
+                try context.save()
+            }
+        } catch {
+            print("Error resetting tutorial: \(error)")
+        }
+        
+        currentStep = .welcome
+        isShowingTutorial = true
+    }
+}
 
 // MARK: - Reminder Data Models
 enum WeekDay: String, CaseIterable, Codable {
@@ -172,36 +367,102 @@ class ReminderManager: ObservableObject {
 // MARK: - Main Tab View
 struct MainTabView: View {
     @State private var selectedTab = 0
+    @Environment(\.managedObjectContext) private var viewContext
+    @StateObject private var tutorialManager: TutorialManager
+    @StateObject private var frequencyViewModel = FrequencyMatchingViewModel()
+    
+    init() {
+        let persistenceController = PersistenceController.shared
+        self._tutorialManager = StateObject(wrappedValue: TutorialManager(persistenceController: persistenceController))
+    }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Frequency Controller positioned at top (shown on all pages)
-            FrequencyController()
-                .zIndex(1)
-            
-            TabView(selection: $selectedTab) {
-                FrequencyMatchingView(selectedTab: $selectedTab)
-                    .tabItem {
-                        Image(systemName: selectedTab == 0 ? "waveform.path" : "waveform.path")
-                        Text("Frequency")
-                    }
-                    .tag(0)
+        ZStack {
+            VStack(spacing: 0) {
+                // Frequency Controller positioned at top (shown on all pages)
+                FrequencyController()
+                    .zIndex(1)
                 
-                DiaryView()
-                    .tabItem {
-                        Image(systemName: selectedTab == 1 ? "book.fill" : "book")
-                        Text("Log")
-                    }
-                    .tag(1)
-                
-                CombinedProfileView()
-                    .tabItem {
-                        Image(systemName: selectedTab == 2 ? "person.fill" : "person")
-                        Text("Profile")
-                    }
-                    .tag(2)
+                TabView(selection: $selectedTab) {
+                    FrequencyMatchingView(viewModel: frequencyViewModel, selectedTab: $selectedTab)
+                        .tabItem {
+                            Image(systemName: selectedTab == 0 ? "waveform.path" : "waveform.path")
+                            Text("Frequency")
+                        }
+                        .tag(0)
+                    
+                    DiaryView(tutorialManager: tutorialManager)
+                        .tabItem {
+                            Image(systemName: selectedTab == 1 ? "book.fill" : "book")
+                            Text("Log")
+                        }
+                        .tag(1)
+                    
+                    CombinedProfileView(tutorialManager: tutorialManager)
+                        .tabItem {
+                            Image(systemName: selectedTab == 2 ? "person.fill" : "person")
+                            Text("Profile")
+                        }
+                        .tag(2)
+                }
+                .accentColor(.orange)
             }
-            .accentColor(.orange)
+            
+            // Tutorial overlay
+            if tutorialManager.isShowingTutorial {
+                tutorialOverlay
+            }
+        }
+        .onAppear {
+            // Set up tutorial tab navigation callback
+            tutorialManager.setTabChangeCallback { newTab in
+                selectedTab = newTab
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var tutorialOverlay: some View {
+        switch tutorialManager.currentStep {
+        case .welcome:
+            WelcomeTutorialView(tutorialManager: tutorialManager)
+                .transition(.opacity)
+        case .frequencyDemo:
+            GeometryReader { geometry in
+                // Account for FrequencyController height (~56px) + padding
+                let frequencyControllerHeight: CGFloat = 56
+                let safeArea = geometry.safeAreaInsets
+                let tabViewStartY = safeArea.top + frequencyControllerHeight
+                
+                // Use the same calculations as FrequencyMatchingView but adjusted for FrequencyController offset
+                let availableHeight = geometry.size.height - tabViewStartY - safeArea.bottom - 60
+                let availableWidth = geometry.size.width - 20
+                let controlAreaFrame = CGRect(
+                    x: 10,
+                    y: tabViewStartY + 40,
+                    width: availableWidth,
+                    height: availableHeight
+                )
+                
+                let controlPosition = CGPoint(
+                    x: controlAreaFrame.minX + controlAreaFrame.width * frequencyViewModel.controlPosition.x,
+                    y: controlAreaFrame.minY + controlAreaFrame.height * frequencyViewModel.controlPosition.y
+                )
+                FrequencyDemoOverlayView(tutorialManager: tutorialManager, controlPosition: controlPosition)
+            }
+            .transition(.opacity)
+        case .logDemo:
+            TransparentTutorialOverlayView(tutorialManager: tutorialManager)
+                .transition(.opacity)
+        case .progressDemo:
+            ProgressDemoOverlayView(tutorialManager: tutorialManager)
+                .transition(.opacity)
+        case .historyDemo:
+            HistoryDemoOverlayView(tutorialManager: tutorialManager)
+                .transition(.opacity)
+        case .profileDemo:
+            TransparentTutorialOverlayView(tutorialManager: tutorialManager)
+                .transition(.opacity)
         }
     }
 }
@@ -210,12 +471,15 @@ struct CombinedProfileView: View {
     @StateObject private var reminderManager = ReminderManager()
     @State private var showingReminderEdit = false
     @State private var editingReminder: ReminderItem?
+    let tutorialManager: TutorialManager
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
                     settingsSection
+                    
+                    tutorialSection
                     
                     aboutSection
                     
@@ -259,13 +523,59 @@ struct CombinedProfileView: View {
         }
     }
     
+    private var tutorialSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Help & Tutorial")
+                .font(.headline)
+                .foregroundColor(.primary)
+            
+            VStack(spacing: 0) {
+                Button(action: {
+                    tutorialManager.resetTutorial()
+                }) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "graduationcap")
+                            .font(.system(size: 20))
+                            .foregroundColor(.orange)
+                            .frame(width: 32)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Restart Tutorial")
+                                .font(.body)
+                                .foregroundColor(.primary)
+                                .multilineTextAlignment(.leading)
+                            
+                            Text("Learn how to use the app effectively")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.leading)
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(.ultraThinMaterial)
+            )
+        }
+    }
+    
     private var aboutSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("About")
                 .font(.headline)
                 .foregroundColor(.primary)
             
-            Text("TinnitusRelief is designed to help you manage tinnitus symptoms through personalized frequency matching, progress tracking, and evidence-based techniques.")
+            Text("TinnitusTracker is designed to help you manage tinnitus symptoms through personalized frequency matching, progress tracking, and evidence-based techniques.")
                 .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.leading)
@@ -652,6 +962,9 @@ struct ReminderListItem: View {
     let onEdit: () -> Void
     let onDelete: () -> Void
     
+    @State private var showingActionSheet = false
+    @State private var showingDeleteAlert = false
+    
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 16) {
@@ -686,21 +999,29 @@ struct ReminderListItem: View {
             .padding(.vertical, 12)
             .background(Color.clear)
             .onTapGesture {
-                onEdit()
+                showingActionSheet = true
             }
-            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                Button(role: .destructive) {
+            .actionSheet(isPresented: $showingActionSheet) {
+                ActionSheet(
+                    title: Text("Reminder Options"),
+                    buttons: [
+                        .default(Text("Edit")) {
+                            onEdit()
+                        },
+                        .destructive(Text("Delete")) {
+                            showingDeleteAlert = true
+                        },
+                        .cancel()
+                    ]
+                )
+            }
+            .alert("Delete Reminder", isPresented: $showingDeleteAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Delete", role: .destructive) {
                     onDelete()
-                } label: {
-                    Label("Delete", systemImage: "trash")
                 }
-                
-                Button {
-                    onEdit()
-                } label: {
-                    Label("Edit", systemImage: "pencil")
-                }
-                .tint(.orange)
+            } message: {
+                Text("Are you sure you want to delete this reminder? This action cannot be undone.")
             }
         }
     }
@@ -777,6 +1098,456 @@ struct WeekDayButton: View {
                 )
         }
         .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Tutorial UI Components
+
+
+struct FrequencyDemoOverlayView: View {
+    @ObservedObject var tutorialManager: TutorialManager
+    let controlPosition: CGPoint
+    
+    var body: some View {
+        ZStack {
+            // Very light background to show frequency view
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+            
+            // Tutorial content at bottom
+            VStack(spacing: 0) {
+                Spacer()
+                
+                tutorialContentView
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 50)
+            }
+        }
+    }
+    
+    private var tutorialContentView: some View {
+        VStack(spacing: 20) {
+            stepIndicator
+            
+            VStack(spacing: 12) {
+                Text(tutorialManager.currentStep.title)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.center)
+                
+                Text(tutorialManager.currentStep.description)
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(nil)
+            }
+            
+            Button(action: {
+                tutorialManager.nextStep()
+            }) {
+                Text(tutorialManager.currentStep.buttonText)
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color.orange)
+                    .cornerRadius(12)
+            }
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.ultraThickMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                )
+        )
+    }
+    
+    private var stepIndicator: some View {
+        HStack(spacing: 8) {
+            ForEach(TutorialStep.allCases, id: \.rawValue) { step in
+                Circle()
+                    .fill(step.rawValue <= tutorialManager.currentStep.rawValue ? Color.orange : Color.gray.opacity(0.3))
+                    .frame(width: 8, height: 8)
+                    .scaleEffect(step == tutorialManager.currentStep ? 1.2 : 1.0)
+                    .animation(.easeInOut(duration: 0.2), value: tutorialManager.currentStep)
+            }
+        }
+        .padding(.bottom, 8)
+    }
+}
+
+
+struct TransparentTutorialOverlayView: View {
+    @ObservedObject var tutorialManager: TutorialManager
+    
+    var body: some View {
+        ZStack {
+            // Very light background to show underlying content
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+            
+            VStack(spacing: 0) {
+                Spacer()
+                
+                tutorialContentView
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 50)
+            }
+        }
+    }
+    
+    private var tutorialContentView: some View {
+        VStack(spacing: 20) {
+            stepIndicator
+            
+            VStack(spacing: 12) {
+                Text(tutorialManager.currentStep.title)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.center)
+                
+                Text(tutorialManager.currentStep.description)
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(nil)
+            }
+            
+            VStack(spacing: 12) {
+                Button(action: {
+                    if tutorialManager.currentStep == .profileDemo {
+                        tutorialManager.completeTutorial()
+                    } else {
+                        tutorialManager.nextStep()
+                    }
+                }) {
+                    Text(tutorialManager.currentStep.buttonText)
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.orange)
+                        .cornerRadius(12)
+                }
+                
+                if tutorialManager.currentStep.hasSkipOption {
+                    Button(action: {
+                        tutorialManager.skipTutorial()
+                    }) {
+                        Text("Skip Tutorial")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.ultraThickMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                )
+        )
+    }
+    
+    private var stepIndicator: some View {
+        HStack(spacing: 8) {
+            ForEach(TutorialStep.allCases, id: \.rawValue) { step in
+                Circle()
+                    .fill(step.rawValue <= tutorialManager.currentStep.rawValue ? Color.orange : Color.gray.opacity(0.3))
+                    .frame(width: 8, height: 8)
+                    .scaleEffect(step == tutorialManager.currentStep ? 1.2 : 1.0)
+                    .animation(.easeInOut(duration: 0.2), value: tutorialManager.currentStep)
+            }
+        }
+        .padding(.bottom, 8)
+    }
+}
+
+struct WelcomeTutorialView: View {
+    @ObservedObject var tutorialManager: TutorialManager
+    
+    var body: some View {
+        ZStack {
+            // Completely opaque background with app branding colors
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color.orange,
+                    Color.blue,
+                    Color.orange
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+            
+            // Solid overlay for better text readability
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+            
+            VStack(spacing: 40) {
+                Spacer()
+                
+                VStack(spacing: 24) {
+                    Image(systemName: "ear")
+                        .font(.system(size: 80))
+                        .foregroundColor(.orange)
+                        .symbolEffect(.pulse.byLayer, options: .repeating)
+                    
+                    VStack(spacing: 8) {
+                        Text("Welcome to")
+                            .font(.title2)
+                            .foregroundColor(.white.opacity(0.9))
+                        
+                        Text("Tinnitus Tracker")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                    }
+                }
+                
+                VStack(spacing: 20) {
+                    TutorialFeatureRow(
+                        icon: "waveform",
+                        title: "Match Your Tinnitus",
+                        description: "Find the exact frequency and sound type"
+                    )
+                    
+                    TutorialFeatureRow(
+                        icon: "speaker.wave.2",
+                        title: "Set Optimal Volume",
+                        description: "70% of your tinnitus loudness for best results"
+                    )
+                    
+                    TutorialFeatureRow(
+                        icon: "clock",
+                        title: "2 Hours Daily",
+                        description: "Consistent therapy for effective relief"
+                    )
+                    
+                    TutorialFeatureRow(
+                        icon: "calendar",
+                        title: "track your progress",
+                        description: "Your data, your journey"
+                    )
+                }
+                .padding(.horizontal, 32)
+                
+                Spacer()
+                
+                VStack(spacing: 16) {
+                    Button(action: {
+                        tutorialManager.nextStep()
+                    }) {
+                        Text("Start Tutorial")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(Color.orange)
+                            .cornerRadius(16)
+                    }
+                    
+                    Button(action: {
+                        tutorialManager.skipTutorial()
+                    }) {
+                        Text("Skip for Now")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(.horizontal, 32)
+                .padding(.bottom, 40)
+            }
+        }
+    }
+}
+
+private struct TutorialFeatureRow: View {
+    let icon: String
+    let title: String
+    let description: String
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(.orange)
+                .frame(width: 24)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.white)
+                
+                Text(description)
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.8))
+            }
+            
+            Spacer()
+        }
+        .padding(.vertical, 8)
+    }
+}
+
+struct ProgressDemoOverlayView: View {
+    @ObservedObject var tutorialManager: TutorialManager
+    
+    var body: some View {
+        ZStack {
+            // Light background to show underlying content
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                Spacer()
+                
+                // Tutorial content at bottom
+                tutorialContentView
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 50)
+            }
+        }
+    }
+    
+    
+    private var tutorialContentView: some View {
+        VStack(spacing: 20) {
+            stepIndicator
+            
+            VStack(spacing: 12) {
+                Text(tutorialManager.currentStep.title)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.center)
+                
+                Text(tutorialManager.currentStep.description)
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(nil)
+            }
+            
+            Button(action: {
+                tutorialManager.nextStep()
+            }) {
+                Text(tutorialManager.currentStep.buttonText)
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color.orange)
+                    .cornerRadius(12)
+            }
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.ultraThickMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                )
+        )
+    }
+    
+    private var stepIndicator: some View {
+        HStack(spacing: 8) {
+            ForEach(TutorialStep.allCases, id: \.rawValue) { step in
+                Circle()
+                    .fill(step.rawValue <= tutorialManager.currentStep.rawValue ? Color.orange : Color.gray.opacity(0.3))
+                    .frame(width: 8, height: 8)
+                    .scaleEffect(step == tutorialManager.currentStep ? 1.2 : 1.0)
+                    .animation(.easeInOut(duration: 0.2), value: tutorialManager.currentStep)
+            }
+        }
+        .padding(.bottom, 8)
+    }
+}
+
+struct HistoryDemoOverlayView: View {
+    @ObservedObject var tutorialManager: TutorialManager
+    
+    var body: some View {
+        ZStack {
+            // Light background to show underlying content
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                Spacer()
+                
+                // Tutorial content at bottom
+                tutorialContentView
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 50)
+            }
+        }
+    }
+    
+    
+    private var tutorialContentView: some View {
+        VStack(spacing: 20) {
+            stepIndicator
+            
+            VStack(spacing: 12) {
+                Text(tutorialManager.currentStep.title)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.center)
+                
+                Text(tutorialManager.currentStep.description)
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(nil)
+            }
+            
+            Button(action: {
+                tutorialManager.nextStep()
+            }) {
+                Text(tutorialManager.currentStep.buttonText)
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color.orange)
+                    .cornerRadius(12)
+            }
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.ultraThickMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                )
+        )
+    }
+    
+    private var stepIndicator: some View {
+        HStack(spacing: 8) {
+            ForEach(TutorialStep.allCases, id: \.rawValue) { step in
+                Circle()
+                    .fill(step.rawValue <= tutorialManager.currentStep.rawValue ? Color.orange : Color.gray.opacity(0.3))
+                    .frame(width: 8, height: 8)
+                    .scaleEffect(step == tutorialManager.currentStep ? 1.2 : 1.0)
+                    .animation(.easeInOut(duration: 0.2), value: tutorialManager.currentStep)
+            }
+        }
+        .padding(.bottom, 8)
     }
 }
 

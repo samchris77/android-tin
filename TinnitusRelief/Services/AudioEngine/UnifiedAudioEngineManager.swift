@@ -190,7 +190,7 @@ class UnifiedAudioEngineManager: ObservableObject {
         lastUpdateTime = CACurrentMediaTime()
     }
     
-    private func stopInterpolation() {
+    func stopInterpolation() {
         displayLink?.invalidate()
         displayLink = nil
     }
@@ -422,6 +422,40 @@ extension UnifiedAudioEngineManager {
     func loadSessionData() {
         lastSessionDuration = UserDefaults.standard.double(forKey: "lastSessionDuration")
         totalSessionTime = UserDefaults.standard.double(forKey: "totalSessionTime")
+    }
+    
+    func saveAudioState() {
+        let normalizedX = Self.normalizedXFromFrequency(currentFrequency)
+        let normalizedY = Self.normalizedYFromVolume(currentFrequencyVolume)
+        
+        UserDefaults.standard.set(Double(normalizedX), forKey: "lastControlPositionX")
+        UserDefaults.standard.set(Double(normalizedY), forKey: "lastControlPositionY")
+        UserDefaults.standard.set(Double(currentFrequency), forKey: "lastFrequency")
+        UserDefaults.standard.set(Double(currentFrequencyVolume), forKey: "lastVolume")
+        
+        UserDefaults.standard.synchronize()
+        
+        print("💾 Saved ball data - freq: \(String(format: "%.1f", currentFrequency))Hz, volume: \(String(format: "%.1f", currentFrequencyVolume * 100))%, position: (\(String(format: "%.3f", normalizedX)), \(String(format: "%.3f", normalizedY)))")
+    }
+    
+    func loadAudioState() -> (frequency: Float, volume: Float, position: CGPoint) {
+        let hasFreq = UserDefaults.standard.object(forKey: "lastFrequency") != nil
+        let hasVol = UserDefaults.standard.object(forKey: "lastVolume") != nil
+        let hasPosX = UserDefaults.standard.object(forKey: "lastControlPositionX") != nil
+        let hasPosY = UserDefaults.standard.object(forKey: "lastControlPositionY") != nil
+        
+        let frequency = hasFreq ? Float(UserDefaults.standard.double(forKey: "lastFrequency")) : 1000.0
+        let volume = hasVol ? Float(UserDefaults.standard.double(forKey: "lastVolume")) : 0.3
+        let posX = hasPosX ? CGFloat(UserDefaults.standard.double(forKey: "lastControlPositionX")) : CGFloat(Self.normalizedXFromFrequency(frequency))
+        let posY = hasPosY ? CGFloat(UserDefaults.standard.double(forKey: "lastControlPositionY")) : CGFloat(Self.normalizedYFromVolume(volume))
+        
+        if hasFreq && hasVol && hasPosX && hasPosY {
+            print("📱 Loaded ball data - freq: \(String(format: "%.1f", frequency))Hz, volume: \(String(format: "%.1f", volume * 100))%, position: (\(String(format: "%.3f", posX)), \(String(format: "%.3f", posY)))")
+        } else {
+            print("📱 No saved data found, using defaults - freq: \(String(format: "%.1f", frequency))Hz, volume: \(String(format: "%.1f", volume * 100))%")
+        }
+        
+        return (frequency, volume, CGPoint(x: posX, y: posY))
     }
     
     func clearLastSession() {
