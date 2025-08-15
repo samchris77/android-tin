@@ -15,7 +15,7 @@ struct PrivacyInfoView: View {
                         icon: "xmark.shield.fill",
                         iconColor: .red,
                         title: "No Personal Data Collection",
-                        content: "TinnitusRelief operates with a strict no-data-collection policy. We do not require user accounts, emails, or any personal identifiers. Your use of the app is completely anonymous."
+                        content: "TinnitusTracker operates with a strict no-data-collection policy. We do not require user accounts, emails, or any personal identifiers. Your use of the app is completely anonymous."
                     )
                     
                     PrivacySection(
@@ -51,7 +51,7 @@ struct PrivacyInfoView: View {
                         Text("Complete Privacy Guarantee")
                             .font(.headline)
                             .fontWeight(.bold)
-                        Text("TinnitusRelief is designed with privacy-by-design principles. We cannot access your data because we never collect it. Your health information remains exclusively yours.")
+                        Text("TinnitusTracker is designed with privacy-by-design principles. We cannot access your data because we never collect it. Your health information remains exclusively yours.")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -92,7 +92,7 @@ private struct HeaderView: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
             
-            Text("TinnitusRelief is built to be a private, secure, and offline-first application. We believe your health data is your own.")
+            Text("TinnitusTracker is built to be a private, secure, and offline-first application. We believe your health data is your own.")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
         }
