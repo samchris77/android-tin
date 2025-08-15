@@ -8,6 +8,8 @@ enum TutorialStep: Int, CaseIterable {
     case welcome = 0
     case frequencyDemo
     case logDemo
+    case progressDemo
+    case historyDemo
     case profileDemo
     
     var title: String {
@@ -18,6 +20,10 @@ enum TutorialStep: Int, CaseIterable {
             return "Match Your Tinnitus Frequency"
         case .logDemo:
             return "Track Your Progress"
+        case .progressDemo:
+            return "View Your Progress"
+        case .historyDemo:
+            return "Review Your History"
         case .profileDemo:
             return "Setup Reminders"
         }
@@ -31,6 +37,10 @@ enum TutorialStep: Int, CaseIterable {
             return "Drag the control ball to match your tinnitus frequency and sound type. The arrows show you can move it in any direction."
         case .logDemo:
             return "Add entries, view your progress charts, and review your therapy history to track improvement over time."
+        case .progressDemo:
+            return "View your therapy progress with weekly summaries, session calendar, and comprehensive statistics to track your improvement."
+        case .historyDemo:
+            return "Review all your individual diary entries to see your detailed therapy history and symptom patterns over time."
         case .profileDemo:
             return "Set up daily reminders to help you maintain a consistent 2-hour therapy routine for maximum effectiveness."
         }
@@ -38,7 +48,7 @@ enum TutorialStep: Int, CaseIterable {
     
     var buttonText: String {
         switch self {
-        case .welcome, .frequencyDemo, .logDemo:
+        case .welcome, .frequencyDemo, .logDemo, .progressDemo, .historyDemo:
             return "Next"
         case .profileDemo:
             return "Start Therapy"
@@ -60,8 +70,8 @@ enum TutorialStep: Int, CaseIterable {
             return nil // Stay on current tab
         case .frequencyDemo:
             return 0 // Frequency tab
-        case .logDemo:
-            return 1 // Log tab
+        case .logDemo, .progressDemo, .historyDemo:
+            return 1 // Log tab (with different internal tabs)
         case .profileDemo:
             return 2 // Profile tab
         }
@@ -74,6 +84,7 @@ class TutorialManager: ObservableObject {
     
     private let persistenceController: PersistenceController
     private var onTabChange: ((Int) -> Void)?
+    private var onDiaryTabChange: ((Int) -> Void)?
     
     init(persistenceController: PersistenceController) {
         self.persistenceController = persistenceController
@@ -82,6 +93,10 @@ class TutorialManager: ObservableObject {
     
     func setTabChangeCallback(_ callback: @escaping (Int) -> Void) {
         self.onTabChange = callback
+    }
+    
+    func setDiaryTabChangeCallback(_ callback: @escaping (Int) -> Void) {
+        self.onDiaryTabChange = callback
     }
     
     func checkOnboardingStatus() {
@@ -113,6 +128,18 @@ class TutorialManager: ObservableObject {
                 // Navigate to appropriate tab if needed
                 if let targetTab = nextStep.targetTab {
                     onTabChange?(targetTab)
+                }
+                
+                // Handle DiaryView internal tab navigation
+                switch nextStep {
+                case .logDemo:
+                    onDiaryTabChange?(0) // Add tab
+                case .progressDemo:
+                    onDiaryTabChange?(1) // Progress Tracking tab
+                case .historyDemo:
+                    onDiaryTabChange?(2) // History tab
+                default:
+                    break
                 }
             } else {
                 completeTutorial()
@@ -357,7 +384,7 @@ struct MainTabView: View {
                         }
                         .tag(0)
                     
-                    DiaryView()
+                    DiaryView(tutorialManager: tutorialManager)
                         .tabItem {
                             Image(systemName: selectedTab == 1 ? "book.fill" : "book")
                             Text("Log")
@@ -418,7 +445,13 @@ struct MainTabView: View {
             }
             .transition(.opacity)
         case .logDemo:
-            LogDemoOverlayView(tutorialManager: tutorialManager)
+            TransparentTutorialOverlayView(tutorialManager: tutorialManager)
+                .transition(.opacity)
+        case .progressDemo:
+            ProgressDemoOverlayView(tutorialManager: tutorialManager)
+                .transition(.opacity)
+        case .historyDemo:
+            HistoryDemoOverlayView(tutorialManager: tutorialManager)
                 .transition(.opacity)
         case .profileDemo:
             TransparentTutorialOverlayView(tutorialManager: tutorialManager)
@@ -535,7 +568,7 @@ struct CombinedProfileView: View {
                 .font(.headline)
                 .foregroundColor(.primary)
             
-            Text("TinnitusRelief is designed to help you manage tinnitus symptoms through personalized frequency matching, progress tracking, and evidence-based techniques.")
+            Text("TinnitusTracker is designed to help you manage tinnitus symptoms through personalized frequency matching, progress tracking, and evidence-based techniques.")
                 .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.leading)
@@ -1052,46 +1085,6 @@ struct WeekDayButton: View {
 
 // MARK: - Tutorial UI Components
 
-struct ArrowIndicatorView: View {
-    let direction: ArrowDirection
-    @State private var isAnimating = false
-    
-    enum ArrowDirection {
-        case up, down, left, right
-        
-        var angle: Double {
-            switch self {
-            case .up: return 0
-            case .right: return 90
-            case .down: return 180
-            case .left: return 270
-            }
-        }
-        
-        var offset: (x: CGFloat, y: CGFloat) {
-            switch self {
-            case .up: return (0, -40)
-            case .right: return (40, 0)
-            case .down: return (0, 40)
-            case .left: return (-40, 0)
-            }
-        }
-    }
-    
-    var body: some View {
-        Image(systemName: "arrow.up")
-            .font(.title2)
-            .foregroundColor(.orange)
-            .rotationEffect(.degrees(direction.angle))
-            .offset(x: direction.offset.x, y: direction.offset.y)
-            .scaleEffect(isAnimating ? 1.2 : 1.0)
-            .opacity(isAnimating ? 1.0 : 0.7)
-            .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: isAnimating)
-            .onAppear {
-                isAnimating = true
-            }
-    }
-}
 
 struct FrequencyDemoOverlayView: View {
     @ObservedObject var tutorialManager: TutorialManager
@@ -1102,14 +1095,6 @@ struct FrequencyDemoOverlayView: View {
             // Very light background to show frequency view
             Color.black.opacity(0.3)
                 .ignoresSafeArea()
-            
-            // Arrow indicators around control ball
-            ZStack {
-                ForEach(ArrowIndicatorView.ArrowDirection.allCases, id: \.self) { direction in
-                    ArrowIndicatorView(direction: direction)
-                }
-            }
-            .position(controlPosition)
             
             // Tutorial content at bottom
             VStack(spacing: 0) {
@@ -1177,12 +1162,6 @@ struct FrequencyDemoOverlayView: View {
     }
 }
 
-// Extension to make ArrowDirection CaseIterable and Hashable
-extension ArrowIndicatorView.ArrowDirection: CaseIterable, Hashable {
-    static var allCases: [ArrowIndicatorView.ArrowDirection] {
-        return [.up, .right, .down, .left]
-    }
-}
 
 struct TransparentTutorialOverlayView: View {
     @ObservedObject var tutorialManager: TutorialManager
@@ -1309,7 +1288,7 @@ struct WelcomeTutorialView: View {
                             .font(.title2)
                             .foregroundColor(.white.opacity(0.9))
                         
-                        Text("Tinnitus Relief")
+                        Text("Tinnitus Tracker")
                             .font(.largeTitle)
                             .fontWeight(.bold)
                             .foregroundColor(.white)
@@ -1333,6 +1312,12 @@ struct WelcomeTutorialView: View {
                         icon: "clock",
                         title: "2 Hours Daily",
                         description: "Consistent therapy for effective relief"
+                    )
+                    
+                    TutorialFeatureRow(
+                        icon: "list",
+                        title: "track your progress",
+                        description: "Your data, your journey"
                     )
                 }
                 .padding(.horizontal, 32)
@@ -1395,146 +1380,31 @@ private struct TutorialFeatureRow: View {
     }
 }
 
-struct LogDemoOverlayView: View {
+struct ProgressDemoOverlayView: View {
     @ObservedObject var tutorialManager: TutorialManager
-    @State private var animationPhase: Int = 0
-    @State private var demoTinnitus: Int = 7
-    @State private var demoStress: Int = 6
-    @State private var showSaveButton = false
-    @State private var showSaveConfirmation = false
-    
-    private let animationTimer = Timer.publish(every: 2.5, on: .main, in: .common).autoconnect()
     
     var body: some View {
         ZStack {
-            // Complete background coverage to prevent any UI bleeding
-            Rectangle()
-                .fill(Color.black.opacity(0.95))
-                .ignoresSafeArea(.all)
-                .allowsHitTesting(true) // Block all touches to underlying content
+            // Dark background to hide real content
+            Color.black.opacity(0.9)
+                .ignoresSafeArea()
+                .allowsHitTesting(true)
             
             VStack(spacing: 0) {
-                // Top area with tab highlight
-                HStack {
-                    if animationPhase >= 1 {
-                        TabHighlight()
-                            .padding(.leading, 20)
+                // Mock progress content
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // Mock session calendar
+                        mockSessionCalendar
+                        
+                        // Mock weekly summaries
+                        mockWeeklySummary
+                        
+                        // Mock comprehensive stats
+                        mockComprehensiveStats
                     }
-                    Spacer()
+                    .padding(16)
                 }
-                .frame(height: 60)
-                .padding(.top, 40)
-                
-                // Main demo content area - contained and elevated
-                VStack(spacing: 24) {
-                    // Demo header
-                    VStack(spacing: 8) {
-                        Text("Aug 15, 2025")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                        
-                        Text("11:29 AM")
-                            .font(.subheadline)
-                            .foregroundColor(.white.opacity(0.7))
-                        
-                        HStack {
-                            Spacer()
-                            VStack(alignment: .trailing, spacing: 2) {
-                                Text("Entry")
-                                    .font(.caption2)
-                                    .foregroundColor(.white.opacity(0.7))
-                                Text("#3")
-                                    .font(.title3)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.orange)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.white.opacity(0.1))
-                    )
-                    
-                    // Tinnitus demo slider
-                    DemoSlider(
-                        title: "Tinnitus Level",
-                        value: demoTinnitus,
-                        color: .orange,
-                        isAnimating: animationPhase == 2,
-                        showHighlight: animationPhase >= 2
-                    )
-                    
-                    // Stress demo slider
-                    DemoSlider(
-                        title: "Current Stress", 
-                        value: demoStress,
-                        color: .red,
-                        isAnimating: animationPhase == 3,
-                        showHighlight: animationPhase >= 3
-                    )
-                    
-                    // Session duration demo (static)
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Session Duration")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.white)
-                        
-                        HStack {
-                            VStack(spacing: 2) {
-                                Spacer()
-                                    .frame(height: 8)
-                                
-                                Text("0 min")
-                                    .font(.title3)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.blue)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(Color.blue.opacity(0.2))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 8)
-                                                    .stroke(Color.blue.opacity(0.4), lineWidth: 1)
-                                            )
-                                    )
-                                
-                                Spacer()
-                                    .frame(height: 8)
-                            }
-                            .frame(height: 60)
-                            
-                            Spacer()
-                            
-                            HStack(spacing: 8) {
-                                Text("Live")
-                                    .font(.caption)
-                                    .foregroundColor(.white.opacity(0.7))
-                                
-                                Toggle("", isOn: .constant(false))
-                                    .toggleStyle(SwitchToggleStyle(tint: .green))
-                                    .labelsHidden()
-                                    .disabled(true)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.white.opacity(0.1))
-                    )
-                    
-                    // Demo save button
-                    if showSaveButton {
-                        DemoSaveButton(isAnimating: animationPhase == 4, showHighlight: animationPhase >= 4)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
                 
                 Spacer()
                 
@@ -1543,72 +1413,138 @@ struct LogDemoOverlayView: View {
                     .padding(.horizontal, 24)
                     .padding(.bottom, 50)
             }
+        }
+    }
+    
+    private var mockSessionCalendar: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Session Calendar")
+                .font(.headline)
+                .foregroundColor(.white)
             
-            // Save confirmation demo (centered overlay)
-            if showSaveConfirmation {
-                DemoSaveConfirmation()
-                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+            // Mock calendar grid showing therapy sessions
+            VStack(spacing: 8) {
+                HStack {
+                    ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { day in
+                        Text(day)
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.7))
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                
+                // Mock week with some therapy sessions
+                HStack(spacing: 4) {
+                    ForEach(0..<7) { index in
+                        let hasSession = [1, 2, 4, 6].contains(index) // Mock sessions on Mon, Tue, Thu, Sat
+                        Circle()
+                            .fill(hasSession ? Color.orange : Color.gray.opacity(0.3))
+                            .frame(width: 32, height: 32)
+                            .overlay(
+                                Text("\(10 + index)")
+                                    .font(.caption)
+                                    .foregroundColor(hasSession ? .white : .white.opacity(0.6))
+                            )
+                    }
+                }
             }
-        }
-        .onAppear {
-            startAnimation()
-        }
-        .onReceive(animationTimer) { _ in
-            advanceAnimation()
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white.opacity(0.1))
+            )
         }
     }
     
-    private func startAnimation() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            withAnimation(.easeInOut(duration: 0.5)) {
-                animationPhase = 1
+    private var mockWeeklySummary: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("This Week's Progress")
+                .font(.headline)
+                .foregroundColor(.white)
+            
+            HStack(spacing: 16) {
+                // Mock tinnitus average
+                VStack(spacing: 8) {
+                    Text("Avg. Tinnitus")
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.7))
+                    Text("6.2")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.orange)
+                    Text("↓ 15% this week")
+                        .font(.caption2)
+                        .foregroundColor(.green)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.white.opacity(0.1))
+                )
+                
+                // Mock stress average
+                VStack(spacing: 8) {
+                    Text("Avg. Stress")
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.7))
+                    Text("4.8")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.red)
+                    Text("↓ 22% this week")
+                        .font(.caption2)
+                        .foregroundColor(.green)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.white.opacity(0.1))
+                )
             }
         }
     }
     
-    private func advanceAnimation() {
-        switch animationPhase {
-        case 1:
-            // Start tinnitus animation
-            withAnimation(.easeInOut(duration: 2.0)) {
-                animationPhase = 2
-                demoTinnitus = 4
-            }
-        case 2:
-            // Start stress animation
-            withAnimation(.easeInOut(duration: 2.0)) {
-                animationPhase = 3
-                demoStress = 2
-            }
-        case 3:
-            // Show save button and start save animation
-            withAnimation(.easeInOut(duration: 0.5)) {
-                showSaveButton = true
-                animationPhase = 4
-            }
-        case 4:
-            // Show save confirmation
-            withAnimation(.easeInOut(duration: 0.3)) {
-                showSaveConfirmation = true
-                animationPhase = 5
-            }
-        case 5:
-            // Hide confirmation and restart
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    showSaveConfirmation = false
-                    animationPhase = 0
-                    demoTinnitus = 7
-                    demoStress = 6
-                    showSaveButton = false
+    private var mockComprehensiveStats: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("30-Day Overview")
+                .font(.headline)
+                .foregroundColor(.white)
+            
+            VStack(spacing: 12) {
+                HStack {
+                    Text("Total Sessions")
+                        .foregroundColor(.white.opacity(0.8))
+                    Spacer()
+                    Text("24")
+                        .fontWeight(.semibold)
+                        .foregroundColor(.orange)
                 }
-                // Restart the animation
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    startAnimation()
+                
+                HStack {
+                    Text("Average Session Length")
+                        .foregroundColor(.white.opacity(0.8))
+                    Spacer()
+                    Text("1h 45m")
+                        .fontWeight(.semibold)
+                        .foregroundColor(.blue)
+                }
+                
+                HStack {
+                    Text("Best Week")
+                        .foregroundColor(.white.opacity(0.8))
+                    Spacer()
+                    Text("Dec 4-10")
+                        .fontWeight(.semibold)
+                        .foregroundColor(.green)
                 }
             }
-        default:
-            break
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white.opacity(0.1))
+            )
         }
     }
     
@@ -1623,7 +1559,7 @@ struct LogDemoOverlayView: View {
                     .foregroundColor(.primary)
                     .multilineTextAlignment(.center)
                 
-                Text("Watch the demonstration below to learn how to track your symptoms")
+                Text(tutorialManager.currentStep.description)
                     .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -1667,204 +1603,189 @@ struct LogDemoOverlayView: View {
     }
 }
 
-struct TabHighlight: View {
-    var body: some View {
-        Text("Add")
-            .font(.system(size: 16, weight: .semibold))
-            .foregroundColor(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color.orange)
-                    .shadow(color: .orange.opacity(0.6), radius: 8, x: 0, y: 0)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(Color.orange.opacity(0.8), lineWidth: 2)
-            )
-    }
-}
-
-struct DemoSlider: View {
-    let title: String
-    let value: Int
-    let color: Color
-    let isAnimating: Bool
-    let showHighlight: Bool
+struct HistoryDemoOverlayView: View {
+    @ObservedObject var tutorialManager: TutorialManager
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sliderHeader
-            sliderContent
-        }
-        .padding(20)
-        .background(sliderBackground)
-        .scaleEffect(showHighlight ? 1.05 : 1.0)
-        .animation(.easeInOut(duration: 0.3), value: showHighlight)
-    }
-    
-    private var sliderHeader: some View {
-        HStack {
-            Text(title)
-                .font(.headline)
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-            
-            Spacer()
-            
-            Text("\(value)")
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(color)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(color.opacity(0.2))
-                )
-        }
-    }
-    
-    private var sliderContent: some View {
-        VStack(spacing: 8) {
-            sliderTrack
-            stepMarks
-        }
-    }
-    
-    private var sliderTrack: some View {
-        GeometryReader { geometry in
-            let trackWidth = geometry.size.width - 40
-            ZStack(alignment: .leading) {
-                // Background track
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(height: 6)
-                
-                // Active track
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(color)
-                    .frame(width: CGFloat(value) / 10 * trackWidth, height: 6)
-                
-                // Slider handle with glow effect
-                Circle()
-                    .fill(color)
-                    .frame(width: 20, height: 20)
-                    .shadow(color: color.opacity(0.3), radius: 3, x: 0, y: 2)
-                    .shadow(color: isAnimating ? color : .clear, radius: isAnimating ? 12 : 0, x: 0, y: 0)
-                    .offset(x: CGFloat(value) / 10 * (trackWidth - 20))
-                    .scaleEffect(isAnimating ? 1.3 : 1.0)
-                    .animation(.easeInOut(duration: 0.3).repeatForever(autoreverses: true), value: isAnimating)
-            }
-            .padding(.horizontal, 20)
-        }
-        .frame(height: 20)
-    }
-    
-    private var stepMarks: some View {
-        HStack {
-            ForEach(0...10, id: \.self) { step in
-                VStack(spacing: 4) {
-                    Rectangle()
-                        .fill(step == value ? color : Color.gray.opacity(0.4))
-                        .frame(width: 2, height: step % 5 == 0 ? 12 : 8)
-                    
-                    if step % 5 == 0 {
-                        Text("\(step)")
-                            .font(.caption2)
-                            .foregroundColor(step == value ? color : .white.opacity(0.6))
-                            .fontWeight(step == value ? .semibold : .regular)
-                    }
-                }
-                
-                if step < 10 {
-                    Spacer()
-                }
-            }
-        }
-        .padding(.horizontal, 20)
-    }
-    
-    private var sliderBackground: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.1))
+            // Dark background to hide real content
+            Color.black.opacity(0.9)
+                .ignoresSafeArea()
+                .allowsHitTesting(true)
             
-            if showHighlight {
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(color.opacity(0.2))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(color, lineWidth: 2)
-                    )
+            VStack(spacing: 0) {
+                // Mock history content
+                ScrollView {
+                    VStack(spacing: 16) {
+                        // Mock entry for today
+                        mockHistoryEntry(
+                            date: Date(),
+                            tinnitus: 5,
+                            stress: 3,
+                            duration: "2h 15m",
+                            entryNumber: 28
+                        )
+                        
+                        // Mock entry for yesterday
+                        mockHistoryEntry(
+                            date: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date(),
+                            tinnitus: 6,
+                            stress: 4,
+                            duration: "1h 45m",
+                            entryNumber: 27
+                        )
+                        
+                        // Mock entry for 2 days ago
+                        mockHistoryEntry(
+                            date: Calendar.current.date(byAdding: .day, value: -2, to: Date()) ?? Date(),
+                            tinnitus: 7,
+                            stress: 5,
+                            duration: "2h 0m",
+                            entryNumber: 26
+                        )
+                        
+                        // Mock entry for 3 days ago
+                        mockHistoryEntry(
+                            date: Calendar.current.date(byAdding: .day, value: -3, to: Date()) ?? Date(),
+                            tinnitus: 8,
+                            stress: 6,
+                            duration: "1h 30m",
+                            entryNumber: 25
+                        )
+                    }
+                    .padding(16)
+                }
+                
+                Spacer()
+                
+                // Tutorial content at bottom
+                tutorialContentView
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 50)
             }
         }
     }
-}
-
-struct DemoSaveButton: View {
-    let isAnimating: Bool
-    let showHighlight: Bool
     
-    var body: some View {
-        HStack {
-            Image(systemName: "checkmark.circle.fill")
-            Text("Save Entry")
-        }
-        .font(.headline)
-        .foregroundColor(.white)
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(Color.orange)
-        .cornerRadius(12)
-        .scaleEffect(isAnimating ? 1.1 : 1.0)
-        .shadow(color: showHighlight ? .orange.opacity(0.6) : .clear, radius: showHighlight ? 8 : 0, x: 0, y: 0)
-        .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: isAnimating)
-    }
-}
-
-struct DemoSaveConfirmation: View {
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 32))
-                .foregroundColor(.green)
+    private func mockHistoryEntry(date: Date, tinnitus: Int, stress: Int, duration: String, entryNumber: Int) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Date header
+            HStack {
+                Text(date, style: .date)
+                    .font(.headline)
+                    .foregroundColor(.white)
+                Spacer()
+                Text("Entry #\(entryNumber)")
+                    .font(.caption)
+                    .foregroundColor(.orange)
+            }
             
-            Text("Entry #1 Saved")
-                .font(.headline)
-                .fontWeight(.semibold)
-                .foregroundColor(.primary)
-            
-            VStack(spacing: 4) {
-                HStack(spacing: 16) {
+            // Entry details
+            HStack(spacing: 20) {
+                // Tinnitus level
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Tinnitus Level")
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.7))
                     HStack(spacing: 4) {
-                        Image(systemName: "speaker.wave.2.fill")
-                            .font(.caption)
+                        Text("\(tinnitus)")
+                            .font(.title3)
+                            .fontWeight(.semibold)
                             .foregroundColor(.orange)
-                        Text("Tinnitus: 4/10")
+                        Text("/ 10")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.white.opacity(0.6))
                     }
-                    
+                }
+                
+                // Stress level
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Stress Level")
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.7))
                     HStack(spacing: 4) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.caption)
+                        Text("\(stress)")
+                            .font(.title3)
+                            .fontWeight(.semibold)
                             .foregroundColor(.red)
-                        Text("Stress: 2/10")
+                        Text("/ 10")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.white.opacity(0.6))
                     }
+                }
+                
+                Spacer()
+                
+                // Session duration
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("Session")
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.7))
+                    Text(duration)
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.blue)
                 }
             }
         }
-        .padding(20)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white.opacity(0.1))
+        )
+    }
+    
+    private var tutorialContentView: some View {
+        VStack(spacing: 20) {
+            stepIndicator
+            
+            VStack(spacing: 12) {
+                Text(tutorialManager.currentStep.title)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.center)
+                
+                Text(tutorialManager.currentStep.description)
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(nil)
+            }
+            
+            Button(action: {
+                tutorialManager.nextStep()
+            }) {
+                Text(tutorialManager.currentStep.buttonText)
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color.orange)
+                    .cornerRadius(12)
+            }
+        }
+        .padding(24)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(.ultraThinMaterial)
-                .shadow(radius: 8, x: 0, y: 4)
+                .fill(.ultraThickMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                )
         )
-        .frame(maxWidth: 280)
+    }
+    
+    private var stepIndicator: some View {
+        HStack(spacing: 8) {
+            ForEach(TutorialStep.allCases, id: \.rawValue) { step in
+                Circle()
+                    .fill(step.rawValue <= tutorialManager.currentStep.rawValue ? Color.orange : Color.gray.opacity(0.3))
+                    .frame(width: 8, height: 8)
+                    .scaleEffect(step == tutorialManager.currentStep ? 1.2 : 1.0)
+                    .animation(.easeInOut(duration: 0.2), value: tutorialManager.currentStep)
+            }
+        }
+        .padding(.bottom, 8)
     }
 }
 

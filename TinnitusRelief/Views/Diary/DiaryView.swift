@@ -1,9 +1,11 @@
 import SwiftUI
 import Charts
+import CoreData
 
 struct DiaryView: View {
     @StateObject private var viewModel = DiaryViewModel()
     @State private var selectedTab = 0
+    let tutorialManager: TutorialManager?
     @State private var refreshTrigger = 0
     @State private var selectedTime = Date()
     @State private var selectedMonth = Date()
@@ -72,6 +74,11 @@ struct DiaryView: View {
         }
         .onAppear {
             viewModel.fetchEntries()
+            
+            // Set up tutorial callback for internal tab navigation
+            tutorialManager?.setDiaryTabChangeCallback { tabIndex in
+                selectedTab = tabIndex
+            }
         }
     }
     
@@ -1643,5 +1650,5 @@ struct SaveConfirmationPopup: View {
 }
 
 #Preview {
-    DiaryView()
+    DiaryView(tutorialManager: nil)
 }
