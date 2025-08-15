@@ -15,7 +15,6 @@
 		1D92FB0C2C8E4B5F00F7EF96 /* TinnitusRelief.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 1D92FB0A2C8E4B5F00F7EF96 /* TinnitusRelief.xcdatamodeld */; };
 		1D92FB142C8E4C0000F7EF96 /* FrequencyMatchingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D92FB132C8E4C0000F7EF96 /* FrequencyMatchingView.swift */; };
 		1D92FB162C8E4C0700F7EF96 /* FrequencyControlPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D92FB152C8E4C0700F7EF96 /* FrequencyControlPoint.swift */; };
-		1D92FB182C8E4C1000F7EF96 /* AudioEngineService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D92FB172C8E4C1000F7EF96 /* AudioEngineService.swift */; };
 		1D92FB1C2C8E4C1E00F7EF96 /* UnifiedAudioEngineManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D92FB1B2C8E4C1E00F7EF96 /* UnifiedAudioEngineManager.swift */; };
 		1D92FB1E2C8E4C2600F7EF96 /* FrequencyMatchingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D92FB1D2C8E4C2600F7EF96 /* FrequencyMatchingViewModel.swift */; };
 		1D92FB202C8E4C2D00F7EF96 /* DiaryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D92FB1F2C8E4C2D00F7EF96 /* DiaryViewModel.swift */; };
@@ -38,7 +37,6 @@
 		1D92FB122C8E4BDC00F7EF96 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		1D92FB132C8E4C0000F7EF96 /* FrequencyMatchingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrequencyMatchingView.swift; sourceTree = "<group>"; };
 		1D92FB152C8E4C0700F7EF96 /* FrequencyControlPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrequencyControlPoint.swift; sourceTree = "<group>"; };
-		1D92FB172C8E4C1000F7EF96 /* AudioEngineService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngineService.swift; sourceTree = "<group>"; };
 		1D92FB1B2C8E4C1E00F7EF96 /* UnifiedAudioEngineManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedAudioEngineManager.swift; sourceTree = "<group>"; };
 		1D92FB1D2C8E4C2600F7EF96 /* FrequencyMatchingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrequencyMatchingViewModel.swift; sourceTree = "<group>"; };
 		1D92FB1F2C8E4C2D00F7EF96 /* DiaryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryViewModel.swift; sourceTree = "<group>"; };
@@ -193,7 +191,6 @@
 		1D92FB3B2C8E4CBB00F7EF96 /* AudioEngine */ = {
 			isa = PBXGroup;
 			children = (
-				1D92FB172C8E4C1000F7EF96 /* AudioEngineService.swift */,
 				1D92FB1B2C8E4C1E00F7EF96 /* UnifiedAudioEngineManager.swift */,
 			);
 			path = AudioEngine;
@@ -278,7 +275,6 @@
 				1D92FB1C2C8E4C1E00F7EF96 /* UnifiedAudioEngineManager.swift in Sources */,
 				1D92FB0C2C8E4B5F00F7EF96 /* TinnitusRelief.xcdatamodeld in Sources */,
 				1D92FB142C8E4C0000F7EF96 /* FrequencyMatchingView.swift in Sources */,
-				1D92FB182C8E4C1000F7EF96 /* AudioEngineService.swift in Sources */,
 				1D92FB202C8E4C2D00F7EF96 /* DiaryViewModel.swift in Sources */,
 				1D92FB162C8E4C0700F7EF96 /* FrequencyControlPoint.swift in Sources */,
 				1D92FB262C8E4C4200F7EF96 /* MainTabView.swift in Sources */,

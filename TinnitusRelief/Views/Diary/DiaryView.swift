@@ -464,27 +464,11 @@ struct DiaryView: View {
                 )
                 
                 EnhancedStatCard(
-                    icon: "chart.bar.fill",
-                    title: "Avg Session",
-                    value: formatTimeInterval(viewModel.getAverageListeningTime()),
-                    unit: "",
-                    color: .blue
-                )
-                
-                EnhancedStatCard(
                     icon: "list.bullet",
                     title: "Total Entries",
                     value: "\(viewModel.diaryEntries.count)",
                     unit: "",
                     color: .purple
-                )
-                
-                EnhancedStatCard(
-                    icon: "waveform",
-                    title: "Most Used",
-                    value: viewModel.formatFrequency(viewModel.getMostCommonFrequency()),
-                    unit: "",
-                    color: .indigo
                 )
             }
         }

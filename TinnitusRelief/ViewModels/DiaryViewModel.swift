@@ -404,8 +404,14 @@ class DiaryViewModel: ObservableObject {
             frequencyGroups[key, default: 0] += 1
         }
         
-        let _ = frequencyGroups.max { $0.value < $1.value }
-        return frequencies.reduce(0, +) / Float(frequencies.count) // Return average for now
+        // Find the most common frequency group
+        guard let mostCommonGroup = frequencyGroups.max(by: { $0.value < $1.value }) else {
+            return 0
+        }
+        
+        // Extract the frequency value from the most common group key (e.g., "1000Hz" -> 1000)
+        let frequencyString = mostCommonGroup.key.replacingOccurrences(of: "Hz", with: "")
+        return Float(frequencyString) ?? 0
     }
     
     func formatFrequency(_ frequency: Float) -> String {
