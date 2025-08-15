@@ -26,7 +26,7 @@ struct EnhancedProfileView: View {
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.large)
             .sheet(isPresented: $showingPrivacyView) {
-                PrivacyView()
+                PrivacyInfoView()
             }
         }
     }
