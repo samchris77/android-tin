@@ -13,6 +13,17 @@ struct FrequencyMatchingView: View {
             }
         }
         .navigationBarHidden(true)
+        .onAppear {
+            print("🖼️ FrequencyMatchingView onAppear called")
+            // Backup loading mechanism if ViewModel wasn't recreated
+            let savedState = UnifiedAudioEngineManager.shared.loadAudioState()
+            if viewModel.controlPosition == CGPoint(x: 0.5, y: 0.5) && (savedState.position != CGPoint(x: 0.5, y: 0.5)) {
+                print("🔄 Backup loading - ViewModel wasn't recreated, manually loading saved state")
+                viewModel.controlPosition = savedState.position
+                UnifiedAudioEngineManager.shared.updateFrequency(savedState.frequency)
+                UnifiedAudioEngineManager.shared.updateFrequencyVolume(savedState.volume)
+            }
+        }
     }
     
     private var backgroundView: some View {

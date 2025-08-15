@@ -19,9 +19,14 @@ class FrequencyMatchingViewModel: ObservableObject {
     private var pendingPosition: CGPoint?
     private var lastUpdateTime: CFTimeInterval = 0
     
+    // Loading state guard
+    private var isLoadingState = false
+    
     init() {
+        print("🏗️ FrequencyMatchingViewModel init called")
         setupBindings()
         setupInitialPosition()
+        print("🏗️ FrequencyMatchingViewModel init complete")
     }
     
     private func setupBindings() {
@@ -46,14 +51,16 @@ class FrequencyMatchingViewModel: ObservableObject {
             .sink { [weak self] frequency, volume in
                 guard let self = self else { return }
                 
+                // Don't update position during loading or dragging
+                guard !self.isLoadingState && !self.isDragging else {
+                    return
+                }
+                
                 let normalizedX = UnifiedAudioEngineManager.normalizedXFromFrequency(frequency)
                 let normalizedY = UnifiedAudioEngineManager.normalizedYFromVolume(volume)
                 let newPosition = CGPoint(x: CGFloat(normalizedX), y: CGFloat(normalizedY))
                 
-                // Only update if user is not currently dragging
-                if !self.isDragging {
-                    self.controlPosition = newPosition
-                }
+                self.controlPosition = newPosition
             }
             .store(in: &cancellables)
         
@@ -74,17 +81,24 @@ class FrequencyMatchingViewModel: ObservableObject {
     }
     
     private func setupInitialPosition() {
-        let initialFrequency: Float = 1000.0
-        let initialVolume: Float = 0.3
+        print("🎯 setupInitialPosition called")
+        guard !isLoadingState else { 
+            print("⚠️ setupInitialPosition blocked - already loading")
+            return 
+        }
         
-        audioManager.updateFrequency(initialFrequency)
-        audioManager.updateFrequencyVolume(initialVolume)
+        isLoadingState = true
+        let savedState = audioManager.loadAudioState()
         
-        let normalizedX = UnifiedAudioEngineManager.normalizedXFromFrequency(initialFrequency)
-        let normalizedY = UnifiedAudioEngineManager.normalizedYFromVolume(initialVolume)
+        audioManager.stopInterpolation()
+        audioManager.updateFrequency(savedState.frequency)
+        audioManager.updateFrequencyVolume(savedState.volume)
+        controlPosition = savedState.position
         
-        controlPosition = CGPoint(x: CGFloat(normalizedX), y: CGFloat(normalizedY))
+        print("🎯 setupInitialPosition complete - position set to \(savedState.position)")
+        isLoadingState = false
     }
+    
     
     private func updateAudioFromPosition(_ position: CGPoint) {
         let frequency = UnifiedAudioEngineManager.frequencyFromNormalizedX(Float(position.x))
@@ -142,6 +156,8 @@ class FrequencyMatchingViewModel: ObservableObject {
         if let position = pendingPosition {
             updateAudioFromPosition(position)
         }
+        // Save audio state once when dragging stops
+        audioManager.saveAudioState()
     }
     
     func updateControlPosition(to position: CGPoint, in size: CGSize) {
@@ -187,7 +203,5 @@ class FrequencyMatchingViewModel: ObservableObject {
     
     deinit {
         stopRealTimeUpdates()
-        // Note: Audio continues playing - will be managed by FrequencyController
-        // Only cleanup the Combine subscriptions (handled automatically)
     }
 }

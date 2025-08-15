@@ -34,15 +34,15 @@ enum TutorialStep: Int, CaseIterable {
         case .welcome:
             return "This app helps reduce your tinnitus through sound therapy. Set volume to 70% of your tinnitus loudness and listen for about 2 hours daily for best results."
         case .frequencyDemo:
-            return "Drag the control ball to match your tinnitus frequency and sound type. The arrows show you can move it in any direction."
+            return "Match your tinnitus frequency and volume levels to reduce tinnitus symptoms."
         case .logDemo:
-            return "Add entries, view your progress charts, and review your therapy history to track improvement over time."
+            return "Add entries, tinnitus loudness and stress levels, and therapy duration to track improvement over time."
         case .progressDemo:
             return "View your therapy progress with weekly summaries, session calendar, and comprehensive statistics to track your improvement."
         case .historyDemo:
-            return "Review all your individual diary entries to see your detailed therapy history and symptom patterns over time."
+            return "Review all your individual session entries to see your detailed therapy history and symptom patterns over time."
         case .profileDemo:
-            return "Set up daily reminders to help you maintain a consistent 2-hour therapy routine for maximum effectiveness."
+            return "Set up daily reminders to help you maintain a consistent therapy routine for maximum effectiveness."
         }
     }
     
@@ -130,14 +130,21 @@ class TutorialManager: ObservableObject {
                     onTabChange?(targetTab)
                 }
                 
-                // Handle DiaryView internal tab navigation
+                // Handle DiaryView internal tab navigation with delay to ensure DiaryView is loaded
                 switch nextStep {
-                case .logDemo:
-                    onDiaryTabChange?(0) // Add tab
-                case .progressDemo:
-                    onDiaryTabChange?(1) // Progress Tracking tab
-                case .historyDemo:
-                    onDiaryTabChange?(2) // History tab
+                case .logDemo, .progressDemo, .historyDemo:
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        switch nextStep {
+                        case .logDemo:
+                            self.onDiaryTabChange?(0) // Add tab
+                        case .progressDemo:
+                            self.onDiaryTabChange?(1) // Progress Tracking tab
+                        case .historyDemo:
+                            self.onDiaryTabChange?(2) // History tab
+                        default:
+                            break
+                        }
+                    }
                 default:
                     break
                 }
@@ -955,6 +962,9 @@ struct ReminderListItem: View {
     let onEdit: () -> Void
     let onDelete: () -> Void
     
+    @State private var showingActionSheet = false
+    @State private var showingDeleteAlert = false
+    
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 16) {
@@ -989,21 +999,29 @@ struct ReminderListItem: View {
             .padding(.vertical, 12)
             .background(Color.clear)
             .onTapGesture {
-                onEdit()
+                showingActionSheet = true
             }
-            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                Button(role: .destructive) {
+            .actionSheet(isPresented: $showingActionSheet) {
+                ActionSheet(
+                    title: Text("Reminder Options"),
+                    buttons: [
+                        .default(Text("Edit")) {
+                            onEdit()
+                        },
+                        .destructive(Text("Delete")) {
+                            showingDeleteAlert = true
+                        },
+                        .cancel()
+                    ]
+                )
+            }
+            .alert("Delete Reminder", isPresented: $showingDeleteAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Delete", role: .destructive) {
                     onDelete()
-                } label: {
-                    Label("Delete", systemImage: "trash")
                 }
-                
-                Button {
-                    onEdit()
-                } label: {
-                    Label("Edit", systemImage: "pencil")
-                }
-                .tint(.orange)
+            } message: {
+                Text("Are you sure you want to delete this reminder? This action cannot be undone.")
             }
         }
     }
@@ -1171,6 +1189,7 @@ struct TransparentTutorialOverlayView: View {
             // Very light background to show underlying content
             Color.black.opacity(0.4)
                 .ignoresSafeArea()
+                .allowsHitTesting(false)
             
             VStack(spacing: 0) {
                 Spacer()
@@ -1315,7 +1334,7 @@ struct WelcomeTutorialView: View {
                     )
                     
                     TutorialFeatureRow(
-                        icon: "list",
+                        icon: "calendar",
                         title: "track your progress",
                         description: "Your data, your journey"
                     )
@@ -1385,27 +1404,11 @@ struct ProgressDemoOverlayView: View {
     
     var body: some View {
         ZStack {
-            // Dark background to hide real content
-            Color.black.opacity(0.9)
+            // Light background to show underlying content
+            Color.black.opacity(0.4)
                 .ignoresSafeArea()
-                .allowsHitTesting(true)
             
             VStack(spacing: 0) {
-                // Mock progress content
-                ScrollView {
-                    VStack(spacing: 20) {
-                        // Mock session calendar
-                        mockSessionCalendar
-                        
-                        // Mock weekly summaries
-                        mockWeeklySummary
-                        
-                        // Mock comprehensive stats
-                        mockComprehensiveStats
-                    }
-                    .padding(16)
-                }
-                
                 Spacer()
                 
                 // Tutorial content at bottom
@@ -1416,137 +1419,6 @@ struct ProgressDemoOverlayView: View {
         }
     }
     
-    private var mockSessionCalendar: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Session Calendar")
-                .font(.headline)
-                .foregroundColor(.white)
-            
-            // Mock calendar grid showing therapy sessions
-            VStack(spacing: 8) {
-                HStack {
-                    ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { day in
-                        Text(day)
-                            .font(.caption)
-                            .foregroundColor(.white.opacity(0.7))
-                            .frame(maxWidth: .infinity)
-                    }
-                }
-                
-                // Mock week with some therapy sessions
-                HStack(spacing: 4) {
-                    ForEach(0..<7) { index in
-                        let hasSession = [1, 2, 4, 6].contains(index) // Mock sessions on Mon, Tue, Thu, Sat
-                        Circle()
-                            .fill(hasSession ? Color.orange : Color.gray.opacity(0.3))
-                            .frame(width: 32, height: 32)
-                            .overlay(
-                                Text("\(10 + index)")
-                                    .font(.caption)
-                                    .foregroundColor(hasSession ? .white : .white.opacity(0.6))
-                            )
-                    }
-                }
-            }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white.opacity(0.1))
-            )
-        }
-    }
-    
-    private var mockWeeklySummary: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("This Week's Progress")
-                .font(.headline)
-                .foregroundColor(.white)
-            
-            HStack(spacing: 16) {
-                // Mock tinnitus average
-                VStack(spacing: 8) {
-                    Text("Avg. Tinnitus")
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.7))
-                    Text("6.2")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.orange)
-                    Text("↓ 15% this week")
-                        .font(.caption2)
-                        .foregroundColor(.green)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(12)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.white.opacity(0.1))
-                )
-                
-                // Mock stress average
-                VStack(spacing: 8) {
-                    Text("Avg. Stress")
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.7))
-                    Text("4.8")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.red)
-                    Text("↓ 22% this week")
-                        .font(.caption2)
-                        .foregroundColor(.green)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(12)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.white.opacity(0.1))
-                )
-            }
-        }
-    }
-    
-    private var mockComprehensiveStats: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("30-Day Overview")
-                .font(.headline)
-                .foregroundColor(.white)
-            
-            VStack(spacing: 12) {
-                HStack {
-                    Text("Total Sessions")
-                        .foregroundColor(.white.opacity(0.8))
-                    Spacer()
-                    Text("24")
-                        .fontWeight(.semibold)
-                        .foregroundColor(.orange)
-                }
-                
-                HStack {
-                    Text("Average Session Length")
-                        .foregroundColor(.white.opacity(0.8))
-                    Spacer()
-                    Text("1h 45m")
-                        .fontWeight(.semibold)
-                        .foregroundColor(.blue)
-                }
-                
-                HStack {
-                    Text("Best Week")
-                        .foregroundColor(.white.opacity(0.8))
-                    Spacer()
-                    Text("Dec 4-10")
-                        .fontWeight(.semibold)
-                        .foregroundColor(.green)
-                }
-            }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white.opacity(0.1))
-            )
-        }
-    }
     
     private var tutorialContentView: some View {
         VStack(spacing: 20) {
@@ -1608,54 +1480,11 @@ struct HistoryDemoOverlayView: View {
     
     var body: some View {
         ZStack {
-            // Dark background to hide real content
-            Color.black.opacity(0.9)
+            // Light background to show underlying content
+            Color.black.opacity(0.4)
                 .ignoresSafeArea()
-                .allowsHitTesting(true)
             
             VStack(spacing: 0) {
-                // Mock history content
-                ScrollView {
-                    VStack(spacing: 16) {
-                        // Mock entry for today
-                        mockHistoryEntry(
-                            date: Date(),
-                            tinnitus: 5,
-                            stress: 3,
-                            duration: "2h 15m",
-                            entryNumber: 28
-                        )
-                        
-                        // Mock entry for yesterday
-                        mockHistoryEntry(
-                            date: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date(),
-                            tinnitus: 6,
-                            stress: 4,
-                            duration: "1h 45m",
-                            entryNumber: 27
-                        )
-                        
-                        // Mock entry for 2 days ago
-                        mockHistoryEntry(
-                            date: Calendar.current.date(byAdding: .day, value: -2, to: Date()) ?? Date(),
-                            tinnitus: 7,
-                            stress: 5,
-                            duration: "2h 0m",
-                            entryNumber: 26
-                        )
-                        
-                        // Mock entry for 3 days ago
-                        mockHistoryEntry(
-                            date: Calendar.current.date(byAdding: .day, value: -3, to: Date()) ?? Date(),
-                            tinnitus: 8,
-                            stress: 6,
-                            duration: "1h 30m",
-                            entryNumber: 25
-                        )
-                    }
-                    .padding(16)
-                }
-                
                 Spacer()
                 
                 // Tutorial content at bottom
@@ -1666,73 +1495,6 @@ struct HistoryDemoOverlayView: View {
         }
     }
     
-    private func mockHistoryEntry(date: Date, tinnitus: Int, stress: Int, duration: String, entryNumber: Int) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Date header
-            HStack {
-                Text(date, style: .date)
-                    .font(.headline)
-                    .foregroundColor(.white)
-                Spacer()
-                Text("Entry #\(entryNumber)")
-                    .font(.caption)
-                    .foregroundColor(.orange)
-            }
-            
-            // Entry details
-            HStack(spacing: 20) {
-                // Tinnitus level
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Tinnitus Level")
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.7))
-                    HStack(spacing: 4) {
-                        Text("\(tinnitus)")
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.orange)
-                        Text("/ 10")
-                            .font(.caption)
-                            .foregroundColor(.white.opacity(0.6))
-                    }
-                }
-                
-                // Stress level
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Stress Level")
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.7))
-                    HStack(spacing: 4) {
-                        Text("\(stress)")
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.red)
-                        Text("/ 10")
-                            .font(.caption)
-                            .foregroundColor(.white.opacity(0.6))
-                    }
-                }
-                
-                Spacer()
-                
-                // Session duration
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text("Session")
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.7))
-                    Text(duration)
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.blue)
-                }
-            }
-        }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white.opacity(0.1))
-        )
-    }
     
     private var tutorialContentView: some View {
         VStack(spacing: 20) {
