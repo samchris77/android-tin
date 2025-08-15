@@ -1,8 +1,8 @@
-# TinnitusRelief - Project Structure Documentation
+# TinnitusTracker - Project Structure Documentation
 
 ## 📱 Project Overview
 
-**TinnitusRelief** is a comprehensive iOS application designed to help users manage tinnitus symptoms through personalized frequency matching, sound therapy, progress tracking, and evidence-based techniques. Built with SwiftUI and leveraging advanced audio processing capabilities.
+**TinnitusTracker** is a comprehensive iOS application designed to help users manage tinnitus symptoms through personalized frequency matching, sound therapy, progress tracking, and evidence-based techniques. Built with SwiftUI and leveraging advanced audio processing capabilities.
 
 ## 🛠️ Technology Stack
 
@@ -16,19 +16,19 @@
 ## 📁 Directory Structure
 
 ```
-TinnitusRelief.xcodeproj/          # Xcode project configuration
+TinnitusTracker.xcodeproj/          # Xcode project configuration
 ├── project.pbxproj                # Project build settings and file references
 ├── project.xcworkspace/           # Workspace configuration
 └── xcuserdata/                    # User-specific Xcode settings
 
-TinnitusRelief/                    # Main application source
-├── TinnitusReliefApp.swift        # App entry point and configuration
+TinnitusTracker/                    # Main application source
+├── TinnitusTrackerApp.swift        # App entry point and configuration
 ├── ContentView.swift              # Root view container
 ├── Info.plist                     # App configuration and permissions
 │
 ├── Models/                        # Data models and persistence
 │   ├── Persistence.swift          # Core Data stack configuration
-│   └── TinnitusRelief.xcdatamodeld/ # Core Data model definition
+│   └── TinnitusTracker.xcdatamodeld/ # Core Data model definition
 │
 ├── Views/                         # UI components and screens
 │   ├── Components/                # Reusable UI components
@@ -205,7 +205,7 @@ class UnifiedAudioEngineManager: ObservableObject {
 
 | File | Purpose | Key Features |
 |------|---------|-------------|
-| `TinnitusReliefApp.swift` | App entry point | Core Data integration, window configuration |
+| `TinnitusTrackerApp.swift` | App entry point | Core Data integration, window configuration |
 | `ContentView.swift` | Root view container | Environment setup, navigation root |
 | `MainTabView.swift` | Tab navigation system | 6-tab structure, home dashboard, therapy, settings |
 | `UnifiedAudioEngineManager.swift` | Audio engine service | Frequency generation, volume mixing, session management |
@@ -233,7 +233,7 @@ class UnifiedAudioEngineManager: ObservableObject {
 ### Building the Project
 ```bash
 cd /Users/midnight/Documents/Projects/tin
-open TinnitusRelief.xcodeproj
+open TinnitusTracker.xcodeproj
 ```
 
 ### Testing Audio Features

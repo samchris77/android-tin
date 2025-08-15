@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct TinnitusReliefApp: App {
+struct TinnitusTrackerApp: App {
     let persistenceController = PersistenceController.shared
 
     var body: some Scene {
