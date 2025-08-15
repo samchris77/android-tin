@@ -988,32 +988,28 @@ struct ReminderListItem: View {
                 
                 Spacer()
                 
-                Toggle("", isOn: .constant(reminder.isEnabled))
-                    .labelsHidden()
-                    .toggleStyle(SwitchToggleStyle(tint: .orange))
-                    .onTapGesture {
-                        onToggle()
-                    }
+                Button(action: onToggle) {
+                    Toggle("", isOn: .constant(reminder.isEnabled))
+                        .labelsHidden()
+                        .toggleStyle(SwitchToggleStyle(tint: .orange))
+                        .allowsHitTesting(false)
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
             .background(Color.clear)
+            .contentShape(Rectangle()) // Ensure entire area is tappable
             .onTapGesture {
                 showingActionSheet = true
             }
-            .actionSheet(isPresented: $showingActionSheet) {
-                ActionSheet(
-                    title: Text("Reminder Options"),
-                    buttons: [
-                        .default(Text("Edit")) {
-                            onEdit()
-                        },
-                        .destructive(Text("Delete")) {
-                            showingDeleteAlert = true
-                        },
-                        .cancel()
-                    ]
-                )
+            .confirmationDialog("Reminder Options", isPresented: $showingActionSheet, titleVisibility: .visible) {
+                Button("Edit") {
+                    onEdit()
+                }
+                Button("Delete", role: .destructive) {
+                    showingDeleteAlert = true
+                }
+                Button("Cancel", role: .cancel) { }
             }
             .alert("Delete Reminder", isPresented: $showingDeleteAlert) {
                 Button("Cancel", role: .cancel) { }
