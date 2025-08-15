@@ -293,37 +293,29 @@ struct DiaryView: View {
                 }
             }
             
-            // Two weeks side by side
-            HStack(spacing: 12) {
-                let summaries = viewModel.getWeeklySummariesForOffset(weekOffset)
-                ForEach(Array(summaries.enumerated()), id: \.element.weekOf) { index, summary in
-                    WeeklySummaryCard(
-                        summary: summary,
-                        showChangeIndicators: index == 1 // Only show indicators on the second (right) card
-                    )
-                    .frame(maxWidth: .infinity)
+            // Weekly summaries with page-style transitions
+            TabView(selection: $weekOffset) {
+                ForEach(-3...0, id: \.self) { offset in
+                    let summaries = viewModel.getWeeklySummariesForOffset(offset)
+                    HStack(spacing: 12) {
+                        ForEach(Array(summaries.enumerated()), id: \.element.weekOf) { index, summary in
+                            WeeklySummaryCard(
+                                summary: summary,
+                                showChangeIndicators: index == 1 // Only show indicators on the second (right) card
+                            )
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .tag(offset)
                 }
             }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .frame(height: 120) // Fixed height to prevent layout issues
         }
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(.ultraThinMaterial)
-        )
-        .gesture(
-            DragGesture()
-                .onEnded { gesture in
-                    let threshold: CGFloat = 50
-                    if gesture.translation.width > threshold && weekOffset > -3 {
-                        withAnimation(.easeInOut) {
-                            weekOffset -= 1 // Swipe right to go back in time
-                        }
-                    } else if gesture.translation.width < -threshold && weekOffset < 0 {
-                        withAnimation(.easeInOut) {
-                            weekOffset += 1 // Swipe left to go forward in time
-                        }
-                    }
-                }
         )
     }
     
@@ -635,6 +627,7 @@ struct EntryFormView: View {
     @State private var stressLevel: Int = 5
     @State private var sessionDurationMinutes: Double = 0.0
     @State private var isManuallyEdited: Bool = false
+    @State private var showAudioOffFeedback = false
     
     // Computed property to determine which duration to display
     private var effectiveSessionDuration: Double {
@@ -656,26 +649,40 @@ struct EntryFormView: View {
             isManuallyEdited = true
             sessionDurationMinutes = effectiveSessionDuration
         } else {
-            // Switch back to live mode (if audio is playing)
+            // Try to switch to live mode
             if audioManager.isFrequencyPlaying && audioManager.currentSessionDuration > 0 {
                 isManuallyEdited = false
+            } else {
+                // Provide feedback that audio is required for live tracking
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    showAudioOffFeedback = true
+                }
+                
+                // Auto-hide feedback after 2.5 seconds
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        showAudioOffFeedback = false
+                    }
+                }
             }
         }
     }
     
     // Helper function for updating session duration from drag gesture
     private func updateSessionDuration(from dragValue: DragGesture.Value) {
-        let sensitivity: Double = 0.02
-        let change = Double(dragValue.translation.height) * sensitivity
+        let sensitivity: Double = 0.007
+        let change = Double(-dragValue.translation.height) * sensitivity
         let newValue = max(0, min(120, sessionDurationMinutes + change))
         
-        if abs(newValue - sessionDurationMinutes) >= 1.0 {
-            sessionDurationMinutes = round(newValue)
+        if abs(newValue - sessionDurationMinutes) >= 0.2 {
+            sessionDurationMinutes = newValue
             isManuallyEdited = true
             
-            // Haptic feedback
-            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-            impactFeedback.impactOccurred()
+            // Haptic feedback for every 1 minute change
+            if abs(newValue - sessionDurationMinutes) >= 1.0 {
+                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                impactFeedback.impactOccurred()
+            }
         }
     }
     
@@ -684,6 +691,10 @@ struct EntryFormView: View {
         DragGesture()
             .onChanged { value in
                 updateSessionDuration(from: value)
+            }
+            .onEnded { _ in
+                // Round to nearest minute when gesture ends for clean final value
+                sessionDurationMinutes = round(sessionDurationMinutes)
             }
     }
     
@@ -709,28 +720,35 @@ struct EntryFormView: View {
                         .foregroundColor(.primary)
                     
                     Spacer()
-                    
-                    if isLiveTracking {
-                        HStack(spacing: 4) {
-                            Circle()
-                                .fill(Color.green)
-                                .frame(width: 6, height: 6)
-                            Text("Live")
-                                .font(.caption2)
-                                .fontWeight(.medium)
-                                .foregroundColor(.green)
-                        }
-                    }
                 }
                 
                 HStack {
-                    if isLiveTracking {
-                        Text("\(Int(effectiveSessionDuration)) min")
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.green)
-                    } else {
-                        VStack(spacing: 2) {
+                    // Fixed height container for both modes to prevent layout shifts
+                    VStack(spacing: 2) {
+                        if isLiveTracking {
+                            // Live mode: Use spacers to maintain height consistency
+                            Spacer()
+                                .frame(height: 8) // Same as chevron height
+                            
+                            Text("\(Int(effectiveSessionDuration)) min")
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.green)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.green.opacity(0.1))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 6)
+                                                .stroke(Color.green.opacity(0.3), lineWidth: 1)
+                                        )
+                                )
+                            
+                            Spacer()
+                                .frame(height: 8) // Same as chevron height
+                        } else {
+                            // Manual mode: Keep existing layout
                             Image(systemName: "chevron.up")
                                 .font(.caption2)
                                 .foregroundColor(.gray.opacity(0.6))
@@ -743,27 +761,33 @@ struct EntryFormView: View {
                                 .background(
                                     RoundedRectangle(cornerRadius: 6)
                                         .fill(Color.blue.opacity(0.1))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 6)
+                                                .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                                        )
                                 )
                             
                             Image(systemName: "chevron.down")
                                 .font(.caption2)
                                 .foregroundColor(.gray.opacity(0.6))
                         }
-                        .gesture(sessionDurationDragGesture)
                     }
+                    .frame(height: 60) // Fixed height to prevent layout changes
+                    .gesture(isLiveTracking ? nil : sessionDurationDragGesture)
                     
                     Spacer()
                     
-                    Button(action: toggleMode) {
-                        HStack(spacing: 6) {
-                            Image(systemName: isLiveTracking ? "largecircle.fill.circle" : "circle")
-                                .font(.body)
-                                .foregroundColor(isLiveTracking ? .green : .gray)
-                            
-                            Text("Live")
-                                .font(.body)
-                                .foregroundColor(.primary)
-                        }
+                    HStack(spacing: 8) {
+                        Text("Live")
+                            .font(.caption)
+                            .foregroundColor(isLiveTracking ? .green : .gray)
+                        
+                        Toggle("", isOn: Binding(
+                            get: { isLiveTracking },
+                            set: { _ in toggleMode() }
+                        ))
+                        .toggleStyle(SwitchToggleStyle(tint: .green))
+                        .labelsHidden()
                     }
                 }
             }
@@ -772,6 +796,39 @@ struct EntryFormView: View {
             .background(
                 RoundedRectangle(cornerRadius: 10)
                     .fill(.ultraThinMaterial)
+            )
+            .overlay(
+                // Audio off feedback overlay
+                Group {
+                    if showAudioOffFeedback {
+                        VStack {
+                            Spacer()
+                            HStack {
+                                Spacer()
+                                VStack(spacing: 4) {
+                                    Image(systemName: "speaker.slash.fill")
+                                        .font(.caption)
+                                        .foregroundColor(.orange)
+                                    Text("Start audio to enable live tracking")
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                        .multilineTextAlignment(.center)
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(.ultraThinMaterial)
+                                        .shadow(radius: 4, x: 0, y: 2)
+                                )
+                                Spacer()
+                            }
+                            Spacer()
+                                .frame(height: 8)
+                        }
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                    }
+                }
             )
             
             Button(action: {
