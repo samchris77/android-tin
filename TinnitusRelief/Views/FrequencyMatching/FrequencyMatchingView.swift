@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct FrequencyMatchingView: View {
-    @StateObject private var viewModel = FrequencyMatchingViewModel()
+    @ObservedObject var viewModel: FrequencyMatchingViewModel
     @Binding var selectedTab: Int
     
     var body: some View {
@@ -118,5 +118,5 @@ struct FrequencyMatchingView: View {
 }
 
 #Preview {
-    FrequencyMatchingView(selectedTab: .constant(1))
+    FrequencyMatchingView(viewModel: FrequencyMatchingViewModel(), selectedTab: .constant(1))
 }

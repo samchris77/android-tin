@@ -1,5 +1,166 @@
 import SwiftUI
 import UserNotifications
+import CoreData
+
+// MARK: - Tutorial System
+
+enum TutorialStep: Int, CaseIterable {
+    case welcome = 0
+    case frequencyDemo
+    case logDemo
+    case profileDemo
+    
+    var title: String {
+        switch self {
+        case .welcome:
+            return "Welcome to Tinnitus Relief"
+        case .frequencyDemo:
+            return "Match Your Tinnitus Frequency"
+        case .logDemo:
+            return "Track Your Progress"
+        case .profileDemo:
+            return "Setup Reminders"
+        }
+    }
+    
+    var description: String {
+        switch self {
+        case .welcome:
+            return "This app helps reduce your tinnitus through sound therapy. Set volume to 70% of your tinnitus loudness and listen for about 2 hours daily for best results."
+        case .frequencyDemo:
+            return "Drag the control ball to match your tinnitus frequency and sound type. The arrows show you can move it in any direction."
+        case .logDemo:
+            return "Add entries, view your progress charts, and review your therapy history to track improvement over time."
+        case .profileDemo:
+            return "Set up daily reminders to help you maintain a consistent 2-hour therapy routine for maximum effectiveness."
+        }
+    }
+    
+    var buttonText: String {
+        switch self {
+        case .welcome, .frequencyDemo, .logDemo:
+            return "Next"
+        case .profileDemo:
+            return "Start Therapy"
+        }
+    }
+    
+    var hasSkipOption: Bool {
+        switch self {
+        case .welcome:
+            return true
+        default:
+            return false
+        }
+    }
+    
+    var targetTab: Int? {
+        switch self {
+        case .welcome:
+            return nil // Stay on current tab
+        case .frequencyDemo:
+            return 0 // Frequency tab
+        case .logDemo:
+            return 1 // Log tab
+        case .profileDemo:
+            return 2 // Profile tab
+        }
+    }
+}
+
+class TutorialManager: ObservableObject {
+    @Published var isShowingTutorial: Bool = false
+    @Published var currentStep: TutorialStep = .welcome
+    
+    private let persistenceController: PersistenceController
+    private var onTabChange: ((Int) -> Void)?
+    
+    init(persistenceController: PersistenceController) {
+        self.persistenceController = persistenceController
+        checkOnboardingStatus()
+    }
+    
+    func setTabChangeCallback(_ callback: @escaping (Int) -> Void) {
+        self.onTabChange = callback
+    }
+    
+    func checkOnboardingStatus() {
+        let context = persistenceController.container.viewContext
+        let request: NSFetchRequest<UserProfile> = UserProfile.fetchRequest()
+        
+        do {
+            let profiles = try context.fetch(request)
+            if let profile = profiles.first {
+                isShowingTutorial = !profile.hasCompletedOnboarding
+            } else {
+                let newProfile = UserProfile(context: context)
+                newProfile.hasCompletedOnboarding = false
+                newProfile.id = UUID()
+                try context.save()
+                isShowingTutorial = true
+            }
+        } catch {
+            print("Error checking onboarding status: \(error)")
+            isShowingTutorial = true
+        }
+    }
+    
+    func nextStep() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            let nextStepRawValue = currentStep.rawValue + 1
+            if let nextStep = TutorialStep(rawValue: nextStepRawValue) {
+                currentStep = nextStep
+                // Navigate to appropriate tab if needed
+                if let targetTab = nextStep.targetTab {
+                    onTabChange?(targetTab)
+                }
+            } else {
+                completeTutorial()
+            }
+        }
+    }
+    
+    func skipTutorial() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            completeTutorial()
+        }
+    }
+    
+    func completeTutorial() {
+        let context = persistenceController.container.viewContext
+        let request: NSFetchRequest<UserProfile> = UserProfile.fetchRequest()
+        
+        do {
+            let profiles = try context.fetch(request)
+            if let profile = profiles.first {
+                profile.hasCompletedOnboarding = true
+                try context.save()
+            }
+        } catch {
+            print("Error completing tutorial: \(error)")
+        }
+        
+        isShowingTutorial = false
+    }
+    
+    func resetTutorial() {
+        let context = persistenceController.container.viewContext
+        let request: NSFetchRequest<UserProfile> = UserProfile.fetchRequest()
+        
+        do {
+            let profiles = try context.fetch(request)
+            if let profile = profiles.first {
+                profile.hasCompletedOnboarding = false
+                try context.save()
+            }
+        } catch {
+            print("Error resetting tutorial: \(error)")
+        }
+        
+        currentStep = .welcome
+        isShowingTutorial = true
+    }
+}
 
 // MARK: - Reminder Data Models
 enum WeekDay: String, CaseIterable, Codable {
@@ -172,36 +333,96 @@ class ReminderManager: ObservableObject {
 // MARK: - Main Tab View
 struct MainTabView: View {
     @State private var selectedTab = 0
+    @Environment(\.managedObjectContext) private var viewContext
+    @StateObject private var tutorialManager: TutorialManager
+    @StateObject private var frequencyViewModel = FrequencyMatchingViewModel()
+    
+    init() {
+        let persistenceController = PersistenceController.shared
+        self._tutorialManager = StateObject(wrappedValue: TutorialManager(persistenceController: persistenceController))
+    }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Frequency Controller positioned at top (shown on all pages)
-            FrequencyController()
-                .zIndex(1)
-            
-            TabView(selection: $selectedTab) {
-                FrequencyMatchingView(selectedTab: $selectedTab)
-                    .tabItem {
-                        Image(systemName: selectedTab == 0 ? "waveform.path" : "waveform.path")
-                        Text("Frequency")
-                    }
-                    .tag(0)
+        ZStack {
+            VStack(spacing: 0) {
+                // Frequency Controller positioned at top (shown on all pages)
+                FrequencyController()
+                    .zIndex(1)
                 
-                DiaryView()
-                    .tabItem {
-                        Image(systemName: selectedTab == 1 ? "book.fill" : "book")
-                        Text("Log")
-                    }
-                    .tag(1)
-                
-                CombinedProfileView()
-                    .tabItem {
-                        Image(systemName: selectedTab == 2 ? "person.fill" : "person")
-                        Text("Profile")
-                    }
-                    .tag(2)
+                TabView(selection: $selectedTab) {
+                    FrequencyMatchingView(viewModel: frequencyViewModel, selectedTab: $selectedTab)
+                        .tabItem {
+                            Image(systemName: selectedTab == 0 ? "waveform.path" : "waveform.path")
+                            Text("Frequency")
+                        }
+                        .tag(0)
+                    
+                    DiaryView()
+                        .tabItem {
+                            Image(systemName: selectedTab == 1 ? "book.fill" : "book")
+                            Text("Log")
+                        }
+                        .tag(1)
+                    
+                    CombinedProfileView(tutorialManager: tutorialManager)
+                        .tabItem {
+                            Image(systemName: selectedTab == 2 ? "person.fill" : "person")
+                            Text("Profile")
+                        }
+                        .tag(2)
+                }
+                .accentColor(.orange)
             }
-            .accentColor(.orange)
+            
+            // Tutorial overlay
+            if tutorialManager.isShowingTutorial {
+                tutorialOverlay
+            }
+        }
+        .onAppear {
+            // Set up tutorial tab navigation callback
+            tutorialManager.setTabChangeCallback { newTab in
+                selectedTab = newTab
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var tutorialOverlay: some View {
+        switch tutorialManager.currentStep {
+        case .welcome:
+            WelcomeTutorialView(tutorialManager: tutorialManager)
+                .transition(.opacity)
+        case .frequencyDemo:
+            GeometryReader { geometry in
+                // Account for FrequencyController height (~56px) + padding
+                let frequencyControllerHeight: CGFloat = 56
+                let safeArea = geometry.safeAreaInsets
+                let tabViewStartY = safeArea.top + frequencyControllerHeight
+                
+                // Use the same calculations as FrequencyMatchingView but adjusted for FrequencyController offset
+                let availableHeight = geometry.size.height - tabViewStartY - safeArea.bottom - 60
+                let availableWidth = geometry.size.width - 20
+                let controlAreaFrame = CGRect(
+                    x: 10,
+                    y: tabViewStartY + 40,
+                    width: availableWidth,
+                    height: availableHeight
+                )
+                
+                let controlPosition = CGPoint(
+                    x: controlAreaFrame.minX + controlAreaFrame.width * frequencyViewModel.controlPosition.x,
+                    y: controlAreaFrame.minY + controlAreaFrame.height * frequencyViewModel.controlPosition.y
+                )
+                FrequencyDemoOverlayView(tutorialManager: tutorialManager, controlPosition: controlPosition)
+            }
+            .transition(.opacity)
+        case .logDemo:
+            LogDemoOverlayView(tutorialManager: tutorialManager)
+                .transition(.opacity)
+        case .profileDemo:
+            TransparentTutorialOverlayView(tutorialManager: tutorialManager)
+                .transition(.opacity)
         }
     }
 }
@@ -210,12 +431,15 @@ struct CombinedProfileView: View {
     @StateObject private var reminderManager = ReminderManager()
     @State private var showingReminderEdit = false
     @State private var editingReminder: ReminderItem?
+    let tutorialManager: TutorialManager
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
                     settingsSection
+                    
+                    tutorialSection
                     
                     aboutSection
                     
@@ -251,6 +475,52 @@ struct CombinedProfileView: View {
                     showingReminderEdit: $showingReminderEdit,
                     editingReminder: $editingReminder
                 )
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(.ultraThinMaterial)
+            )
+        }
+    }
+    
+    private var tutorialSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Help & Tutorial")
+                .font(.headline)
+                .foregroundColor(.primary)
+            
+            VStack(spacing: 0) {
+                Button(action: {
+                    tutorialManager.resetTutorial()
+                }) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "graduationcap")
+                            .font(.system(size: 20))
+                            .foregroundColor(.orange)
+                            .frame(width: 32)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Restart Tutorial")
+                                .font(.body)
+                                .foregroundColor(.primary)
+                                .multilineTextAlignment(.leading)
+                            
+                            Text("Learn how to use the app effectively")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.leading)
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(PlainButtonStyle())
             }
             .background(
                 RoundedRectangle(cornerRadius: 12)
@@ -777,6 +1047,824 @@ struct WeekDayButton: View {
                 )
         }
         .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Tutorial UI Components
+
+struct ArrowIndicatorView: View {
+    let direction: ArrowDirection
+    @State private var isAnimating = false
+    
+    enum ArrowDirection {
+        case up, down, left, right
+        
+        var angle: Double {
+            switch self {
+            case .up: return 0
+            case .right: return 90
+            case .down: return 180
+            case .left: return 270
+            }
+        }
+        
+        var offset: (x: CGFloat, y: CGFloat) {
+            switch self {
+            case .up: return (0, -40)
+            case .right: return (40, 0)
+            case .down: return (0, 40)
+            case .left: return (-40, 0)
+            }
+        }
+    }
+    
+    var body: some View {
+        Image(systemName: "arrow.up")
+            .font(.title2)
+            .foregroundColor(.orange)
+            .rotationEffect(.degrees(direction.angle))
+            .offset(x: direction.offset.x, y: direction.offset.y)
+            .scaleEffect(isAnimating ? 1.2 : 1.0)
+            .opacity(isAnimating ? 1.0 : 0.7)
+            .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: isAnimating)
+            .onAppear {
+                isAnimating = true
+            }
+    }
+}
+
+struct FrequencyDemoOverlayView: View {
+    @ObservedObject var tutorialManager: TutorialManager
+    let controlPosition: CGPoint
+    
+    var body: some View {
+        ZStack {
+            // Very light background to show frequency view
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+            
+            // Arrow indicators around control ball
+            ZStack {
+                ForEach(ArrowIndicatorView.ArrowDirection.allCases, id: \.self) { direction in
+                    ArrowIndicatorView(direction: direction)
+                }
+            }
+            .position(controlPosition)
+            
+            // Tutorial content at bottom
+            VStack(spacing: 0) {
+                Spacer()
+                
+                tutorialContentView
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 50)
+            }
+        }
+    }
+    
+    private var tutorialContentView: some View {
+        VStack(spacing: 20) {
+            stepIndicator
+            
+            VStack(spacing: 12) {
+                Text(tutorialManager.currentStep.title)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.center)
+                
+                Text(tutorialManager.currentStep.description)
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(nil)
+            }
+            
+            Button(action: {
+                tutorialManager.nextStep()
+            }) {
+                Text(tutorialManager.currentStep.buttonText)
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color.orange)
+                    .cornerRadius(12)
+            }
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.ultraThickMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                )
+        )
+    }
+    
+    private var stepIndicator: some View {
+        HStack(spacing: 8) {
+            ForEach(TutorialStep.allCases, id: \.rawValue) { step in
+                Circle()
+                    .fill(step.rawValue <= tutorialManager.currentStep.rawValue ? Color.orange : Color.gray.opacity(0.3))
+                    .frame(width: 8, height: 8)
+                    .scaleEffect(step == tutorialManager.currentStep ? 1.2 : 1.0)
+                    .animation(.easeInOut(duration: 0.2), value: tutorialManager.currentStep)
+            }
+        }
+        .padding(.bottom, 8)
+    }
+}
+
+// Extension to make ArrowDirection CaseIterable and Hashable
+extension ArrowIndicatorView.ArrowDirection: CaseIterable, Hashable {
+    static var allCases: [ArrowIndicatorView.ArrowDirection] {
+        return [.up, .right, .down, .left]
+    }
+}
+
+struct TransparentTutorialOverlayView: View {
+    @ObservedObject var tutorialManager: TutorialManager
+    
+    var body: some View {
+        ZStack {
+            // Very light background to show underlying content
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                Spacer()
+                
+                tutorialContentView
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 50)
+            }
+        }
+    }
+    
+    private var tutorialContentView: some View {
+        VStack(spacing: 20) {
+            stepIndicator
+            
+            VStack(spacing: 12) {
+                Text(tutorialManager.currentStep.title)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.center)
+                
+                Text(tutorialManager.currentStep.description)
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(nil)
+            }
+            
+            VStack(spacing: 12) {
+                Button(action: {
+                    if tutorialManager.currentStep == .profileDemo {
+                        tutorialManager.completeTutorial()
+                    } else {
+                        tutorialManager.nextStep()
+                    }
+                }) {
+                    Text(tutorialManager.currentStep.buttonText)
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.orange)
+                        .cornerRadius(12)
+                }
+                
+                if tutorialManager.currentStep.hasSkipOption {
+                    Button(action: {
+                        tutorialManager.skipTutorial()
+                    }) {
+                        Text("Skip Tutorial")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.ultraThickMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                )
+        )
+    }
+    
+    private var stepIndicator: some View {
+        HStack(spacing: 8) {
+            ForEach(TutorialStep.allCases, id: \.rawValue) { step in
+                Circle()
+                    .fill(step.rawValue <= tutorialManager.currentStep.rawValue ? Color.orange : Color.gray.opacity(0.3))
+                    .frame(width: 8, height: 8)
+                    .scaleEffect(step == tutorialManager.currentStep ? 1.2 : 1.0)
+                    .animation(.easeInOut(duration: 0.2), value: tutorialManager.currentStep)
+            }
+        }
+        .padding(.bottom, 8)
+    }
+}
+
+struct WelcomeTutorialView: View {
+    @ObservedObject var tutorialManager: TutorialManager
+    
+    var body: some View {
+        ZStack {
+            // Completely opaque background with app branding colors
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color.orange,
+                    Color.blue,
+                    Color.orange
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+            
+            // Solid overlay for better text readability
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+            
+            VStack(spacing: 40) {
+                Spacer()
+                
+                VStack(spacing: 24) {
+                    Image(systemName: "ear")
+                        .font(.system(size: 80))
+                        .foregroundColor(.orange)
+                        .symbolEffect(.pulse.byLayer, options: .repeating)
+                    
+                    VStack(spacing: 8) {
+                        Text("Welcome to")
+                            .font(.title2)
+                            .foregroundColor(.white.opacity(0.9))
+                        
+                        Text("Tinnitus Relief")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                    }
+                }
+                
+                VStack(spacing: 20) {
+                    TutorialFeatureRow(
+                        icon: "waveform",
+                        title: "Match Your Tinnitus",
+                        description: "Find the exact frequency and sound type"
+                    )
+                    
+                    TutorialFeatureRow(
+                        icon: "speaker.wave.2",
+                        title: "Set Optimal Volume",
+                        description: "70% of your tinnitus loudness for best results"
+                    )
+                    
+                    TutorialFeatureRow(
+                        icon: "clock",
+                        title: "2 Hours Daily",
+                        description: "Consistent therapy for effective relief"
+                    )
+                }
+                .padding(.horizontal, 32)
+                
+                Spacer()
+                
+                VStack(spacing: 16) {
+                    Button(action: {
+                        tutorialManager.nextStep()
+                    }) {
+                        Text("Start Tutorial")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(Color.orange)
+                            .cornerRadius(16)
+                    }
+                    
+                    Button(action: {
+                        tutorialManager.skipTutorial()
+                    }) {
+                        Text("Skip for Now")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(.horizontal, 32)
+                .padding(.bottom, 40)
+            }
+        }
+    }
+}
+
+private struct TutorialFeatureRow: View {
+    let icon: String
+    let title: String
+    let description: String
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(.orange)
+                .frame(width: 24)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.white)
+                
+                Text(description)
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.8))
+            }
+            
+            Spacer()
+        }
+        .padding(.vertical, 8)
+    }
+}
+
+struct LogDemoOverlayView: View {
+    @ObservedObject var tutorialManager: TutorialManager
+    @State private var animationPhase: Int = 0
+    @State private var demoTinnitus: Int = 7
+    @State private var demoStress: Int = 6
+    @State private var showSaveButton = false
+    @State private var showSaveConfirmation = false
+    
+    private let animationTimer = Timer.publish(every: 2.5, on: .main, in: .common).autoconnect()
+    
+    var body: some View {
+        ZStack {
+            // Complete background coverage to prevent any UI bleeding
+            Rectangle()
+                .fill(Color.black.opacity(0.95))
+                .ignoresSafeArea(.all)
+                .allowsHitTesting(true) // Block all touches to underlying content
+            
+            VStack(spacing: 0) {
+                // Top area with tab highlight
+                HStack {
+                    if animationPhase >= 1 {
+                        TabHighlight()
+                            .padding(.leading, 20)
+                    }
+                    Spacer()
+                }
+                .frame(height: 60)
+                .padding(.top, 40)
+                
+                // Main demo content area - contained and elevated
+                VStack(spacing: 24) {
+                    // Demo header
+                    VStack(spacing: 8) {
+                        Text("Aug 15, 2025")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        
+                        Text("11:29 AM")
+                            .font(.subheadline)
+                            .foregroundColor(.white.opacity(0.7))
+                        
+                        HStack {
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 2) {
+                                Text("Entry")
+                                    .font(.caption2)
+                                    .foregroundColor(.white.opacity(0.7))
+                                Text("#3")
+                                    .font(.title3)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.orange)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.white.opacity(0.1))
+                    )
+                    
+                    // Tinnitus demo slider
+                    DemoSlider(
+                        title: "Tinnitus Level",
+                        value: demoTinnitus,
+                        color: .orange,
+                        isAnimating: animationPhase == 2,
+                        showHighlight: animationPhase >= 2
+                    )
+                    
+                    // Stress demo slider
+                    DemoSlider(
+                        title: "Current Stress", 
+                        value: demoStress,
+                        color: .red,
+                        isAnimating: animationPhase == 3,
+                        showHighlight: animationPhase >= 3
+                    )
+                    
+                    // Session duration demo (static)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Session Duration")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.white)
+                        
+                        HStack {
+                            VStack(spacing: 2) {
+                                Spacer()
+                                    .frame(height: 8)
+                                
+                                Text("0 min")
+                                    .font(.title3)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.blue)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(Color.blue.opacity(0.2))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .stroke(Color.blue.opacity(0.4), lineWidth: 1)
+                                            )
+                                    )
+                                
+                                Spacer()
+                                    .frame(height: 8)
+                            }
+                            .frame(height: 60)
+                            
+                            Spacer()
+                            
+                            HStack(spacing: 8) {
+                                Text("Live")
+                                    .font(.caption)
+                                    .foregroundColor(.white.opacity(0.7))
+                                
+                                Toggle("", isOn: .constant(false))
+                                    .toggleStyle(SwitchToggleStyle(tint: .green))
+                                    .labelsHidden()
+                                    .disabled(true)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.white.opacity(0.1))
+                    )
+                    
+                    // Demo save button
+                    if showSaveButton {
+                        DemoSaveButton(isAnimating: animationPhase == 4, showHighlight: animationPhase >= 4)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                
+                Spacer()
+                
+                // Tutorial content at bottom
+                tutorialContentView
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 50)
+            }
+            
+            // Save confirmation demo (centered overlay)
+            if showSaveConfirmation {
+                DemoSaveConfirmation()
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+            }
+        }
+        .onAppear {
+            startAnimation()
+        }
+        .onReceive(animationTimer) { _ in
+            advanceAnimation()
+        }
+    }
+    
+    private func startAnimation() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            withAnimation(.easeInOut(duration: 0.5)) {
+                animationPhase = 1
+            }
+        }
+    }
+    
+    private func advanceAnimation() {
+        switch animationPhase {
+        case 1:
+            // Start tinnitus animation
+            withAnimation(.easeInOut(duration: 2.0)) {
+                animationPhase = 2
+                demoTinnitus = 4
+            }
+        case 2:
+            // Start stress animation
+            withAnimation(.easeInOut(duration: 2.0)) {
+                animationPhase = 3
+                demoStress = 2
+            }
+        case 3:
+            // Show save button and start save animation
+            withAnimation(.easeInOut(duration: 0.5)) {
+                showSaveButton = true
+                animationPhase = 4
+            }
+        case 4:
+            // Show save confirmation
+            withAnimation(.easeInOut(duration: 0.3)) {
+                showSaveConfirmation = true
+                animationPhase = 5
+            }
+        case 5:
+            // Hide confirmation and restart
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    showSaveConfirmation = false
+                    animationPhase = 0
+                    demoTinnitus = 7
+                    demoStress = 6
+                    showSaveButton = false
+                }
+                // Restart the animation
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    startAnimation()
+                }
+            }
+        default:
+            break
+        }
+    }
+    
+    private var tutorialContentView: some View {
+        VStack(spacing: 20) {
+            stepIndicator
+            
+            VStack(spacing: 12) {
+                Text(tutorialManager.currentStep.title)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.center)
+                
+                Text("Watch the demonstration below to learn how to track your symptoms")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(nil)
+            }
+            
+            Button(action: {
+                tutorialManager.nextStep()
+            }) {
+                Text(tutorialManager.currentStep.buttonText)
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color.orange)
+                    .cornerRadius(12)
+            }
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.ultraThickMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                )
+        )
+    }
+    
+    private var stepIndicator: some View {
+        HStack(spacing: 8) {
+            ForEach(TutorialStep.allCases, id: \.rawValue) { step in
+                Circle()
+                    .fill(step.rawValue <= tutorialManager.currentStep.rawValue ? Color.orange : Color.gray.opacity(0.3))
+                    .frame(width: 8, height: 8)
+                    .scaleEffect(step == tutorialManager.currentStep ? 1.2 : 1.0)
+                    .animation(.easeInOut(duration: 0.2), value: tutorialManager.currentStep)
+            }
+        }
+        .padding(.bottom, 8)
+    }
+}
+
+struct TabHighlight: View {
+    var body: some View {
+        Text("Add")
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundColor(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.orange)
+                    .shadow(color: .orange.opacity(0.6), radius: 8, x: 0, y: 0)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.orange.opacity(0.8), lineWidth: 2)
+            )
+    }
+}
+
+struct DemoSlider: View {
+    let title: String
+    let value: Int
+    let color: Color
+    let isAnimating: Bool
+    let showHighlight: Bool
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sliderHeader
+            sliderContent
+        }
+        .padding(20)
+        .background(sliderBackground)
+        .scaleEffect(showHighlight ? 1.05 : 1.0)
+        .animation(.easeInOut(duration: 0.3), value: showHighlight)
+    }
+    
+    private var sliderHeader: some View {
+        HStack {
+            Text(title)
+                .font(.headline)
+                .fontWeight(.semibold)
+                .foregroundColor(.white)
+            
+            Spacer()
+            
+            Text("\(value)")
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(color)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(color.opacity(0.2))
+                )
+        }
+    }
+    
+    private var sliderContent: some View {
+        VStack(spacing: 8) {
+            sliderTrack
+            stepMarks
+        }
+    }
+    
+    private var sliderTrack: some View {
+        GeometryReader { geometry in
+            let trackWidth = geometry.size.width - 40
+            ZStack(alignment: .leading) {
+                // Background track
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(height: 6)
+                
+                // Active track
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(color)
+                    .frame(width: CGFloat(value) / 10 * trackWidth, height: 6)
+                
+                // Slider handle with glow effect
+                Circle()
+                    .fill(color)
+                    .frame(width: 20, height: 20)
+                    .shadow(color: color.opacity(0.3), radius: 3, x: 0, y: 2)
+                    .shadow(color: isAnimating ? color : .clear, radius: isAnimating ? 12 : 0, x: 0, y: 0)
+                    .offset(x: CGFloat(value) / 10 * (trackWidth - 20))
+                    .scaleEffect(isAnimating ? 1.3 : 1.0)
+                    .animation(.easeInOut(duration: 0.3).repeatForever(autoreverses: true), value: isAnimating)
+            }
+            .padding(.horizontal, 20)
+        }
+        .frame(height: 20)
+    }
+    
+    private var stepMarks: some View {
+        HStack {
+            ForEach(0...10, id: \.self) { step in
+                VStack(spacing: 4) {
+                    Rectangle()
+                        .fill(step == value ? color : Color.gray.opacity(0.4))
+                        .frame(width: 2, height: step % 5 == 0 ? 12 : 8)
+                    
+                    if step % 5 == 0 {
+                        Text("\(step)")
+                            .font(.caption2)
+                            .foregroundColor(step == value ? color : .white.opacity(0.6))
+                            .fontWeight(step == value ? .semibold : .regular)
+                    }
+                }
+                
+                if step < 10 {
+                    Spacer()
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+    }
+    
+    private var sliderBackground: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white.opacity(0.1))
+            
+            if showHighlight {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(color.opacity(0.2))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(color, lineWidth: 2)
+                    )
+            }
+        }
+    }
+}
+
+struct DemoSaveButton: View {
+    let isAnimating: Bool
+    let showHighlight: Bool
+    
+    var body: some View {
+        HStack {
+            Image(systemName: "checkmark.circle.fill")
+            Text("Save Entry")
+        }
+        .font(.headline)
+        .foregroundColor(.white)
+        .frame(maxWidth: .infinity)
+        .padding()
+        .background(Color.orange)
+        .cornerRadius(12)
+        .scaleEffect(isAnimating ? 1.1 : 1.0)
+        .shadow(color: showHighlight ? .orange.opacity(0.6) : .clear, radius: showHighlight ? 8 : 0, x: 0, y: 0)
+        .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: isAnimating)
+    }
+}
+
+struct DemoSaveConfirmation: View {
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 32))
+                .foregroundColor(.green)
+            
+            Text("Entry #1 Saved")
+                .font(.headline)
+                .fontWeight(.semibold)
+                .foregroundColor(.primary)
+            
+            VStack(spacing: 4) {
+                HStack(spacing: 16) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "speaker.wave.2.fill")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                        Text("Tinnitus: 4/10")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    HStack(spacing: 4) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.caption)
+                            .foregroundColor(.red)
+                        Text("Stress: 2/10")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.ultraThinMaterial)
+                .shadow(radius: 8, x: 0, y: 4)
+        )
+        .frame(maxWidth: 280)
     }
 }
 
