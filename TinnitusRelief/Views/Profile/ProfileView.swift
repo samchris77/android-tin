@@ -5,6 +5,7 @@ struct ProfileView: View {
     @State private var showingPrivacyData = false
     @State private var hapticFeedbackEnabled = true
     @State private var backgroundAudioEnabled = false
+    @State private var showingPrivacyInfo = false
     
     var body: some View {
         NavigationView {
@@ -98,7 +99,9 @@ struct ProfileView: View {
                                 title: "Privacy Policy",
                                 subtitle: "Learn how we protect your information",
                                 icon: "doc.text",
-                                action: {}
+                                action: {
+                                    showingPrivacyInfo = true
+                                }
                             )
                         }
                     }
@@ -170,6 +173,9 @@ struct ProfileView: View {
             }
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.large)
+        }
+        .sheet(isPresented: $showingPrivacyInfo) {
+            PrivacyInfoView()
         }
     }
 }

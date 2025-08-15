@@ -51,9 +51,19 @@ class UnifiedAudioEngineManager: ObservableObject {
     
     private init() {
         setupAudioSession()
+        loadInitialState()
         setupEngine()
         setupAudioInterruptionHandling()
         loadSessionData()
+    }
+    
+    private func loadInitialState() {
+        let savedState = loadAudioState()
+        self.currentFrequency = savedState.frequency
+        self.currentFrequencyVolume = savedState.volume
+        self.targetFrequency = savedState.frequency
+        self.targetVolume = savedState.volume
+        print("🔊 Audio Manager initial state loaded: \(self.currentFrequency) Hz")
     }
     
     deinit {

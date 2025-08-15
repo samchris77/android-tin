@@ -19,13 +19,10 @@ class FrequencyMatchingViewModel: ObservableObject {
     private var pendingPosition: CGPoint?
     private var lastUpdateTime: CFTimeInterval = 0
     
-    // Loading state guard
-    private var isLoadingState = false
     
     init() {
         print("🏗️ FrequencyMatchingViewModel init called")
         setupBindings()
-        setupInitialPosition()
         print("🏗️ FrequencyMatchingViewModel init complete")
     }
     
@@ -51,8 +48,8 @@ class FrequencyMatchingViewModel: ObservableObject {
             .sink { [weak self] frequency, volume in
                 guard let self = self else { return }
                 
-                // Don't update position during loading or dragging
-                guard !self.isLoadingState && !self.isDragging else {
+                // Don't update position during dragging
+                guard !self.isDragging else {
                     return
                 }
                 
@@ -80,24 +77,6 @@ class FrequencyMatchingViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
-    private func setupInitialPosition() {
-        print("🎯 setupInitialPosition called")
-        guard !isLoadingState else { 
-            print("⚠️ setupInitialPosition blocked - already loading")
-            return 
-        }
-        
-        isLoadingState = true
-        let savedState = audioManager.loadAudioState()
-        
-        audioManager.stopInterpolation()
-        audioManager.updateFrequency(savedState.frequency)
-        audioManager.updateFrequencyVolume(savedState.volume)
-        controlPosition = savedState.position
-        
-        print("🎯 setupInitialPosition complete - position set to \(savedState.position)")
-        isLoadingState = false
-    }
     
     
     private func updateAudioFromPosition(_ position: CGPoint) {
