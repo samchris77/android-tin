@@ -1,0 +1,31 @@
+/* Profile Section */
+"profile.title" = "프로필";
+"profile.reminders.title" = "알림";
+
+/* Language Section */
+"profile.language.title" = "언어";
+"profile.language.button.title" = "언어";
+"profile.language.selection.title" = "언어 선택";
+"profile.language.english" = "영어";
+"profile.language.korean" = "한국어";
+
+/* Tutorial Section */
+"profile.tutorial.title" = "도움말 및 튜토리얼";
+"profile.tutorial.restart.title" = "튜토리얼 다시 시작";
+"profile.tutorial.restart.description" = "앱을 효과적으로 사용하는 방법을 배우세요";
+
+/* About Section */
+"profile.about.title" = "정보";
+"profile.about.app.title" = "앱 정보";
+"profile.about.app.description" = "이명 증상을 추적하고 완화 방법을 찾으세요";
+"profile.about.description" = "TinnitusTracker는 개인화된 주파수 매칭, 진행 상황 추적 및 증거 기반 기법을 통해 이명 증상을 관리할 수 있도록 설계되었습니다.";
+"profile.about.disclaimer" = "주의: 이 앱은 전문의료진의 조언을 대체할 수 없습니다. 정확한 진단과 치료를 위해서는 의료진과 상담하시기 바랍니다.";
+
+/* Privacy Section */
+"profile.privacy.title" = "개인정보 보호";
+"profile.privacy.policy.title" = "개인정보 처리방침";
+"profile.privacy.policy.description" = "개인정보 보호 방법";
+"profile.privacy.policy.button.description" = "개인정보 보호 방법을 알아보세요";
+
+/* Common */
+"common.cancel" = "취소";

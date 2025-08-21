@@ -1,0 +1,31 @@
+/* Profile Section */
+"profile.title" = "Profile";
+"profile.reminders.title" = "Reminders";
+
+/* Language Section */
+"profile.language.title" = "Language";
+"profile.language.button.title" = "Language";
+"profile.language.selection.title" = "Select Language";
+"profile.language.english" = "English";
+"profile.language.korean" = "Korean";
+
+/* Tutorial Section */
+"profile.tutorial.title" = "Help & Tutorial";
+"profile.tutorial.restart.title" = "Restart Tutorial";
+"profile.tutorial.restart.description" = "Learn how to use the app effectively";
+
+/* About Section */
+"profile.about.title" = "About";
+"profile.about.app.title" = "About This App";
+"profile.about.app.description" = "Track your tinnitus symptoms and find relief";
+"profile.about.description" = "TinnitusTracker is designed to help you manage tinnitus symptoms through personalized frequency matching, progress tracking, and evidence-based techniques.";
+"profile.about.disclaimer" = "Remember: This app is not a substitute for professional medical advice. Please consult with a healthcare provider for proper diagnosis and treatment.";
+
+/* Privacy Section */
+"profile.privacy.title" = "Privacy";
+"profile.privacy.policy.title" = "Privacy Policy";
+"profile.privacy.policy.description" = "How we protect your data";
+"profile.privacy.policy.button.description" = "Learn how we protect your information";
+
+/* Common */
+"common.cancel" = "Cancel";

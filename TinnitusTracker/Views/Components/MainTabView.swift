@@ -1,6 +1,63 @@
 import SwiftUI
 import UserNotifications
 import CoreData
+import Foundation
+
+// MARK: - Localization Manager
+
+class LocalizationManager: ObservableObject {
+    static let shared = LocalizationManager()
+    
+    @Published var currentLanguage: String {
+        didSet {
+            UserDefaults.standard.set(currentLanguage, forKey: "selectedLanguage")
+            UserDefaults.standard.set([currentLanguage], forKey: "AppleLanguages")
+            UserDefaults.standard.synchronize()
+        }
+    }
+    
+    private init() {
+        self.currentLanguage = UserDefaults.standard.string(forKey: "selectedLanguage") ?? "en"
+        // Set the app language on init
+        UserDefaults.standard.set([currentLanguage], forKey: "AppleLanguages")
+        UserDefaults.standard.synchronize()
+    }
+    
+    func setLanguage(_ language: String) {
+        currentLanguage = language
+    }
+    
+    var displayLanguage: String {
+        switch currentLanguage {
+        case "ko":
+            return localizedString(for: "profile.language.korean")
+        default:
+            return localizedString(for: "profile.language.english")
+        }
+    }
+    
+    private func localizedString(for key: String) -> String {
+        // Get the localized string for the current language
+        if let path = Bundle.main.path(forResource: currentLanguage, ofType: "lproj"),
+           let bundle = Bundle(path: path) {
+            return bundle.localizedString(forKey: key, value: nil, table: nil)
+        }
+        return NSLocalizedString(key, comment: "")
+    }
+}
+
+// Custom Text extension for localization
+extension Text {
+    init(localized key: String) {
+        let manager = LocalizationManager.shared
+        if let path = Bundle.main.path(forResource: manager.currentLanguage, ofType: "lproj"),
+           let bundle = Bundle(path: path) {
+            self.init(bundle.localizedString(forKey: key, value: nil, table: nil))
+        } else {
+            self.init(NSLocalizedString(key, comment: ""))
+        }
+    }
+}
 
 // MARK: - Tutorial System
 
@@ -472,6 +529,8 @@ struct CombinedProfileView: View {
     @State private var showingReminderEdit = false
     @State private var editingReminder: ReminderItem?
     @State private var showingPrivacyInfo = false
+    @StateObject private var localizationManager = LocalizationManager.shared
+    @State private var showingLanguageSelection = false
     let tutorialManager: TutorialManager
     
     var body: some View {
@@ -479,6 +538,8 @@ struct CombinedProfileView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     settingsSection
+                    
+                    languageSection
                     
                     tutorialSection
                     
@@ -488,8 +549,9 @@ struct CombinedProfileView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Profile")
+            .navigationTitle(Text(localized: "profile.title"))
             .navigationBarTitleDisplayMode(.large)
+            .id(localizationManager.currentLanguage)
             .sheet(isPresented: $showingReminderEdit) {
                 ReminderEditView(reminderManager: reminderManager, existingReminder: editingReminder)
             }
@@ -507,7 +569,7 @@ struct CombinedProfileView: View {
     
     private var settingsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Daily Reminders")
+            Text(localized: "profile.reminders.title")
                 .font(.headline)
                 .foregroundColor(.primary)
             
@@ -525,9 +587,66 @@ struct CombinedProfileView: View {
         }
     }
     
+    private var languageSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(localized: "profile.language.title")
+                .font(.headline)
+                .foregroundColor(.primary)
+            
+            Button(action: {
+                showingLanguageSelection = true
+            }) {
+                HStack(spacing: 12) {
+                    Image(systemName: "globe")
+                        .font(.system(size: 20))
+                        .foregroundColor(.blue)
+                        .frame(width: 32)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(localized: "profile.language.button.title")
+                            .font(.body)
+                            .foregroundColor(.primary)
+                            .multilineTextAlignment(.leading)
+                        
+                        Text(localizationManager.displayLanguage)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(.ultraThinMaterial)
+            )
+            .actionSheet(isPresented: $showingLanguageSelection) {
+                ActionSheet(
+                    title: Text(localized: "profile.language.selection.title"),
+                    buttons: [
+                        .default(Text(localized: "profile.language.english")) {
+                            localizationManager.setLanguage("en")
+                        },
+                        .default(Text(localized: "profile.language.korean")) {
+                            localizationManager.setLanguage("ko")
+                        },
+                        .cancel(Text(localized: "common.cancel"))
+                    ]
+                )
+            }
+        }
+    }
+    
     private var tutorialSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Help & Tutorial")
+            Text(localized: "profile.tutorial.title")
                 .font(.headline)
                 .foregroundColor(.primary)
             
@@ -542,12 +661,12 @@ struct CombinedProfileView: View {
                             .frame(width: 32)
                         
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Restart Tutorial")
+                            Text(localized: "profile.tutorial.restart.title")
                                 .font(.body)
                                 .foregroundColor(.primary)
                                 .multilineTextAlignment(.leading)
                             
-                            Text("Learn how to use the app effectively")
+                            Text(localized: "profile.tutorial.restart.description")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.leading)
@@ -573,16 +692,16 @@ struct CombinedProfileView: View {
     
     private var aboutSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("About")
+            Text(localized: "profile.about.title")
                 .font(.headline)
                 .foregroundColor(.primary)
             
-            Text("TinnitusTracker is designed to help you manage tinnitus symptoms through personalized frequency matching, progress tracking, and evidence-based techniques.")
+            Text(localized: "profile.about.description")
                 .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.leading)
             
-            Text("Remember: This app is not a substitute for professional medical advice. Please consult with a healthcare provider for proper diagnosis and treatment.")
+            Text(localized: "profile.about.disclaimer")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.top, 8)
@@ -596,7 +715,7 @@ struct CombinedProfileView: View {
     
     private var privacySection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Privacy")
+            Text(localized: "profile.privacy.title")
                 .font(.headline)
                 .foregroundColor(.primary)
             
@@ -610,12 +729,12 @@ struct CombinedProfileView: View {
                         .frame(width: 32)
                     
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Privacy Policy")
+                        Text(localized: "profile.privacy.policy.title")
                             .font(.body)
                             .foregroundColor(.primary)
                             .multilineTextAlignment(.leading)
                         
-                        Text("Learn how we protect your information")
+                        Text(localized: "profile.privacy.policy.button.description")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.leading)
