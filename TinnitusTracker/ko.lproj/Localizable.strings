@@ -27,5 +27,152 @@
 "profile.privacy.policy.description" = "개인정보 보호 방법";
 "profile.privacy.policy.button.description" = "개인정보 보호 방법을 알아보세요";
 
+/* Tab Navigation */
+"tab.frequency" = "주파수";
+"tab.log" = "기록";
+"tab.profile" = "프로필";
+
+/* Diary Navigation */
+"diary.add" = "추가";
+"diary.progress.tracking" = "진행 상황";
+"diary.history" = "개별 기록";
+
+/* Entry Form */
+"form.tinnitus.level" = "이명 수준";
+"form.current.stress" = "현재 스트레스";
+"form.session.duration" = "훈련 시간";
+"form.entry" = "항목";
+"form.live" = "실시간";
+"form.save.entry" = "저장";
+
+/* Frequency Interface */
+"frequency.frequency" = "주파수";
+"frequency.volume" = "볼륨";
+
+/* Statistics */
+"stats.this.week.average" = "이번 주 평균";
+"stats.loudness" = "음량";
+"stats.stress" = "스트레스";
+"stats.weekly.summaries" = "주간 요약";
+"stats.session.calendar" = "기록 달력";
+"stats.overall.statistics" = "전체 통계";
+"stats.avg.tinnitus" = "평균 이명";
+"stats.avg.stress" = "평균 스트레스";
+"stats.total.time" = "총 시간";
+"stats.total.entries" = "총 기록";
+"stats.this.month" = "이번 달:";
+"stats.less" = "적음";
+"stats.more" = "많음";
+
+/* Empty States */
+"empty.no.diary.entries" = "일기 기록이 없습니다";
+"empty.enter.new.log" = "새 기록 입력";
+"empty.track.symptoms" = "이명 증상을 추적하려면";
+"empty.switch.to.add" = "\"추가\" 탭으로 이동하세요";
+"empty.no.data" = "데이터 없음";
+
+/* Alerts */
+"alert.delete.entry" = "항목 삭제";
+"alert.delete.confirm" = "이 일기 항목을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.";
+"alert.delete" = "삭제";
+
+/* Save Confirmation */
+"save.entry.saved" = "항목 #%d 저장됨";
+"save.tinnitus" = "이명: %d/10";
+"save.stress" = "스트레스: %d/10";
+"save.duration" = "지속시간: %@";
+
+/* Audio Feedback */
+"audio.start.to.enable" = "실시간 추적을 활성화하려면 오디오를 시작하세요";
+
+/* Tutorial Content */
+"tutorial.welcome.title" = "Tinnitus Tracker에 오신 것을 환영합니다";
+"tutorial.welcome.description" = "이 앱은 음향 치료를 통해 이명의 효과를 줄이는 데 도움이 됩니다. 이명 크기의 70% 볼륨으로 설정하고 최상의 결과를 위해 매일 약 2시간 들으세요.";
+"tutorial.frequency.matching.title" = "이명 주파수 매칭";
+"tutorial.frequency.matching.description" = "이명 주파수와 볼륨 수준을 맞춰 이명 효과를 줄이세요.";
+"tutorial.log.title" = "상황 기록";
+"tutorial.log.description" = "이명 크기, 스트레스 수준, 치료 지속 시간을 기록하여 변화 양상을 추적하세요.";
+"tutorial.progress.title" = "진행 요약";
+"tutorial.progress.description" = "주간 요약, 세션 달력, 종합 통계로 훈련 진행 상황을 확인하고 비교하세요.";
+"tutorial.history.title" = "기록 검토";
+"tutorial.history.description" = "모든 개별 세션 기록을 검토하여 상세한 치료 기록과 시간에 따른 증상 패턴을 확인하세요.";
+"tutorial.profile.title" = "알림 설정";
+"tutorial.profile.description" = "최대 효과를 위해 일관된 치료 루틴을 유지할 수 있도록 일일 알림을 설정하세요.";
+"tutorial.step.next" = "다음";
+"tutorial.step.start.therapy" = "치료 시작";
+"tutorial.step.start.tutorial" = "튜토리얼 시작";
+"tutorial.skip" = "튜토리얼 건너뛰기";
+"tutorial.skip.for.now" = "나중에 하기";
+"tutorial.features.match.title" = "이명 매칭";
+"tutorial.features.match.description" = "정확한 주파수와 소리 유형 찾기";
+"tutorial.features.volume.title" = "최적 볼륨 설정";
+"tutorial.features.volume.description" = "최상의 결과를 위해 이명 크기의 70%로 듣기";
+"tutorial.features.daily.title" = "매일 2시간";
+"tutorial.features.daily.description" = "효과적인 완화를 위한 지속적인 치료";
+"tutorial.features.track.title" = "진행 상황 추적";
+"tutorial.features.track.description" = "당신의 데이터, 당신의 여정";
+"tutorial.welcome.to" = "환영합니다";
+"tutorial.app.name" = "Tinnitus Tracker";
+
+/* Privacy Policy Content */
+"privacy.navigation.title" = "개인정보 처리방침";
+"privacy.navigation.done" = "완료";
+"privacy.header.title" = "귀하의 개인정보 보호가 우리의 우선순위입니다";
+"privacy.header.last.updated" = "최종 업데이트: 2025년 8월 15일";
+"privacy.header.description" = "TinnitusTracker는 개인정보 보호, 보안, 오프라인 우선 애플리케이션으로 구축되었습니다. 귀하의 건강 데이터는 귀하만의 것이라고 믿습니다.";
+"privacy.section.no.data.title" = "개인 데이터 수집 안 함";
+"privacy.section.no.data.content" = "TinnitusTracker는 엄격한 데이터 무수집 정책으로 운영됩니다. 사용자 계정, 이메일 또는 개인 식별자를 요구하지 않습니다. 앱 사용은 완전히 익명입니다.";
+"privacy.section.local.storage.title" = "로컬 저장소 전용";
+"privacy.section.local.storage.content" = "모든 일기 기록, 주파수 설정 및 환경설정은 Apple의 보안 Core Data 프레임워크를 사용하여 귀하의 기기에만 저장됩니다. 이 데이터는 기기의 보안(예: Face ID, 패스코드)으로 보호되며 앱을 제거하면 영구적으로 삭제됩니다.";
+"privacy.section.no.third.party.title" = "제3자 서비스 없음";
+"privacy.section.no.third.party.content" = "이 앱은 제3자 분석, 광고 네트워크 또는 충돌 보고 서비스를 포함하지 않습니다. 완전히 오프라인으로 작동하며 데이터가 기기를 떠나지 않습니다.";
+"privacy.section.audio.permissions.title" = "오디오 권한";
+"privacy.section.audio.permissions.content" = "오디오 세션 권한은 치료 사운드 생성을 위해서만 요청됩니다. 앱은 오디오만 출력하며 녹음하지 않고 마이크를 사용하지 않습니다.";
+"privacy.section.user.control.title" = "당신이 주도권을 가집니다";
+"privacy.section.user.control.content" = "귀하는 데이터에 대한 완전한 제어권을 가집니다. 개인 사용을 위해 일기를 내보내거나 앱 설정을 통해 언제든지 개별 항목을 삭제할 수 있습니다.";
+"privacy.guarantee.title" = "완전한 개인정보 보호 보장";
+"privacy.guarantee.description" = "TinnitusTracker는 프라이버시 바이 디자인 원칙으로 설계되었습니다. 우리는 데이터를 수집하지 않기 때문에 귀하의 데이터에 액세스할 수 없습니다. 귀하의 건강 정보는 오직 귀하만의 것입니다.";
+
+/* Reminder Interface */
+"reminders.add.new" = "새 알림 추가";
+"reminders.no.reminders.set" = "설정된 알림이 없습니다";
+"reminders.tap.to.get.started" = "'새 알림 추가'를 눌러 시작하세요";
+"reminders.edit.reminder" = "알림 편집";
+"reminders.new.reminder" = "새 알림";
+"reminders.time" = "시간";
+"reminders.message" = "메시지";
+"reminders.enable.reminder" = "알림 활성화";
+"reminders.enable.description" = "알림을 받으려면 켜세요";
+"reminders.days" = "요일";
+"reminders.repeat.on" = "반복 요일";
+"reminders.every.day" = "매일";
+"reminders.weekdays" = "평일";
+"reminders.weekends" = "주말";
+"reminders.custom" = "사용자 정의";
+"reminders.save" = "저장";
+"reminders.edit" = "편집";
+"reminders.delete" = "삭제";
+"reminders.cancel" = "취소";
+"reminders.delete.confirmation" = "이 알림을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.";
+"reminders.options.title" = "알림 옵션";
+"reminders.delete.reminder" = "알림 삭제";
+"reminders.notification.title" = "이명 추적 알림";
+"reminders.default.message" = "이명을 추적하세요";
+"reminders.weekday.sunday" = "일요일";
+"reminders.weekday.monday" = "월요일";
+"reminders.weekday.tuesday" = "화요일";
+"reminders.weekday.wednesday" = "수요일";
+"reminders.weekday.thursday" = "목요일";
+"reminders.weekday.friday" = "금요일";
+"reminders.weekday.saturday" = "토요일";
+"reminders.weekday.short.sun" = "일";
+"reminders.weekday.short.mon" = "월";
+"reminders.weekday.short.tue" = "화";
+"reminders.weekday.short.wed" = "수";
+"reminders.weekday.short.thu" = "목";
+"reminders.weekday.short.fri" = "금";
+"reminders.weekday.short.sat" = "토";
+
 /* Common */
 "common.cancel" = "취소";
+"common.unknown.date" = "알 수 없는 날짜";

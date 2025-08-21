@@ -11,51 +11,63 @@ class LocalizationManager: ObservableObject {
     @Published var currentLanguage: String {
         didSet {
             UserDefaults.standard.set(currentLanguage, forKey: "selectedLanguage")
-            UserDefaults.standard.set([currentLanguage], forKey: "AppleLanguages")
-            UserDefaults.standard.synchronize()
+            
+            // Set the app's language
+            if let path = Bundle.main.path(forResource: currentLanguage, ofType: "lproj") {
+                Bundle.setLanguage(path)
+            }
         }
     }
     
     private init() {
         self.currentLanguage = UserDefaults.standard.string(forKey: "selectedLanguage") ?? "en"
-        // Set the app language on init
-        UserDefaults.standard.set([currentLanguage], forKey: "AppleLanguages")
-        UserDefaults.standard.synchronize()
+        
+        // Set initial language
+        if let path = Bundle.main.path(forResource: currentLanguage, ofType: "lproj") {
+            Bundle.setLanguage(path)
+        }
     }
     
     func setLanguage(_ language: String) {
         currentLanguage = language
     }
     
+    func localizedString(for key: String) -> String {
+        return NSLocalizedString(key, comment: "")
+    }
+    
     var displayLanguage: String {
         switch currentLanguage {
         case "ko":
-            return localizedString(for: "profile.language.korean")
+            return LocalizedString("profile.language.korean")
         default:
-            return localizedString(for: "profile.language.english")
+            return LocalizedString("profile.language.english")
         }
-    }
-    
-    private func localizedString(for key: String) -> String {
-        // Get the localized string for the current language
-        if let path = Bundle.main.path(forResource: currentLanguage, ofType: "lproj"),
-           let bundle = Bundle(path: path) {
-            return bundle.localizedString(forKey: key, value: nil, table: nil)
-        }
-        return NSLocalizedString(key, comment: "")
     }
 }
 
-// Custom Text extension for localization
+// Extension to support language switching at runtime
+extension Bundle {
+    private static var bundle: Bundle!
+    
+    public static func setLanguage(_ path: String) {
+        bundle = Bundle(path: path) ?? Bundle.main
+    }
+    
+    public static func localizedBundle() -> Bundle {
+        return bundle ?? Bundle.main
+    }
+}
+
+// Custom localized string function that respects our language manager
+func LocalizedString(_ key: String) -> String {
+    return Bundle.localizedBundle().localizedString(forKey: key, value: nil, table: nil)
+}
+
+// SwiftUI Text extension for easy localization
 extension Text {
     init(localized key: String) {
-        let manager = LocalizationManager.shared
-        if let path = Bundle.main.path(forResource: manager.currentLanguage, ofType: "lproj"),
-           let bundle = Bundle(path: path) {
-            self.init(bundle.localizedString(forKey: key, value: nil, table: nil))
-        } else {
-            self.init(NSLocalizedString(key, comment: ""))
-        }
+        self.init(LocalizedString(key))
     }
 }
 
@@ -72,43 +84,43 @@ enum TutorialStep: Int, CaseIterable {
     var title: String {
         switch self {
         case .welcome:
-            return "Welcome to Tinnitus Tracker"
+            return String(localized: "tutorial.welcome.title")
         case .frequencyDemo:
-            return "Match Your Tinnitus Frequency"
+            return String(localized: "tutorial.frequency.matching.title")
         case .logDemo:
-            return "Track Your Progress"
+            return String(localized: "tutorial.log.title")
         case .progressDemo:
-            return "View Your Progress"
+            return String(localized: "tutorial.progress.title")
         case .historyDemo:
-            return "Review Your History"
+            return String(localized: "tutorial.history.title")
         case .profileDemo:
-            return "Setup Reminders"
+            return String(localized: "tutorial.profile.title")
         }
     }
     
     var description: String {
         switch self {
         case .welcome:
-            return "This app helps reduce your tinnitus through sound therapy. Set volume to 70% of your tinnitus loudness and listen for about 2 hours daily for best results."
+            return String(localized: "tutorial.welcome.description")
         case .frequencyDemo:
-            return "Match your tinnitus frequency and volume levels to reduce tinnitus symptoms."
+            return String(localized: "tutorial.frequency.matching.description")
         case .logDemo:
-            return "Add entries, tinnitus loudness and stress levels, and therapy duration to track improvement over time."
+            return String(localized: "tutorial.log.description")
         case .progressDemo:
-            return "View your therapy progress with weekly summaries, session calendar, and comprehensive statistics to track your improvement."
+            return String(localized: "tutorial.progress.description")
         case .historyDemo:
-            return "Review all your individual session entries to see your detailed therapy history and symptom patterns over time."
+            return String(localized: "tutorial.history.description")
         case .profileDemo:
-            return "Set up daily reminders to help you maintain a consistent therapy routine for maximum effectiveness."
+            return String(localized: "tutorial.profile.description")
         }
     }
     
     var buttonText: String {
         switch self {
         case .welcome, .frequencyDemo, .logDemo, .progressDemo, .historyDemo:
-            return "Next"
+            return String(localized: "tutorial.step.next")
         case .profileDemo:
-            return "Start Therapy"
+            return String(localized: "tutorial.step.start.therapy")
         }
     }
     
@@ -263,15 +275,27 @@ enum WeekDay: String, CaseIterable, Codable {
     case saturday = "Saturday"
     case sunday = "Sunday"
     
+    var localizedName: String {
+        switch self {
+        case .monday: return String(localized: "reminders.weekday.monday")
+        case .tuesday: return String(localized: "reminders.weekday.tuesday")
+        case .wednesday: return String(localized: "reminders.weekday.wednesday")
+        case .thursday: return String(localized: "reminders.weekday.thursday")
+        case .friday: return String(localized: "reminders.weekday.friday")
+        case .saturday: return String(localized: "reminders.weekday.saturday")
+        case .sunday: return String(localized: "reminders.weekday.sunday")
+        }
+    }
+    
     var shortName: String {
         switch self {
-        case .monday: return "Mon"
-        case .tuesday: return "Tue"
-        case .wednesday: return "Wed"
-        case .thursday: return "Thu"
-        case .friday: return "Fri"
-        case .saturday: return "Sat"
-        case .sunday: return "Sun"
+        case .monday: return String(localized: "reminders.weekday.short.mon")
+        case .tuesday: return String(localized: "reminders.weekday.short.tue")
+        case .wednesday: return String(localized: "reminders.weekday.short.wed")
+        case .thursday: return String(localized: "reminders.weekday.short.thu")
+        case .friday: return String(localized: "reminders.weekday.short.fri")
+        case .saturday: return String(localized: "reminders.weekday.short.sat")
+        case .sunday: return String(localized: "reminders.weekday.short.sun")
         }
     }
     
@@ -295,7 +319,7 @@ struct ReminderItem: Identifiable, Codable {
     var selectedDays: Set<WeekDay>
     var title: String
     
-    init(id: UUID = UUID(), time: Date = Date(), isEnabled: Bool = true, selectedDays: Set<WeekDay> = Set(WeekDay.allCases), title: String = "Track your tinnitus") {
+    init(id: UUID = UUID(), time: Date = Date(), isEnabled: Bool = true, selectedDays: Set<WeekDay> = Set(WeekDay.allCases), title: String = String(localized: "reminders.default.message")) {
         self.id = id
         self.time = time
         self.isEnabled = isEnabled
@@ -311,11 +335,11 @@ struct ReminderItem: Identifiable, Codable {
     
     var formattedDays: String {
         if selectedDays.count == 7 {
-            return "Every day"
+            return String(localized: "reminders.every.day")
         } else if selectedDays.count == 5 && !selectedDays.contains(.saturday) && !selectedDays.contains(.sunday) {
-            return "Weekdays"
+            return String(localized: "reminders.weekdays")
         } else if selectedDays.count == 2 && selectedDays.contains(.saturday) && selectedDays.contains(.sunday) {
-            return "Weekends"
+            return String(localized: "reminders.weekends")
         } else {
             return selectedDays.sorted { $0.weekdayNumber < $1.weekdayNumber }
                 .map { $0.shortName }
@@ -384,7 +408,7 @@ class ReminderManager: ObservableObject {
     
     private func scheduleNotifications(for reminder: ReminderItem) {
         let content = UNMutableNotificationContent()
-        content.title = "Tinnitus Tracking Reminder"
+        content.title = String(localized: "reminders.notification.title")
         content.body = reminder.title
         content.sound = .default
         
@@ -444,21 +468,21 @@ struct MainTabView: View {
                     FrequencyMatchingView(viewModel: frequencyViewModel, selectedTab: $selectedTab)
                         .tabItem {
                             Image(systemName: selectedTab == 0 ? "waveform.path" : "waveform.path")
-                            Text("Frequency")
+                            Text(localized: "tab.frequency")
                         }
                         .tag(0)
                     
                     DiaryView(tutorialManager: tutorialManager)
                         .tabItem {
                             Image(systemName: selectedTab == 1 ? "book.fill" : "book")
-                            Text("Log")
+                            Text(localized: "tab.log")
                         }
                         .tag(1)
                     
                     CombinedProfileView(tutorialManager: tutorialManager)
                         .tabItem {
                             Image(systemName: selectedTab == 2 ? "person.fill" : "person")
-                            Text("Profile")
+                            Text(localized: "tab.profile")
                         }
                         .tag(2)
                 }
@@ -876,7 +900,7 @@ struct AdvancedReminderSettingsSection: View {
                         .foregroundColor(.orange)
                         .frame(width: 32)
                     
-                    Text("Add New Reminder")
+                    Text(localized: "reminders.add.new")
                         .font(.body)
                         .foregroundColor(.orange)
                         .multilineTextAlignment(.leading)
@@ -900,11 +924,11 @@ struct AdvancedReminderSettingsSection: View {
                         .font(.system(size: 32))
                         .foregroundColor(.secondary)
                     
-                    Text("No reminders set")
+                    Text(localized: "reminders.no.reminders.set")
                         .font(.body)
                         .foregroundColor(.secondary)
                     
-                    Text("Tap 'Add New Reminder' to get started")
+                    Text(localized: "reminders.tap.to.get.started")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -956,7 +980,7 @@ struct ReminderEditView: View {
     
     @State private var reminderTime = Date()
     @State private var selectedDays: Set<WeekDay> = Set(WeekDay.allCases)
-    @State private var reminderTitle = "Track your tinnitus"
+    @State private var reminderTitle = String(localized: "reminders.default.message")
     @State private var isEnabled = true
     
     let existingReminder: ReminderItem?
@@ -979,7 +1003,7 @@ struct ReminderEditView: View {
                 VStack(spacing: 24) {
                     // Time Selection
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Time")
+                        Text(localized: "reminders.time")
                             .font(.headline)
                             .foregroundColor(.primary)
                         
@@ -997,11 +1021,11 @@ struct ReminderEditView: View {
                     
                     // Title/Message
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Message")
+                        Text(localized: "reminders.message")
                             .font(.headline)
                             .foregroundColor(.primary)
                         
-                        TextField("Reminder message", text: $reminderTitle)
+                        TextField(String(localized: "reminders.message"), text: $reminderTitle)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                     }
                     
@@ -1011,11 +1035,11 @@ struct ReminderEditView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Enable Reminder")
+                                Text(localized: "reminders.enable.reminder")
                                     .font(.headline)
                                     .foregroundColor(.primary)
                                 
-                                Text("Turn on to receive notifications")
+                                Text(localized: "reminders.enable.description")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
@@ -1033,13 +1057,13 @@ struct ReminderEditView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
             }
-            .navigationTitle(existingReminder == nil ? "New Reminder" : "Edit Reminder")
+            .navigationTitle(existingReminder == nil ? String(localized: "reminders.new.reminder") : String(localized: "reminders.edit.reminder"))
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(
-                leading: Button("Cancel") {
+                leading: Button(String(localized: "reminders.cancel")) {
                     presentationMode.wrappedValue.dismiss()
                 },
-                trailing: Button("Save") {
+                trailing: Button(String(localized: "reminders.save")) {
                     saveReminder()
                 }
                 .fontWeight(.semibold)
@@ -1099,7 +1123,7 @@ struct ReminderListItem: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    if !reminder.title.isEmpty && reminder.title != "Track your tinnitus" {
+                    if !reminder.title.isEmpty && reminder.title != String(localized: "reminders.default.message") {
                         Text(reminder.title)
                             .font(.body)
                             .foregroundColor(.primary)
@@ -1123,22 +1147,22 @@ struct ReminderListItem: View {
             .onTapGesture {
                 showingActionSheet = true
             }
-            .confirmationDialog("Reminder Options", isPresented: $showingActionSheet, titleVisibility: .visible) {
-                Button("Edit") {
+            .confirmationDialog(String(localized: "reminders.options.title"), isPresented: $showingActionSheet, titleVisibility: .visible) {
+                Button(String(localized: "reminders.edit")) {
                     onEdit()
                 }
-                Button("Delete", role: .destructive) {
+                Button(String(localized: "reminders.delete"), role: .destructive) {
                     showingDeleteAlert = true
                 }
-                Button("Cancel", role: .cancel) { }
+                Button(String(localized: "reminders.cancel"), role: .cancel) { }
             }
-            .alert("Delete Reminder", isPresented: $showingDeleteAlert) {
-                Button("Cancel", role: .cancel) { }
-                Button("Delete", role: .destructive) {
+            .alert(String(localized: "reminders.delete.reminder"), isPresented: $showingDeleteAlert) {
+                Button(String(localized: "reminders.cancel"), role: .cancel) { }
+                Button(String(localized: "reminders.delete"), role: .destructive) {
                     onDelete()
                 }
             } message: {
-                Text("Are you sure you want to delete this reminder? This action cannot be undone.")
+                Text(localized: "reminders.delete.confirmation")
             }
         }
     }
@@ -1150,7 +1174,7 @@ struct WeekDaySelector: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Repeat on")
+            Text(localized: "reminders.repeat.on")
                 .font(.headline)
                 .foregroundColor(.primary)
             
@@ -1170,19 +1194,19 @@ struct WeekDaySelector: View {
             }
             
             HStack(spacing: 16) {
-                Button("Every day") {
+                Button(String(localized: "reminders.every.day")) {
                     selectedDays = Set(WeekDay.allCases)
                 }
                 .font(.caption)
                 .foregroundColor(.orange)
                 
-                Button("Weekdays") {
+                Button(String(localized: "reminders.weekdays")) {
                     selectedDays = Set([.monday, .tuesday, .wednesday, .thursday, .friday])
                 }
                 .font(.caption)
                 .foregroundColor(.orange)
                 
-                Button("Weekends") {
+                Button(String(localized: "reminders.weekends")) {
                     selectedDays = Set([.saturday, .sunday])
                 }
                 .font(.caption)
@@ -1357,7 +1381,7 @@ struct TransparentTutorialOverlayView: View {
                     Button(action: {
                         tutorialManager.skipTutorial()
                     }) {
-                        Text("Skip Tutorial")
+                        Text(localized: "tutorial.skip")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
@@ -1420,11 +1444,11 @@ struct WelcomeTutorialView: View {
                         .symbolEffect(.pulse.byLayer, options: .repeating)
                     
                     VStack(spacing: 8) {
-                        Text("Welcome to")
+                        Text(localized: "tutorial.welcome.to")
                             .font(.title2)
                             .foregroundColor(.white.opacity(0.9))
                         
-                        Text("Tinnitus Tracker")
+                        Text(localized: "tutorial.app.name")
                             .font(.largeTitle)
                             .fontWeight(.bold)
                             .foregroundColor(.white)
@@ -1434,26 +1458,26 @@ struct WelcomeTutorialView: View {
                 VStack(spacing: 20) {
                     TutorialFeatureRow(
                         icon: "waveform",
-                        title: "Match Your Tinnitus",
-                        description: "Find the exact frequency and sound type"
+                        title: String(localized: "tutorial.features.match.title"),
+                        description: String(localized: "tutorial.features.match.description")
                     )
                     
                     TutorialFeatureRow(
                         icon: "speaker.wave.2",
-                        title: "Set Optimal Volume",
-                        description: "70% of your tinnitus loudness for best results"
+                        title: String(localized: "tutorial.features.volume.title"),
+                        description: String(localized: "tutorial.features.volume.description")
                     )
                     
                     TutorialFeatureRow(
                         icon: "clock",
-                        title: "2 Hours Daily",
-                        description: "Consistent therapy for effective relief"
+                        title: String(localized: "tutorial.features.daily.title"),
+                        description: String(localized: "tutorial.features.daily.description")
                     )
                     
                     TutorialFeatureRow(
                         icon: "calendar",
-                        title: "track your progress",
-                        description: "Your data, your journey"
+                        title: String(localized: "tutorial.features.track.title"),
+                        description: String(localized: "tutorial.features.track.description")
                     )
                 }
                 .padding(.horizontal, 32)
@@ -1464,7 +1488,7 @@ struct WelcomeTutorialView: View {
                     Button(action: {
                         tutorialManager.nextStep()
                     }) {
-                        Text("Start Tutorial")
+                        Text(localized: "tutorial.step.start.tutorial")
                             .font(.headline)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -1476,7 +1500,7 @@ struct WelcomeTutorialView: View {
                     Button(action: {
                         tutorialManager.skipTutorial()
                     }) {
-                        Text("Skip for Now")
+                        Text(localized: "tutorial.skip.for.now")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
@@ -1668,127 +1692,6 @@ struct HistoryDemoOverlayView: View {
     }
 }
 
-private struct PrivacyInfoView: View {
-    @Environment(\.presentationMode) var presentationMode
-
-    var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    PrivacyHeaderView()
-                    
-                    // Main Privacy Points
-                    PrivacySectionView(
-                        icon: "xmark.shield.fill",
-                        iconColor: .red,
-                        title: "No Personal Data Collection",
-                        content: "TinnitusTracker operates with a strict no-data-collection policy. We do not require user accounts, emails, or any personal identifiers. Your use of the app is completely anonymous."
-                    )
-                    
-                    PrivacySectionView(
-                        icon: "iphone.homebutton.badge.play",
-                        iconColor: .blue,
-                        title: "Local Storage Only",
-                        content: "All diary entries, frequency settings, and preferences are stored exclusively on your device using Apple's secure Core Data framework. This data is protected by your device's security (e.g., Face ID, Passcode) and is permanently deleted if you uninstall the app."
-                    )
-                    
-                    PrivacySectionView(
-                        icon: "network.slash",
-                        iconColor: .green,
-                        title: "No Third-Party Services",
-                        content: "This app does not include any third-party analytics, advertising networks, or crash reporting services. It functions entirely offline, and no data ever leaves your device."
-                    )
-                    
-                    PrivacySectionView(
-                        icon: "waveform.path.ecg",
-                        iconColor: .purple,
-                        title: "Audio Permissions",
-                        content: "Audio session permissions are requested solely to generate therapeutic sounds. The app only outputs audio; it never records and does not use the microphone."
-                    )
-                    
-                    PrivacySectionView(
-                        icon: "hand.raised.fill",
-                        iconColor: .orange,
-                        title: "You Are in Control",
-                        content: "You have full control over your data. You can export your diary for personal use or delete individual entries at any time through the app's settings."
-                    )
-                    
-                    // Final Assurance
-                    VStack(alignment: .center, spacing: 10) {
-                        Text("Complete Privacy Guarantee")
-                            .font(.headline)
-                            .fontWeight(.bold)
-                        Text("TinnitusTracker is designed with privacy-by-design principles. We cannot access your data because we never collect it. Your health information remains exclusively yours.")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(.ultraThinMaterial)
-                    )
-                    
-                }
-                .padding()
-            }
-            .navigationTitle("Privacy Policy")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-            }
-        }
-    }
-}
-
-private struct PrivacyHeaderView: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Your Privacy is Our Priority")
-                .font(.title)
-                .fontWeight(.bold)
-            
-            Text("Last Updated: August 15, 2025")
-                .font(.caption)
-                .foregroundColor(.secondary)
-            
-            Text("TinnitusTracker is built to be a private, secure, and offline-first application. We believe your health data is your own.")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-        }
-    }
-}
-
-private struct PrivacySectionView: View {
-    let icon: String
-    let iconColor: Color
-    let title: String
-    let content: String
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(iconColor)
-                .frame(width: 30, alignment: .center)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                
-                Text(content)
-                    .font(.body)
-                    .foregroundColor(.secondary)
-            }
-        }
-    }
-}
 
 #Preview {
     MainTabView()

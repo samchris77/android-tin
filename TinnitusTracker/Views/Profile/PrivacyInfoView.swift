@@ -3,6 +3,7 @@ import SwiftUI
 
 struct PrivacyInfoView: View {
     @Environment(\.presentationMode) var presentationMode
+    @StateObject private var localizationManager = LocalizationManager.shared
 
     var body: some View {
         NavigationView {
@@ -14,44 +15,44 @@ struct PrivacyInfoView: View {
                     PrivacySection(
                         icon: "xmark.shield.fill",
                         iconColor: .red,
-                        title: "No Personal Data Collection",
-                        content: "TinnitusTracker operates with a strict no-data-collection policy. We do not require user accounts, emails, or any personal identifiers. Your use of the app is completely anonymous."
+                        title: LocalizedString("privacy.section.no.data.title"),
+                        content: LocalizedString("privacy.section.no.data.content")
                     )
                     
                     PrivacySection(
                         icon: "iphone.homebutton.badge.play",
                         iconColor: .blue,
-                        title: "Local Storage Only",
-                        content: "All diary entries, frequency settings, and preferences are stored exclusively on your device using Apple's secure Core Data framework. This data is protected by your device's security (e.g., Face ID, Passcode) and is permanently deleted if you uninstall the app."
+                        title: LocalizedString("privacy.section.local.storage.title"),
+                        content: LocalizedString("privacy.section.local.storage.content")
                     )
                     
                     PrivacySection(
                         icon: "network.slash",
                         iconColor: .green,
-                        title: "No Third-Party Services",
-                        content: "This app does not include any third-party analytics, advertising networks, or crash reporting services. It functions entirely offline, and no data ever leaves your device."
+                        title: LocalizedString("privacy.section.no.third.party.title"),
+                        content: LocalizedString("privacy.section.no.third.party.content")
                     )
                     
                     PrivacySection(
                         icon: "waveform.path.ecg",
                         iconColor: .purple,
-                        title: "Audio Permissions",
-                        content: "Audio session permissions are requested solely to generate therapeutic sounds. The app only outputs audio; it never records and does not use the microphone."
+                        title: LocalizedString("privacy.section.audio.permissions.title"),
+                        content: LocalizedString("privacy.section.audio.permissions.content")
                     )
                     
                     PrivacySection(
                         icon: "hand.raised.fill",
                         iconColor: .orange,
-                        title: "You Are in Control",
-                        content: "You have full control over your data. You can export your diary for personal use or delete individual entries at any time through the app's settings."
+                        title: LocalizedString("privacy.section.user.control.title"),
+                        content: LocalizedString("privacy.section.user.control.content")
                     )
                     
                     // Final Assurance
                     VStack(alignment: .center, spacing: 10) {
-                        Text("Complete Privacy Guarantee")
+                        Text(localized: "privacy.guarantee.title")
                             .font(.headline)
                             .fontWeight(.bold)
-                        Text("TinnitusTracker is designed with privacy-by-design principles. We cannot access your data because we never collect it. Your health information remains exclusively yours.")
+                        Text(localized: "privacy.guarantee.description")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -66,16 +67,17 @@ struct PrivacyInfoView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Privacy Policy")
+            .navigationTitle(LocalizedString("privacy.navigation.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                    Button(LocalizedString("privacy.navigation.done")) {
                         presentationMode.wrappedValue.dismiss()
                     }
                 }
             }
         }
+        .id(localizationManager.currentLanguage)
     }
 }
 
@@ -84,15 +86,15 @@ struct PrivacyInfoView: View {
 private struct HeaderView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Your Privacy is Our Priority")
+            Text(localized: "privacy.header.title")
                 .font(.title)
                 .fontWeight(.bold)
             
-            Text("Last Updated: August 15, 2025")
+            Text(localized: "privacy.header.last.updated")
                 .font(.caption)
                 .foregroundColor(.secondary)
             
-            Text("TinnitusTracker is built to be a private, secure, and offline-first application. We believe your health data is your own.")
+            Text(localized: "privacy.header.description")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
         }
