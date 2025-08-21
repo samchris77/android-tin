@@ -3,7 +3,7 @@ import SwiftUI
 
 struct PrivacyInfoView: View {
     @Environment(\.presentationMode) var presentationMode
-    @StateObject private var localizationManager = LocalizationManager.shared
+    @EnvironmentObject private var localizationManager: LocalizationManager
 
     var body: some View {
         NavigationView {
@@ -77,7 +77,6 @@ struct PrivacyInfoView: View {
                 }
             }
         }
-        .id(localizationManager.currentLanguage)
     }
 }
 
