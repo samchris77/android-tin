@@ -24,6 +24,9 @@
 		1D92FB2C2C8E4C5700F7EF96 /* Color+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D92FB2B2C8E4C5700F7EF96 /* Color+Extensions.swift */; };
 		1D92FB2E2C8E4C5E00F7EF96 /* View+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D92FB2D2C8E4C5E00F7EF96 /* View+Extensions.swift */; };
 		1D92FB502C8E4D0000F7EF96 /* FrequencyController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D92FB4F2C8E4D0000F7EF96 /* FrequencyController.swift */; };
+		52CAB0542E56E6710060D444 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 52CAB0522E56E6710060D444 /* Localizable.strings */; };
+		52CAB0552E56E6710060D444 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 52CAB04F2E56E6710060D444 /* Localizable.strings */; };
+		52CAB0582E56F7FD0060D444 /* PrivacyInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52CAB0562E56F7FD0060D444 /* PrivacyInfoView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,6 +49,9 @@
 		1D92FB2B2C8E4C5700F7EF96 /* Color+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Extensions.swift"; sourceTree = "<group>"; };
 		1D92FB2D2C8E4C5E00F7EF96 /* View+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Extensions.swift"; sourceTree = "<group>"; };
 		1D92FB4F2C8E4D0000F7EF96 /* FrequencyController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrequencyController.swift; sourceTree = "<group>"; };
+		52CAB04E2E56E6710060D444 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = Localizable.strings; sourceTree = "<group>"; };
+		52CAB0512E56E6710060D444 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = Localizable.strings; sourceTree = "<group>"; };
+		52CAB0562E56F7FD0060D444 /* PrivacyInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyInfoView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,6 +84,8 @@
 		1D92FAFE2C8E4B5E00F7EF96 /* TinnitusTracker */ = {
 			isa = PBXGroup;
 			children = (
+				52CAB0502E56E6710060D444 /* en.lproj */,
+				52CAB0532E56E6710060D444 /* ko.lproj */,
 				1D92FB122C8E4BDC00F7EF96 /* Info.plist */,
 				1D92FAFF2C8E4B5E00F7EF96 /* TinnitusTrackerApp.swift */,
 				1D92FB012C8E4B5E00F7EF96 /* ContentView.swift */,
@@ -113,6 +121,7 @@
 		1D92FB312C8E4C7A00F7EF96 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				52CAB0572E56F7FD0060D444 /* Profile */,
 				1D92FB372C8E4CA100F7EF96 /* FrequencyMatching */,
 				1D92FB392C8E4CAE00F7EF96 /* Diary */,
 				1D92FB3A2C8E4CB400F7EF96 /* Components */,
@@ -196,6 +205,30 @@
 			path = AudioEngine;
 			sourceTree = "<group>";
 		};
+		52CAB0502E56E6710060D444 /* en.lproj */ = {
+			isa = PBXGroup;
+			children = (
+				52CAB04F2E56E6710060D444 /* Localizable.strings */,
+			);
+			path = en.lproj;
+			sourceTree = "<group>";
+		};
+		52CAB0532E56E6710060D444 /* ko.lproj */ = {
+			isa = PBXGroup;
+			children = (
+				52CAB0522E56E6710060D444 /* Localizable.strings */,
+			);
+			path = ko.lproj;
+			sourceTree = "<group>";
+		};
+		52CAB0572E56F7FD0060D444 /* Profile */ = {
+			isa = PBXGroup;
+			children = (
+				52CAB0562E56F7FD0060D444 /* PrivacyInfoView.swift */,
+			);
+			path = Profile;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -224,7 +257,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 1500;
+				LastUpgradeCheck = 1640;
 				TargetAttributes = {
 					1D92FAFB2C8E4B5E00F7EF96 = {
 						CreatedOnToolsVersion = 15.0;
@@ -238,6 +271,7 @@
 			knownRegions = (
 				en,
 				Base,
+				ko,
 			);
 			mainGroup = 1D92FAF32C8E4B5E00F7EF96;
 			productRefGroup = 1D92FAFD2C8E4B5E00F7EF96 /* Products */;
@@ -254,6 +288,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				52CAB0542E56E6710060D444 /* Localizable.strings in Resources */,
+				52CAB0552E56E6710060D444 /* Localizable.strings in Resources */,
 				1D92FB072C8E4B5F00F7EF96 /* Preview Assets.xcassets in Resources */,
 				1D92FB042C8E4B5F00F7EF96 /* Assets.xcassets in Resources */,
 			);
@@ -271,6 +307,7 @@
 				1D92FB2A2C8E4C5000F7EF96 /* HapticFeedback.swift in Sources */,
 				1D92FB242C8E4C3B00F7EF96 /* DiaryView.swift in Sources */,
 				1D92FB2C2C8E4C5700F7EF96 /* Color+Extensions.swift in Sources */,
+				52CAB0582E56F7FD0060D444 /* PrivacyInfoView.swift in Sources */,
 				1D92FB002C8E4B5E00F7EF96 /* TinnitusTrackerApp.swift in Sources */,
 				1D92FB1C2C8E4C1E00F7EF96 /* UnifiedAudioEngineManager.swift in Sources */,
 				1D92FB0C2C8E4B5F00F7EF96 /* TinnitusTracker.xcdatamodeld in Sources */,
@@ -285,6 +322,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		52CAB04F2E56E6710060D444 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				52CAB04E2E56E6710060D444 /* en */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+		52CAB0522E56E6710060D444 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				52CAB0512E56E6710060D444 /* ko */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		1D92FB0D2C8E4B5F00F7EF96 /* Debug */ = {
@@ -422,6 +478,8 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -434,7 +492,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -454,6 +512,8 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -466,7 +526,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};

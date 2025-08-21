@@ -22,7 +22,7 @@ struct DiaryView: View {
                 // Static navigation row
                 HStack(spacing: 0) {
                     Button(action: { navigateTo(0) }) {
-                        Text("Add")
+                        Text(localized: "diary.add")
                             .font(.system(size: 16, weight: selectedTab == 0 ? .semibold : .medium))
                             .foregroundColor(selectedTab == 0 ? .primary : .secondary)
                             .animation(nil, value: selectedTab)
@@ -30,7 +30,7 @@ struct DiaryView: View {
                     .frame(maxWidth: .infinity)
                     
                     Button(action: { navigateTo(1) }) {
-                        Text("Progress Tracking")
+                        Text(localized: "diary.progress.tracking")
                             .font(.system(size: 16, weight: selectedTab == 1 ? .semibold : .medium))
                             .foregroundColor(selectedTab == 1 ? .primary : .secondary)
                             .animation(nil, value: selectedTab)
@@ -38,7 +38,7 @@ struct DiaryView: View {
                     .frame(maxWidth: .infinity)
                     
                     Button(action: { navigateTo(2) }) {
-                        Text("History")
+                        Text(localized: "diary.history")
                             .font(.system(size: 16, weight: selectedTab == 2 ? .semibold : .medium))
                             .foregroundColor(selectedTab == 2 ? .primary : .secondary)
                             .animation(nil, value: selectedTab)
@@ -98,7 +98,7 @@ struct DiaryView: View {
                     Spacer()
                     
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text("Entry")
+                        Text(localized: "form.entry")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                         Text("#\(getEntryNumberForDate(viewModel.selectedDate, trigger: refreshTrigger))")
@@ -238,20 +238,20 @@ struct DiaryView: View {
     
     private var weeklyStatsView: some View {
         VStack(spacing: 16) {
-            Text("This Week's Average")
+            Text(localized: "stats.this.week.average")
                 .font(.headline)
                 .foregroundColor(.primary)
             
             HStack(spacing: 20) {
                 StatCardView(
-                    title: "Loudness",
+                    title: NSLocalizedString("stats.loudness", comment: ""),
                     value: viewModel.averageLoudnessForWeek(),
                     color: .orange,
                     maxValue: 10
                 )
                 
                 StatCardView(
-                    title: "Stress",
+                    title: NSLocalizedString("stats.stress", comment: ""),
                     value: viewModel.averageStressForWeek(),
                     color: .red,
                     maxValue: 10
@@ -283,7 +283,7 @@ struct DiaryView: View {
     private var weeklySummariesView: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Weekly Summaries")
+                Text(localized: "stats.weekly.summaries")
                     .font(.headline)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
@@ -330,7 +330,7 @@ struct DiaryView: View {
         VStack(spacing: 12) {
             // Header with title and month navigation
             HStack {
-                Text("Session Calendar")
+                Text(localized: "stats.session.calendar")
                     .font(.headline)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
@@ -386,7 +386,7 @@ struct DiaryView: View {
             HStack {
                 // Color legend
                 HStack(spacing: 8) {
-                    Text("Less")
+                    Text(localized: "stats.less")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                     
@@ -399,7 +399,7 @@ struct DiaryView: View {
                         }
                     }
                     
-                    Text("More")
+                    Text(localized: "stats.more")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
@@ -408,7 +408,7 @@ struct DiaryView: View {
                 
                 // Monthly total
                 HStack(spacing: 6) {
-                    Text("This Month:")
+                    Text(localized: "stats.this.month")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                     
@@ -430,7 +430,7 @@ struct DiaryView: View {
     
     private var comprehensiveStatsView: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Overall Statistics")
+            Text(localized: "stats.overall.statistics")
                 .font(.headline)
                 .fontWeight(.semibold)
                 .foregroundColor(.primary)
@@ -441,7 +441,7 @@ struct DiaryView: View {
             ], spacing: 8) {
                 EnhancedStatCard(
                     icon: "speaker.wave.2.fill",
-                    title: "Avg Tinnitus",
+                    title: NSLocalizedString("stats.avg.tinnitus", comment: ""),
                     value: String(format: "%.1f", viewModel.getOverallAverageLoudness()),
                     unit: "/10",
                     color: .orange
@@ -449,7 +449,7 @@ struct DiaryView: View {
                 
                 EnhancedStatCard(
                     icon: "exclamationmark.triangle.fill",
-                    title: "Avg Stress",
+                    title: NSLocalizedString("stats.avg.stress", comment: ""),
                     value: String(format: "%.1f", viewModel.getOverallAverageStress()),
                     unit: "/10",
                     color: .red
@@ -457,7 +457,7 @@ struct DiaryView: View {
                 
                 EnhancedStatCard(
                     icon: "clock.fill",
-                    title: "Total Time",
+                    title: NSLocalizedString("stats.total.time", comment: ""),
                     value: formatTimeInterval(viewModel.getTotalListeningTime()),
                     unit: "",
                     color: .green
@@ -465,7 +465,7 @@ struct DiaryView: View {
                 
                 EnhancedStatCard(
                     icon: "list.bullet",
-                    title: "Total Entries",
+                    title: NSLocalizedString("stats.total.entries", comment: ""),
                     value: "\(viewModel.diaryEntries.count)",
                     unit: "",
                     color: .purple
@@ -692,12 +692,12 @@ struct EntryFormView: View {
     var body: some View {
         VStack(spacing: 16) {
             SymptomSlider(
-                title: "Tinnitus Level",
+                title: NSLocalizedString("form.tinnitus.level", comment: ""),
                 value: $loudnessLevel,
                 color: .orange
             )
             SymptomSlider(
-                title: "Current Stress",
+                title: NSLocalizedString("form.current.stress", comment: ""),
                 value: $stressLevel,
                 color: .red
             )
@@ -705,7 +705,7 @@ struct EntryFormView: View {
             // Session Duration Input - Compact
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("Session Duration")
+                    Text(localized: "form.session.duration")
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .foregroundColor(.primary)
@@ -769,7 +769,7 @@ struct EntryFormView: View {
                     Spacer()
                     
                     HStack(spacing: 8) {
-                        Text("Live")
+                        Text(localized: "form.live")
                             .font(.caption)
                             .foregroundColor(isLiveTracking ? .green : .gray)
                         
@@ -835,7 +835,7 @@ struct EntryFormView: View {
             }) {
                 HStack {
                     Image(systemName: "checkmark.circle.fill")
-                    Text("Save Entry")
+                    Text(localized: "form.save.entry")
                 }
                 .font(.headline)
                 .foregroundColor(.white)
@@ -969,19 +969,19 @@ struct DiaryEntryRowView: View {
         .onTapGesture {
             showingDeleteAlert = true
         }
-        .alert("Delete Entry", isPresented: $showingDeleteAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Delete", role: .destructive) {
+        .alert(NSLocalizedString("alert.delete.entry", comment: ""), isPresented: $showingDeleteAlert) {
+            Button(NSLocalizedString("common.cancel", comment: ""), role: .cancel) { }
+            Button(NSLocalizedString("alert.delete", comment: ""), role: .destructive) {
                 onDelete()
             }
         } message: {
-            Text("Are you sure you want to delete this diary entry? This action cannot be undone.")
+            Text(NSLocalizedString("alert.delete.confirm", comment: ""))
         }
         }
     }
     
     private func formatEntryDate(_ date: Date?) -> String {
-        guard let date = date else { return "Unknown Date" }
+        guard let date = date else { return NSLocalizedString("common.unknown.date", comment: "") }
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d, yyyy"
         return formatter.string(from: date)
@@ -1233,22 +1233,22 @@ struct EmptyHistoryView: View {
                 .font(.system(size: 48))
                 .foregroundColor(.orange.opacity(0.6))
             
-            Text("No Diary Entries Yet")
+            Text(localized: "empty.no.diary.entries")
                 .font(.title2)
                 .fontWeight(.semibold)
                 .foregroundColor(.primary)
             
-            Text("Enter a new log")
+            Text(localized: "empty.enter.new.log")
                 .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
             
             VStack(spacing: 8) {
-                Text("Track your tinnitus symptoms by")
+                Text(localized: "empty.track.symptoms")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                Text("switching to the \"Add\" tab")
+                Text(localized: "empty.switch.to.add")
                     .font(.caption)
                     .foregroundColor(.orange)
                     .fontWeight(.medium)
@@ -1320,7 +1320,7 @@ struct WeeklySummaryCard: View {
                         .font(.title2)
                         .foregroundColor(.secondary)
                     
-                    Text("No data")
+                    Text(localized: "empty.no.data")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .fontWeight(.medium)

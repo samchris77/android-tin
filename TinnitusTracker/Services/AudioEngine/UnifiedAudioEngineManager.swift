@@ -2,6 +2,7 @@ import AVFoundation
 import Foundation
 import Combine
 import QuartzCore
+import MediaPlayer
 
 protocol AudioManagerDelegate: AnyObject {
     func audioManagerDidUpdateFrequency(_ frequency: Float)
@@ -77,9 +78,80 @@ class UnifiedAudioEngineManager: ObservableObject {
             try audioSession.setCategory(.playback, mode: .default, options: [.allowBluetooth, .allowBluetoothA2DP])
             try audioSession.setActive(true)
             sampleRate = audioSession.sampleRate
+            
+            // Setup remote command center for lock screen controls
+            setupRemoteCommandCenter()
         } catch {
             print("Failed to setup audio session: \(error)")
         }
+    }
+    
+    private func setupRemoteCommandCenter() {
+        let commandCenter = MPRemoteCommandCenter.shared()
+        
+        // Configure play command
+        commandCenter.playCommand.addTarget { [weak self] event -> MPRemoteCommandHandlerStatus in
+            guard let self = self else { return .commandFailed }
+            if !self.isFrequencyPlaying {
+                self.startFrequencyMatching(frequency: self.currentFrequency, volume: self.currentFrequencyVolume)
+            }
+            return .success
+        }
+        
+        // Configure pause command
+        commandCenter.pauseCommand.addTarget { [weak self] event -> MPRemoteCommandHandlerStatus in
+            guard let self = self else { return .commandFailed }
+            if self.isFrequencyPlaying {
+                self.stopFrequencyMatching()
+            }
+            return .success
+        }
+        
+        // Configure stop command
+        commandCenter.stopCommand.addTarget { [weak self] event -> MPRemoteCommandHandlerStatus in
+            guard let self = self else { return .commandFailed }
+            self.stopFrequencyMatching()
+            self.clearNowPlayingInfo()
+            return .success
+        }
+        
+        // Disable commands that don't apply to frequency generation
+        commandCenter.nextTrackCommand.isEnabled = false
+        commandCenter.previousTrackCommand.isEnabled = false
+        commandCenter.seekForwardCommand.isEnabled = false
+        commandCenter.seekBackwardCommand.isEnabled = false
+    }
+    
+    private func updateNowPlayingInfo() {
+        var nowPlayingInfo = [String: Any]()
+        
+        // Set track information
+        nowPlayingInfo[MPMediaItemPropertyTitle] = LocalizedString("audio.now.playing.title")
+        nowPlayingInfo[MPMediaItemPropertyArtist] = "TinnitusTracker"
+        nowPlayingInfo[MPMediaItemPropertyAlbumTitle] = "\(Int(currentFrequency)) Hz"
+        
+        // Set playback rate (1.0 for playing, 0.0 for paused)
+        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = isFrequencyPlaying ? 1.0 : 0.0
+        
+        // Set elapsed time based on current session
+        if let sessionStart = sessionStartTime {
+            let elapsedTime = Date().timeIntervalSince(sessionStart)
+            nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = elapsedTime
+        }
+        
+        // Create app icon artwork (you can replace with custom artwork if desired)
+        if let appIcon = UIImage(named: "AppIcon") {
+            nowPlayingInfo[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: appIcon.size) { _ in
+                return appIcon
+            }
+        }
+        
+        // Set the metadata
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+    }
+    
+    private func clearNowPlayingInfo() {
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
     }
     
     private func setupEngine() {
@@ -282,6 +354,9 @@ extension UnifiedAudioEngineManager {
         DispatchQueue.main.async {
             self.isFrequencyPlaying = true
             self.delegate?.audioManagerDidUpdatePlayingState(true)
+            
+            // Update lock screen media controls
+            self.updateNowPlayingInfo()
         }
     }
     
@@ -292,6 +367,9 @@ extension UnifiedAudioEngineManager {
         DispatchQueue.main.async {
             self.isFrequencyPlaying = false
             self.delegate?.audioManagerDidUpdatePlayingState(false)
+            
+            // Clear lock screen media controls
+            self.clearNowPlayingInfo()
         }
         frequencyTime = 0.0
         stopEngine()
@@ -301,12 +379,26 @@ extension UnifiedAudioEngineManager {
         let clampedFrequency = max(20, min(16000, frequency))
         targetFrequency = clampedFrequency
         startInterpolation()
+        
+        // Update lock screen info if audio is playing
+        if isFrequencyPlaying {
+            DispatchQueue.main.async {
+                self.updateNowPlayingInfo()
+            }
+        }
     }
     
     func updateFrequencyVolume(_ volume: Float) {
         let clampedVolume = max(0, min(1, volume))
         targetVolume = clampedVolume
         startInterpolation()
+        
+        // Update lock screen info if audio is playing
+        if isFrequencyPlaying {
+            DispatchQueue.main.async {
+                self.updateNowPlayingInfo()
+            }
+        }
     }
     
     func setFrequencyAndVolume(frequency: Float, volume: Float) {
@@ -316,6 +408,13 @@ extension UnifiedAudioEngineManager {
         targetFrequency = clampedFrequency
         targetVolume = clampedVolume
         startInterpolation()
+        
+        // Update lock screen info if audio is playing
+        if isFrequencyPlaying {
+            DispatchQueue.main.async {
+                self.updateNowPlayingInfo()
+            }
+        }
     }
     
     // For immediate updates during real-time interaction (no interpolation)

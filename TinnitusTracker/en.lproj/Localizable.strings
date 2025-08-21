@@ -1,0 +1,179 @@
+/* Profile Section */
+"profile.title" = "Profile";
+"profile.reminders.title" = "Reminders";
+
+/* Language Section */
+"profile.language.title" = "Language";
+"profile.language.button.title" = "Language";
+"profile.language.selection.title" = "Select Language";
+"profile.language.english" = "English";
+"profile.language.korean" = "Korean";
+
+/* Tutorial Section */
+"profile.tutorial.title" = "Help & Tutorial";
+"profile.tutorial.restart.title" = "Restart Tutorial";
+"profile.tutorial.restart.description" = "Learn how to use the app effectively";
+
+/* About Section */
+"profile.about.title" = "About";
+"profile.about.app.title" = "About This App";
+"profile.about.app.description" = "Track your tinnitus symptoms and find relief";
+"profile.about.description" = "TinnitusTracker is designed to help you manage tinnitus symptoms through personalized frequency matching, progress tracking, and evidence-based techniques.";
+"profile.about.disclaimer" = "Remember: This app is not a substitute for professional medical advice. Please consult with a healthcare provider for proper diagnosis and treatment.";
+
+/* Privacy Section */
+"profile.privacy.title" = "Privacy";
+"profile.privacy.policy.title" = "Privacy Policy";
+"profile.privacy.policy.description" = "How we protect your data";
+"profile.privacy.policy.button.description" = "Learn how we protect your information";
+
+/* Tab Navigation */
+"tab.frequency" = "Frequency";
+"tab.log" = "Log";
+"tab.profile" = "Profile";
+
+/* Diary Navigation */
+"diary.add" = "Add";
+"diary.progress.tracking" = "Progress Tracking";
+"diary.history" = "History";
+
+/* Entry Form */
+"form.tinnitus.level" = "Tinnitus Level";
+"form.current.stress" = "Current Stress";
+"form.session.duration" = "Session Duration";
+"form.entry" = "Entry";
+"form.live" = "Live";
+"form.save.entry" = "Save Entry";
+
+/* Frequency Interface */
+"frequency.frequency" = "Frequency";
+"frequency.volume" = "Volume";
+
+/* Statistics */
+"stats.this.week.average" = "This Week's Average";
+"stats.loudness" = "Loudness";
+"stats.stress" = "Stress";
+"stats.weekly.summaries" = "Weekly Summaries";
+"stats.session.calendar" = "Session Calendar";
+"stats.overall.statistics" = "Overall Statistics";
+"stats.avg.tinnitus" = "Avg Tinnitus";
+"stats.avg.stress" = "Avg Stress";
+"stats.total.time" = "Total Time";
+"stats.total.entries" = "Total Entries";
+"stats.this.month" = "This Month:";
+"stats.less" = "Less";
+"stats.more" = "More";
+
+/* Empty States */
+"empty.no.diary.entries" = "No Diary Entries Yet";
+"empty.enter.new.log" = "Enter a new log";
+"empty.track.symptoms" = "Track your tinnitus symptoms by";
+"empty.switch.to.add" = "switching to the \"Add\" tab";
+"empty.no.data" = "No data";
+
+/* Alerts */
+"alert.delete.entry" = "Delete Entry";
+"alert.delete.confirm" = "Are you sure you want to delete this diary entry? This action cannot be undone.";
+"alert.delete" = "Delete";
+
+/* Save Confirmation */
+"save.entry.saved" = "Entry #%d Saved";
+"save.tinnitus" = "Tinnitus: %d/10";
+"save.stress" = "Stress: %d/10";
+"save.duration" = "Duration: %@";
+
+/* Audio Feedback */
+"audio.start.to.enable" = "Start audio to enable live tracking";
+"audio.now.playing.title" = "Tinnitus Frequency Therapy";
+
+/* Tutorial Content */
+"tutorial.welcome.title" = "Welcome to Tinnitus Tracker";
+"tutorial.welcome.description" = "This app helps reduce your tinnitus through sound therapy. Set volume to 70% of your tinnitus loudness and listen for about 2 hours daily for best results.";
+"tutorial.frequency.matching.title" = "Match Your Tinnitus Frequency";
+"tutorial.frequency.matching.description" = "Match your tinnitus frequency and volume levels to reduce tinnitus symptoms.";
+"tutorial.log.title" = "Track Your Progress";
+"tutorial.log.description" = "Add entries, tinnitus loudness and stress levels, and therapy duration to track improvement over time.";
+"tutorial.progress.title" = "View Your Progress";
+"tutorial.progress.description" = "View your therapy progress with weekly summaries, session calendar, and comprehensive statistics to track your improvement.";
+"tutorial.history.title" = "Review Your History";
+"tutorial.history.description" = "Review all your individual session entries to see your detailed therapy history and symptom patterns over time.";
+"tutorial.profile.title" = "Setup Reminders";
+"tutorial.profile.description" = "Set up daily reminders to help you maintain a consistent therapy routine for maximum effectiveness.";
+"tutorial.step.next" = "Next";
+"tutorial.step.start.therapy" = "Start Therapy";
+"tutorial.step.start.tutorial" = "Start Tutorial";
+"tutorial.skip" = "Skip Tutorial";
+"tutorial.skip.for.now" = "Skip for Now";
+"tutorial.features.match.title" = "Match Your Tinnitus";
+"tutorial.features.match.description" = "Find the exact frequency and sound type";
+"tutorial.features.volume.title" = "Set Optimal Volume";
+"tutorial.features.volume.description" = "70% of your tinnitus loudness for best results";
+"tutorial.features.daily.title" = "2 Hours Daily";
+"tutorial.features.daily.description" = "Consistent therapy for effective relief";
+"tutorial.features.track.title" = "track your progress";
+"tutorial.features.track.description" = "Your data, your journey";
+"tutorial.welcome.to" = "Welcome to";
+"tutorial.app.name" = "Tinnitus Tracker";
+
+/* Privacy Policy Content */
+"privacy.navigation.title" = "Privacy Policy";
+"privacy.navigation.done" = "Done";
+"privacy.header.title" = "Your Privacy is Our Priority";
+"privacy.header.last.updated" = "Last Updated: August 15, 2025";
+"privacy.header.description" = "TinnitusTracker is built to be a private, secure, and offline-first application. We believe your health data is your own.";
+"privacy.section.no.data.title" = "No Personal Data Collection";
+"privacy.section.no.data.content" = "TinnitusTracker operates with a strict no-data-collection policy. We do not require user accounts, emails, or any personal identifiers. Your use of the app is completely anonymous.";
+"privacy.section.local.storage.title" = "Local Storage Only";
+"privacy.section.local.storage.content" = "All diary entries, frequency settings, and preferences are stored exclusively on your device using Apple's secure Core Data framework. This data is protected by your device's security (e.g., Face ID, Passcode) and is permanently deleted if you uninstall the app.";
+"privacy.section.no.third.party.title" = "No Third-Party Services";
+"privacy.section.no.third.party.content" = "This app does not include any third-party analytics, advertising networks, or crash reporting services. It functions entirely offline, and no data ever leaves your device.";
+"privacy.section.audio.permissions.title" = "Audio Permissions";
+"privacy.section.audio.permissions.content" = "Audio session permissions are requested solely to generate therapeutic sounds. The app only outputs audio; it never records and does not use the microphone.";
+"privacy.section.user.control.title" = "You Are in Control";
+"privacy.section.user.control.content" = "You have full control over your data. You can export your diary for personal use or delete individual entries at any time through the app's settings.";
+"privacy.guarantee.title" = "Complete Privacy Guarantee";
+"privacy.guarantee.description" = "TinnitusTracker is designed with privacy-by-design principles. We cannot access your data because we never collect it. Your health information remains exclusively yours.";
+
+/* Reminder Interface */
+"reminders.add.new" = "Add New Reminder";
+"reminders.no.reminders.set" = "No reminders set";
+"reminders.tap.to.get.started" = "Tap 'Add New Reminder' to get started";
+"reminders.edit.reminder" = "Edit Reminder";
+"reminders.new.reminder" = "New Reminder";
+"reminders.time" = "Time";
+"reminders.message" = "Message";
+"reminders.enable.reminder" = "Enable Reminder";
+"reminders.enable.description" = "Turn on to receive notifications";
+"reminders.days" = "Days";
+"reminders.repeat.on" = "Repeat on";
+"reminders.every.day" = "Every day";
+"reminders.weekdays" = "Weekdays";
+"reminders.weekends" = "Weekends";
+"reminders.custom" = "Custom";
+"reminders.save" = "Save";
+"reminders.edit" = "Edit";
+"reminders.delete" = "Delete";
+"reminders.cancel" = "Cancel";
+"reminders.delete.confirmation" = "Are you sure you want to delete this reminder? This action cannot be undone.";
+"reminders.options.title" = "Reminder Options";
+"reminders.delete.reminder" = "Delete Reminder";
+"reminders.notification.title" = "Tinnitus Tracking Reminder";
+"reminders.default.message" = "Track your tinnitus";
+"reminders.weekday.sunday" = "Sunday";
+"reminders.weekday.monday" = "Monday";
+"reminders.weekday.tuesday" = "Tuesday";
+"reminders.weekday.wednesday" = "Wednesday";
+"reminders.weekday.thursday" = "Thursday";
+"reminders.weekday.friday" = "Friday";
+"reminders.weekday.saturday" = "Saturday";
+"reminders.weekday.short.sun" = "Sun";
+"reminders.weekday.short.mon" = "Mon";
+"reminders.weekday.short.tue" = "Tue";
+"reminders.weekday.short.wed" = "Wed";
+"reminders.weekday.short.thu" = "Thu";
+"reminders.weekday.short.fri" = "Fri";
+"reminders.weekday.short.sat" = "Sat";
+
+/* Common */
+"common.cancel" = "Cancel";
+"common.unknown.date" = "Unknown Date";
