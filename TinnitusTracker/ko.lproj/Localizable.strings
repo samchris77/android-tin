@@ -84,6 +84,7 @@
 
 /* Audio Feedback */
 "audio.start.to.enable" = "실시간 추적을 활성화하려면 오디오를 시작하세요";
+"audio.now.playing.title" = "이명 주파수 치료";
 
 /* Tutorial Content */
 "tutorial.welcome.title" = "Tinnitus Tracker에 오신 것을 환영합니다";

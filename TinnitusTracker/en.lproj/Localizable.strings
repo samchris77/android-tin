@@ -84,6 +84,7 @@
 
 /* Audio Feedback */
 "audio.start.to.enable" = "Start audio to enable live tracking";
+"audio.now.playing.title" = "Tinnitus Frequency Therapy";
 
 /* Tutorial Content */
 "tutorial.welcome.title" = "Welcome to Tinnitus Tracker";
