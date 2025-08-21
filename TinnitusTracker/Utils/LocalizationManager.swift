@@ -16,7 +16,14 @@ class LocalizationManager: ObservableObject {
     }
     
     private init() {
-        self.currentLanguage = UserDefaults.standard.string(forKey: "selectedLanguage") ?? "en"
+        if let savedLanguage = UserDefaults.standard.string(forKey: "selectedLanguage") {
+            // User has already set a language preference
+            self.currentLanguage = savedLanguage
+        } else {
+            // First launch - detect device language
+            let deviceLanguage = Locale.preferredLanguages.first ?? "en"
+            self.currentLanguage = deviceLanguage.hasPrefix("ko") ? "ko" : "en"
+        }
         
         // Set initial language
         if let path = Bundle.main.path(forResource: currentLanguage, ofType: "lproj") {
