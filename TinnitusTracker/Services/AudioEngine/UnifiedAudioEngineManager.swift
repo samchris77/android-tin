@@ -48,6 +48,11 @@ class UnifiedAudioEngineManager: ObservableObject {
     // Session tracking timer
     private var sessionTimer: Timer?
     
+    // Track last Now Playing info to prevent redundant updates
+    private var lastNowPlayingFrequency: Float = 0
+    private var lastNowPlayingIsPlaying: Bool = false
+    private var lastNowPlayingDuration: TimeInterval = 0
+    
     private var cancellables = Set<AnyCancellable>()
     
     private init() {
@@ -75,43 +80,102 @@ class UnifiedAudioEngineManager: ObservableObject {
     
     private func setupAudioSession() {
         do {
-            try audioSession.setCategory(.playback, mode: .default, options: [.allowBluetooth, .allowBluetoothA2DP])
-            try audioSession.setActive(true)
+            // First, ensure the session is not active to avoid conflicts
+            try audioSession.setActive(false, options: .notifyOthersOnDeactivation)
+            
+            // Try the preferred configuration first
+            try audioSession.setCategory(.playback, mode: .default, options: [.allowBluetooth, .allowBluetoothA2DP, .duckOthers])
+            
+            // Activate the session
+            try audioSession.setActive(true, options: [])
             sampleRate = audioSession.sampleRate
+            
+            print("✅ Audio session setup successful - Category: \(audioSession.category.rawValue), Mode: \(audioSession.mode.rawValue)")
             
             // Setup remote command center for lock screen controls
             setupRemoteCommandCenter()
-        } catch {
-            print("Failed to setup audio session: \(error)")
+        } catch let error as NSError {
+            print("❌ Primary audio session setup failed: \(error.localizedDescription) (Code: \(error.code))")
+            
+            // Fallback configuration for error -50 and other issues
+            setupAudioSessionFallback()
+        }
+    }
+    
+    private func setupAudioSessionFallback() {
+        do {
+            // Try a simpler configuration without bluetooth options
+            try audioSession.setCategory(.playback, mode: .default, options: [])
+            try audioSession.setActive(true, options: [])
+            sampleRate = audioSession.sampleRate
+            
+            print("✅ Audio session fallback successful - Using basic playback configuration")
+            
+            // Setup remote command center for lock screen controls
+            setupRemoteCommandCenter()
+        } catch let error as NSError {
+            print("❌ Audio session fallback also failed: \(error.localizedDescription) (Code: \(error.code))")
+            
+            // Final fallback - try minimal configuration
+            do {
+                try audioSession.setCategory(.ambient)
+                try audioSession.setActive(true)
+                sampleRate = audioSession.sampleRate
+                print("⚠️ Using minimal audio session configuration")
+                setupRemoteCommandCenter()
+            } catch {
+                print("💥 Complete audio session failure: \(error)")
+            }
         }
     }
     
     private func setupRemoteCommandCenter() {
         let commandCenter = MPRemoteCommandCenter.shared()
         
-        // Configure play command
+        // Enable and configure play command
+        commandCenter.playCommand.isEnabled = true
         commandCenter.playCommand.addTarget { [weak self] event -> MPRemoteCommandHandlerStatus in
             guard let self = self else { return .commandFailed }
+            print("🎵 Lock screen PLAY command received")
             if !self.isFrequencyPlaying {
                 self.startFrequencyMatching(frequency: self.currentFrequency, volume: self.currentFrequencyVolume)
+                return .success
             }
-            return .success
+            return .noActionableNowPlayingItem
         }
         
-        // Configure pause command
+        // Enable and configure pause command
+        commandCenter.pauseCommand.isEnabled = true
         commandCenter.pauseCommand.addTarget { [weak self] event -> MPRemoteCommandHandlerStatus in
             guard let self = self else { return .commandFailed }
+            print("⏸️ Lock screen PAUSE command received")
             if self.isFrequencyPlaying {
                 self.stopFrequencyMatching()
+                return .success
             }
+            return .noActionableNowPlayingItem
+        }
+        
+        // Enable and configure stop command
+        commandCenter.stopCommand.isEnabled = true
+        commandCenter.stopCommand.addTarget { [weak self] event -> MPRemoteCommandHandlerStatus in
+            guard let self = self else { return .commandFailed }
+            print("⏹️ Lock screen STOP command received")
+            self.stopFrequencyMatching()
+            self.clearNowPlayingInfo()
             return .success
         }
         
-        // Configure stop command
-        commandCenter.stopCommand.addTarget { [weak self] event -> MPRemoteCommandHandlerStatus in
+        // Enable toggle play/pause command for better compatibility
+        commandCenter.togglePlayPauseCommand.isEnabled = true
+        commandCenter.togglePlayPauseCommand.addTarget { [weak self] event -> MPRemoteCommandHandlerStatus in
             guard let self = self else { return .commandFailed }
-            self.stopFrequencyMatching()
-            self.clearNowPlayingInfo()
+            print("⏯️ Lock screen TOGGLE command received")
+            if self.isFrequencyPlaying {
+                self.stopFrequencyMatching()
+            } else {
+                self.startFrequencyMatching(frequency: self.currentFrequency, volume: self.currentFrequencyVolume)
+            }
             return .success
         }
         
@@ -120,9 +184,25 @@ class UnifiedAudioEngineManager: ObservableObject {
         commandCenter.previousTrackCommand.isEnabled = false
         commandCenter.seekForwardCommand.isEnabled = false
         commandCenter.seekBackwardCommand.isEnabled = false
+        commandCenter.skipForwardCommand.isEnabled = false
+        commandCenter.skipBackwardCommand.isEnabled = false
+        
+        print("🎛️ Remote command center configured successfully")
     }
     
     private func updateNowPlayingInfo() {
+        // Get current values
+        let currentElapsedTime = sessionStartTime != nil ? Date().timeIntervalSince(sessionStartTime!) : 0.0
+        
+        // Check if anything actually changed to avoid redundant updates
+        let frequencyChanged = abs(currentFrequency - lastNowPlayingFrequency) > 1.0
+        let playingStateChanged = isFrequencyPlaying != lastNowPlayingIsPlaying
+        let durationChanged = abs(currentElapsedTime - lastNowPlayingDuration) >= 5.0 // Only update duration every 5 seconds
+        
+        guard frequencyChanged || playingStateChanged || durationChanged else {
+            return // Skip update if nothing significant changed
+        }
+        
         var nowPlayingInfo = [String: Any]()
         
         // Set track information
@@ -130,28 +210,54 @@ class UnifiedAudioEngineManager: ObservableObject {
         nowPlayingInfo[MPMediaItemPropertyArtist] = "TinnitusTracker"
         nowPlayingInfo[MPMediaItemPropertyAlbumTitle] = "\(Int(currentFrequency)) Hz"
         
+        // Set playback duration - iOS requires this for lock screen controls
+        // Set to a large duration for continuous therapy sessions (1 hour)
+        nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = 3600.0
+        
         // Set playback rate (1.0 for playing, 0.0 for paused)
         nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = isFrequencyPlaying ? 1.0 : 0.0
         
         // Set elapsed time based on current session
-        if let sessionStart = sessionStartTime {
-            let elapsedTime = Date().timeIntervalSince(sessionStart)
-            nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = elapsedTime
-        }
+        nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentElapsedTime
         
-        // Create app icon artwork (you can replace with custom artwork if desired)
-        if let appIcon = UIImage(named: "AppIcon") {
-            nowPlayingInfo[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: appIcon.size) { _ in
-                return appIcon
+        // Create SF Symbol artwork for lock screen
+        if let waveformIcon = UIImage(systemName: "waveform.path") {
+            let artworkSize = CGSize(width: 200, height: 200)
+            nowPlayingInfo[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: artworkSize) { _ in
+                return waveformIcon
+            }
+            // Only log artwork setup on first time or state changes to reduce console spam
+            if playingStateChanged || lastNowPlayingFrequency == 0 {
+                print("🎨 Lock screen artwork set with waveform symbol")
+            }
+        } else if let speakerIcon = UIImage(systemName: "speaker.wave.2.fill") {
+            let artworkSize = CGSize(width: 200, height: 200)
+            nowPlayingInfo[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: artworkSize) { _ in
+                return speakerIcon
+            }
+            if playingStateChanged || lastNowPlayingFrequency == 0 {
+                print("🎨 Lock screen artwork set with speaker symbol (fallback)")
+            }
+        } else {
+            if playingStateChanged || lastNowPlayingFrequency == 0 {
+                print("⚠️ Failed to load SF Symbol artwork for lock screen")
             }
         }
         
         // Set the metadata
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+        
+        // Update tracking variables
+        lastNowPlayingFrequency = currentFrequency
+        lastNowPlayingIsPlaying = isFrequencyPlaying
+        lastNowPlayingDuration = currentElapsedTime
+        
+        print("🔒 Lock screen info updated - Playing: \(isFrequencyPlaying), Frequency: \(Int(currentFrequency))Hz, Duration: \(Int(currentElapsedTime))s")
     }
     
     private func clearNowPlayingInfo() {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        print("🔒 Lock screen info cleared")
     }
     
     private func setupEngine() {
@@ -516,7 +622,15 @@ extension UnifiedAudioEngineManager {
         guard let startTime = sessionStartTime else { return }
         
         DispatchQueue.main.async {
-            self.currentSessionDuration = Date().timeIntervalSince(startTime)
+            let newDuration = Date().timeIntervalSince(startTime)
+            let durationChanged = abs(newDuration - self.currentSessionDuration) > 1.0 // Only update if changed by more than 1 second
+            
+            self.currentSessionDuration = newDuration
+            
+            // Only update Now Playing info periodically (every 5 seconds) to avoid spam
+            if Int(newDuration) % 5 == 0 || durationChanged {
+                self.updateNowPlayingInfo()
+            }
         }
     }
     
