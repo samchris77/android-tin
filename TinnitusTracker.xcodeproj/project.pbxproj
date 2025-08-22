@@ -28,6 +28,7 @@
 		52CAB0552E56E6710060D444 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 52CAB04F2E56E6710060D444 /* Localizable.strings */; };
 		52CAB0582E56F7FD0060D444 /* PrivacyInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52CAB0562E56F7FD0060D444 /* PrivacyInfoView.swift */; };
 		52CAB0622E571A3E0060D444 /* LocalizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52CAB0602E571A3E0060D444 /* LocalizationManager.swift */; };
+		52F673922E57EA8600BB9B69 /* soundwave_icon_clean.png in Resources */ = {isa = PBXBuildFile; fileRef = 52F673912E57EA8600BB9B69 /* soundwave_icon_clean.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -54,6 +55,7 @@
 		52CAB0512E56E6710060D444 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = Localizable.strings; sourceTree = "<group>"; };
 		52CAB0562E56F7FD0060D444 /* PrivacyInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyInfoView.swift; sourceTree = "<group>"; };
 		52CAB0602E571A3E0060D444 /* LocalizationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationManager.swift; sourceTree = "<group>"; };
+		52F673912E57EA8600BB9B69 /* soundwave_icon_clean.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = soundwave_icon_clean.png; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -169,6 +171,7 @@
 		1D92FB362C8E4C9800F7EF96 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				52F673912E57EA8600BB9B69 /* soundwave_icon_clean.png */,
 				1D92FB032C8E4B5F00F7EF96 /* Assets.xcassets */,
 			);
 			path = Resources;
@@ -303,6 +306,7 @@
 				52CAB0552E56E6710060D444 /* Localizable.strings in Resources */,
 				1D92FB072C8E4B5F00F7EF96 /* Preview Assets.xcassets in Resources */,
 				1D92FB042C8E4B5F00F7EF96 /* Assets.xcassets in Resources */,
+				52F673922E57EA8600BB9B69 /* soundwave_icon_clean.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -480,7 +484,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "\"TinnitusTracker/Preview Content\"";
 				DEVELOPMENT_TEAM = DK77QDUKRT;
 				ENABLE_PREVIEWS = YES;
@@ -514,7 +518,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "\"TinnitusTracker/Preview Content\"";
 				DEVELOPMENT_TEAM = DK77QDUKRT;
 				ENABLE_PREVIEWS = YES;
