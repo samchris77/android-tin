@@ -207,7 +207,7 @@ class UnifiedAudioEngineManager: ObservableObject {
         
         // Set track information
         nowPlayingInfo[MPMediaItemPropertyTitle] = LocalizedString("audio.now.playing.title")
-        nowPlayingInfo[MPMediaItemPropertyArtist] = "TinnitusTracker"
+        nowPlayingInfo[MPMediaItemPropertyArtist] = "Audio Session"
         nowPlayingInfo[MPMediaItemPropertyAlbumTitle] = "\(Int(currentFrequency)) Hz"
         
         // Set playback duration - iOS requires this for lock screen controls
@@ -220,15 +220,23 @@ class UnifiedAudioEngineManager: ObservableObject {
         // Set elapsed time based on current session
         nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentElapsedTime
         
-        // Create SF Symbol artwork for lock screen
-        if let waveformIcon = UIImage(systemName: "waveform.path") {
+        // Create custom artwork for lock screen
+        if let customIcon = UIImage(named: "soundwave_icon_clean") {
+            let artworkSize = CGSize(width: 200, height: 200)
+            nowPlayingInfo[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: artworkSize) { _ in
+                return customIcon
+            }
+            // Only log artwork setup on first time or state changes to reduce console spam
+            if playingStateChanged || lastNowPlayingFrequency == 0 {
+                print("🎨 Lock screen artwork set with custom soundwave icon")
+            }
+        } else if let waveformIcon = UIImage(systemName: "waveform.path") {
             let artworkSize = CGSize(width: 200, height: 200)
             nowPlayingInfo[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: artworkSize) { _ in
                 return waveformIcon
             }
-            // Only log artwork setup on first time or state changes to reduce console spam
             if playingStateChanged || lastNowPlayingFrequency == 0 {
-                print("🎨 Lock screen artwork set with waveform symbol")
+                print("🎨 Lock screen artwork set with waveform symbol (fallback)")
             }
         } else if let speakerIcon = UIImage(systemName: "speaker.wave.2.fill") {
             let artworkSize = CGSize(width: 200, height: 200)
@@ -236,11 +244,11 @@ class UnifiedAudioEngineManager: ObservableObject {
                 return speakerIcon
             }
             if playingStateChanged || lastNowPlayingFrequency == 0 {
-                print("🎨 Lock screen artwork set with speaker symbol (fallback)")
+                print("🎨 Lock screen artwork set with speaker symbol (final fallback)")
             }
         } else {
             if playingStateChanged || lastNowPlayingFrequency == 0 {
-                print("⚠️ Failed to load SF Symbol artwork for lock screen")
+                print("⚠️ Failed to load any artwork for lock screen")
             }
         }
         
