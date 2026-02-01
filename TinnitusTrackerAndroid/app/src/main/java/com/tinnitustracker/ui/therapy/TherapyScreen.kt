@@ -34,7 +34,7 @@ data class SoundEffect(
 @Composable
 fun TherapyScreen(
     audioEngine: AudioEngine,
-    timerViewModel: TimerViewModel = viewModel(factory = TimerViewModelFactory(audioEngine))
+    viewModel: TherapyViewModel = viewModel(factory = TherapyViewModelFactory(audioEngine))
 ) {
     val sounds = listOf(
         SoundEffect("Rain", R.raw.rain, Color(0xFF4FC3F7)),
@@ -42,8 +42,9 @@ fun TherapyScreen(
         SoundEffect("Beach", R.raw.beach, Color(0xFFFFF176)),
         SoundEffect("Brook", R.raw.brook, Color(0xFF66BB6A))
     )
-
-    var selectedSound by remember { mutableStateOf<SoundEffect?>(null) }
+    
+    // UI just observes ViewModel state
+    val selectedResourceId = viewModel.selectedResourceId
     var isNotchEnabled by remember { mutableStateOf(false) } // AudioEngine tracks this, but UI needs state
     var showTimerDialog by remember { mutableStateOf(false) }
     
@@ -59,8 +60,8 @@ fun TherapyScreen(
                 onClick = { showTimerDialog = true },
                 icon = { Icon(Icons.Default.AccessTime, "Timer") },
                 text = { 
-                    if (timerViewModel.isTimerRunning) {
-                        Text(timerViewModel.getFormattedTime())
+                    if (viewModel.isTimerRunning) {
+                        Text(viewModel.getFormattedTime())
                     } else {
                         Text("Sleep Timer")
                     }
@@ -111,25 +112,12 @@ fun TherapyScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(sounds) { sound ->
+                    val isSelected = selectedResourceId == sound.resourceId
                     SoundCard(
                         sound = sound,
-                        isSelected = selectedSound == sound,
+                        isSelected = isSelected,
                         onClick = {
-                            if (selectedSound == sound) {
-                                // Toggle Play/Pause or Stop? 
-                                // User said "Clicking a sound should switch...". 
-                                // If same sound clicked, maybe pause? 
-                                // Let's simplify: Click starts.
-                                // But if want to stop? 
-                                // Let's assume click always restarts or ensures playing.
-                                // For stopping, maybe a separate stop button or deselect.
-                                // Let's make it toggle behavior if already selected.
-                                audioEngine.stop()
-                                selectedSound = null
-                            } else {
-                                selectedSound = sound
-                                audioEngine.playSound(sound.resourceId)
-                            }
+                            viewModel.toggleSound(sound.resourceId)
                         }
                     )
                 }
@@ -146,7 +134,7 @@ fun TherapyScreen(
                     listOf(15, 30, 45, 60).forEach { mins ->
                         TextButton(
                             onClick = { 
-                                timerViewModel.startTimer(mins)
+                                viewModel.startTimer(mins)
                                 showTimerDialog = false
                             },
                             modifier = Modifier.fillMaxWidth()
@@ -154,10 +142,10 @@ fun TherapyScreen(
                             Text("$mins minutes")
                         }
                     }
-                    if (timerViewModel.isTimerRunning) {
+                    if (viewModel.isTimerRunning) {
                          TextButton(
                             onClick = { 
-                                timerViewModel.stopTimer()
+                                viewModel.stopTimer()
                                 showTimerDialog = false
                             },
                             modifier = Modifier.fillMaxWidth(),

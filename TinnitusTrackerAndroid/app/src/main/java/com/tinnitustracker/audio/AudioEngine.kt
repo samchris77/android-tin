@@ -39,13 +39,16 @@ class AudioEngine(private val context: Context) {
     private var currentVolume = 1.0f // Default to max
     
     // Gains
-    private val THERAPY_GAIN = 3.0f
+    private val THERAPY_GAIN = 6.0f
     private val GENERATOR_GAIN = 5.0f
     
     private val smoothingFactor = 0.1f 
 
     // Current sound resource (null = Generator/Matcher Mode)
     private var currentResourceId: Int? = null
+    
+    val activeResourceId: Int?
+        get() = currentResourceId
 
     init {
         createAudioTrack()
