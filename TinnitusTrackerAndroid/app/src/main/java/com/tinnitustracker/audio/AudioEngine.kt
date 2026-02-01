@@ -10,6 +10,9 @@ import android.media.MediaFormat
 import android.util.Log
 import kotlin.math.tanh
 import kotlin.random.Random
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class AudioEngine(private val context: Context) {
     private val TAG = "AudioEngine"
@@ -30,13 +33,24 @@ class AudioEngine(private val context: Context) {
     
     // Shared frequency for both Matcher (BandPass) and Therapy (Notch)
     private var targetFrequency = 1000.0f
+    private val _frequencyFlow = MutableStateFlow(targetFrequency)
+    val frequencyFlow: StateFlow<Float> = _frequencyFlow.asStateFlow()
+
     private var currentFrequency = 1000.0f
     
     // Therapy Mode State
     private var notchEnabled = false
+    private val _notchEnabledFlow = MutableStateFlow(notchEnabled)
+    val notchEnabledFlow: StateFlow<Boolean> = _notchEnabledFlow.asStateFlow()
+
     
     // Volume Control
     private var currentVolume = 1.0f // Default to max
+    private val _volumeFlow = MutableStateFlow(currentVolume)
+    val volumeFlow: StateFlow<Float> = _volumeFlow.asStateFlow()
+
+    private val _isPlayingFlow = MutableStateFlow(false)
+    val isPlayingFlow: StateFlow<Boolean> = _isPlayingFlow.asStateFlow()
     
     // Gains
     private val THERAPY_GAIN = 6.0f
@@ -100,6 +114,7 @@ class AudioEngine(private val context: Context) {
     fun start() {
         if (isPlaying) return
         isPlaying = true
+        _isPlayingFlow.value = true
         audioTrack?.play()
 
         processingThread = Thread {
@@ -113,6 +128,7 @@ class AudioEngine(private val context: Context) {
 
     fun stop() {
         isPlaying = false
+        _isPlayingFlow.value = false
         try {
             processingThread?.join(500)
         } catch (e: InterruptedException) {
@@ -290,6 +306,7 @@ class AudioEngine(private val context: Context) {
     fun setNotchEnabled(enabled: Boolean) {
         if (notchEnabled != enabled) {
             notchEnabled = enabled
+            _notchEnabledFlow.value = enabled
             filter.reset() // Reset filter state on toggle to avoid click/pop
         }
     }
@@ -301,10 +318,12 @@ class AudioEngine(private val context: Context) {
 
     fun setNotchFrequency(frequency: Float) {
         targetFrequency = frequency.coerceIn(20f, 16000f)
+        _frequencyFlow.value = targetFrequency
     }
 
     fun setVolume(volume: Float) {
         currentVolume = volume.coerceIn(0f, 1f)
+        _volumeFlow.value = currentVolume
     }
     
     private fun smoothParameters() {

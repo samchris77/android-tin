@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -28,6 +29,9 @@ import com.tinnitustracker.ui.frequency.FrequencyMatchingScreen
 import com.tinnitustracker.ui.frequency.FrequencyViewModel
 import com.tinnitustracker.ui.frequency.FrequencyViewModelFactory
 import com.tinnitustracker.ui.therapy.TherapyScreen
+import com.tinnitustracker.ui.therapy.TherapyController
+import com.tinnitustracker.ui.therapy.TherapyViewModel
+import com.tinnitustracker.ui.therapy.TherapyViewModelFactory
 import com.tinnitustracker.ui.theme.TinnitusTrackerTheme
 
 class MainActivity : ComponentActivity() {
@@ -59,59 +63,71 @@ class MainActivity : ComponentActivity() {
 fun MainScreen(audioEngine: AudioEngine) {
     val navController = rememberNavController()
 
+    // Create shared TherapyViewModel to persist across screens and drive the Controller
+    val therapyViewModel: TherapyViewModel = viewModel(
+        factory = TherapyViewModelFactory(audioEngine)
+    )
+
     Scaffold(
         bottomBar = {
-            NavigationBar {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentDestination = navBackStackEntry?.destination
+            Column {
+                // Therapy Controller (Persistent above Nav Bar)
+                // We can conditionally show it or keep it always visible.
+                // Request implies it's a "component... directly above".
+                TherapyController(viewModel = therapyViewModel)
+                
+                NavigationBar {
+                    val navBackStackEntry by navController.currentBackStackEntryAsState()
+                    val currentDestination = navBackStackEntry?.destination
 
-                // 1. Matcher Tab
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.GraphicEq, contentDescription = "Matcher") },
-                    label = { Text("Matcher") },
-                    selected = currentDestination?.hierarchy?.any { it.route == "matcher" } == true,
-                    onClick = {
-                        navController.navigate("matcher") {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
+                    // 1. Matcher Tab
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.GraphicEq, contentDescription = "Matcher") },
+                        label = { Text("Matcher") },
+                        selected = currentDestination?.hierarchy?.any { it.route == "matcher" } == true,
+                        onClick = {
+                            navController.navigate("matcher") {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                            launchSingleTop = true
-                            restoreState = true
                         }
-                    }
-                )
-                
-                // 2. Therapy Tab
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Spa, contentDescription = "Therapy") },
-                    label = { Text("Therapy") },
-                    selected = currentDestination?.hierarchy?.any { it.route == "therapy" } == true,
-                    onClick = {
-                        navController.navigate("therapy") {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
+                    )
+                    
+                    // 2. Therapy Tab
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Spa, contentDescription = "Therapy") },
+                        label = { Text("Therapy") },
+                        selected = currentDestination?.hierarchy?.any { it.route == "therapy" } == true,
+                        onClick = {
+                            navController.navigate("therapy") {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                            launchSingleTop = true
-                            restoreState = true
                         }
-                    }
-                )
-                
-                // 3. Settings Tab
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
-                    label = { Text("Settings") },
-                    selected = currentDestination?.hierarchy?.any { it.route == "settings" } == true,
-                    onClick = {
-                        navController.navigate("settings") {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
+                    )
+                    
+                    // 3. Settings Tab
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
+                        label = { Text("Settings") },
+                        selected = currentDestination?.hierarchy?.any { it.route == "settings" } == true,
+                        onClick = {
+                            navController.navigate("settings") {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                            launchSingleTop = true
-                            restoreState = true
                         }
-                    }
-                )
+                    )
+                }
             }
         }
     ) { innerPadding ->

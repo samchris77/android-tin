@@ -17,6 +17,19 @@ class TherapyViewModel(
     private val audioEngine: AudioEngine
 ) : ViewModel() {
 
+    // --- Playback State ---
+    var isPlaying by mutableStateOf(false)
+        private set
+
+    var isNotchEnabled by mutableStateOf(false)
+        private set
+
+    var matchedFrequency by mutableStateOf(1000f)
+        private set
+
+    var volume by mutableStateOf(0.5f)
+        private set
+
     // --- Sound Selection State ---
     var selectedResourceId by mutableStateOf<Int?>(null)
         private set
@@ -33,8 +46,34 @@ class TherapyViewModel(
     init {
         // Restore state from AudioEngine if it's already playing
         selectedResourceId = audioEngine.activeResourceId
+        
+        // Observe AudioEngine state
+        viewModelScope.launch {
+            launch { audioEngine.isPlayingFlow.collect { isPlaying = it } }
+            launch { audioEngine.notchEnabledFlow.collect { isNotchEnabled = it } }
+            launch { audioEngine.frequencyFlow.collect { matchedFrequency = it } }
+            launch { audioEngine.volumeFlow.collect { volume = it } }
+        }
     }
     
+    // --- Actions ---
+
+    fun togglePlayback() {
+        if (isPlaying) {
+            audioEngine.stop()
+        } else {
+            audioEngine.start()
+        }
+    }
+
+    fun toggleNotch() {
+        audioEngine.setNotchEnabled(!isNotchEnabled)
+    }
+
+    fun updateVolume(newVolume: Float) {
+        audioEngine.setVolume(newVolume)
+    }
+
     fun toggleSound(resourceId: Int) {
         if (selectedResourceId == resourceId) {
             // Stop

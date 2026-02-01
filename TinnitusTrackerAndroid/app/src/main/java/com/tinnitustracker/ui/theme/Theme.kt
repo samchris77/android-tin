@@ -17,22 +17,27 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFFFFA726),
-    secondary = Color(0xFFFFCC80),
-    tertiary = Color(0xFFEF6C00)
+    primary = BluePrimaryDark,
+    secondary = BlueSecondaryDark,
+    tertiary = BlueTertiaryDark,
+    background = DarkBackground,
+    surface = DarkSurface
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFFEF6C00),
-    secondary = Color(0xFFFB8C00),
-    tertiary = Color(0xFFFF9800)
+    primary = BluePrimary,
+    secondary = BlueSecondary,
+    tertiary = BlueTertiary,
+    background = OffWhite,
+    surface = White
 )
 
 @Composable
 fun TinnitusTrackerTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    // Disabling dynamicColor to enforce the custom "Calm Blue" aesthetic
+    dynamicColor: Boolean = false, 
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -49,12 +54,13 @@ fun TinnitusTrackerTheme(
         SideEffect {
             val window = (view.context as Activity).window
             window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
 
     MaterialTheme(
         colorScheme = colorScheme,
+        typography = Typography,
         content = content
     )
 }
