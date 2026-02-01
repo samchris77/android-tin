@@ -29,6 +29,25 @@ class BiquadFilter(
         a1 = -2.0 * cos(omega)
         a2 = 1.0 - alpha
         
+        preNormalize()
+    }
+
+    // Notch Filter implementation
+    fun setNotch(frequency: Float, q: Float) {
+        val omega = 2.0 * PI * frequency / sampleRate
+        val alpha = sin(omega) / (2.0 * q)
+
+        b0 = 1.0
+        b1 = -2.0 * cos(omega)
+        b2 = 1.0
+        a0 = 1.0 + alpha
+        a1 = -2.0 * cos(omega)
+        a2 = 1.0 - alpha
+
+        preNormalize()
+    }
+
+    private fun preNormalize() {
         // Pre-normalize coefficients to save divisions during processing
         val invA0 = 1.0 / a0
         b0 *= invA0
@@ -36,6 +55,11 @@ class BiquadFilter(
         b2 *= invA0
         a1 *= invA0
         a2 *= invA0
+    }
+
+    fun reset() {
+        z1 = 0.0
+        z2 = 0.0
     }
 
     fun process(sample: Float): Float {

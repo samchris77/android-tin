@@ -38,7 +38,7 @@ class FrequencyViewModel(
         if (isPlaying) {
             audioEngine.stop()
         } else {
-            audioEngine.start()
+            audioEngine.startTone()
         }
         isPlaying = !isPlaying
     }

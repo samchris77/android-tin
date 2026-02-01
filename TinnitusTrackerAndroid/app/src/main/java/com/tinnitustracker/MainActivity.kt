@@ -3,14 +3,17 @@ package com.tinnitustracker
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.GraphicEq
-import androidx.compose.material.icons.filled.Book
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Spa
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -21,34 +24,27 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.tinnitustracker.audio.AudioEngine
 import com.tinnitustracker.data.AppDatabase
-import com.tinnitustracker.ui.diary.DiaryEntryScreen
-import com.tinnitustracker.ui.diary.DiaryScreen
-import com.tinnitustracker.ui.diary.DiaryViewModel
-import com.tinnitustracker.ui.diary.DiaryViewModelFactory
 import com.tinnitustracker.ui.frequency.FrequencyMatchingScreen
 import com.tinnitustracker.ui.frequency.FrequencyViewModel
 import com.tinnitustracker.ui.frequency.FrequencyViewModelFactory
-import com.tinnitustracker.ui.profile.ProfileScreen
+import com.tinnitustracker.ui.therapy.TherapyScreen
 import com.tinnitustracker.ui.theme.TinnitusTrackerTheme
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var audioEngine: AudioEngine
-    private lateinit var database: AppDatabase
+    // private lateinit var database: AppDatabase // Database unused in new layout for now
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Initialize Core Components
-        audioEngine = AudioEngine()
-        database = AppDatabase.getDatabase(this)
+        // Initialize Audio Engine
+        audioEngine = AudioEngine(this)
+        // database = AppDatabase.getDatabase(this)
 
         setContent {
             TinnitusTrackerTheme {
-                MainScreen(
-                    audioEngine = audioEngine,
-                    database = database
-                )
+                MainScreen(audioEngine = audioEngine)
             }
         }
     }
@@ -60,7 +56,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainScreen(audioEngine: AudioEngine, database: AppDatabase) {
+fun MainScreen(audioEngine: AudioEngine) {
     val navController = rememberNavController()
 
     Scaffold(
@@ -69,12 +65,13 @@ fun MainScreen(audioEngine: AudioEngine, database: AppDatabase) {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentDestination = navBackStackEntry?.destination
 
+                // 1. Matcher Tab
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.GraphicEq, contentDescription = "Frequency") },
-                    label = { Text("Frequency") },
-                    selected = currentDestination?.hierarchy?.any { it.route == "frequency" } == true,
+                    icon = { Icon(Icons.Default.GraphicEq, contentDescription = "Matcher") },
+                    label = { Text("Matcher") },
+                    selected = currentDestination?.hierarchy?.any { it.route == "matcher" } == true,
                     onClick = {
-                        navController.navigate("frequency") {
+                        navController.navigate("matcher") {
                             popUpTo(navController.graph.findStartDestination().id) {
                                 saveState = true
                             }
@@ -83,12 +80,14 @@ fun MainScreen(audioEngine: AudioEngine, database: AppDatabase) {
                         }
                     }
                 )
+                
+                // 2. Therapy Tab
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Book, contentDescription = "Diary") },
-                    label = { Text("Diary") },
-                    selected = currentDestination?.hierarchy?.any { it.route?.startsWith("diary") == true } == true,
+                    icon = { Icon(Icons.Default.Spa, contentDescription = "Therapy") },
+                    label = { Text("Therapy") },
+                    selected = currentDestination?.hierarchy?.any { it.route == "therapy" } == true,
                     onClick = {
-                        navController.navigate("diary") {
+                        navController.navigate("therapy") {
                             popUpTo(navController.graph.findStartDestination().id) {
                                 saveState = true
                             }
@@ -97,12 +96,14 @@ fun MainScreen(audioEngine: AudioEngine, database: AppDatabase) {
                         }
                     }
                 )
+                
+                // 3. Settings Tab
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
-                    label = { Text("Profile") },
-                    selected = currentDestination?.hierarchy?.any { it.route == "profile" } == true,
+                    icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
+                    label = { Text("Settings") },
+                    selected = currentDestination?.hierarchy?.any { it.route == "settings" } == true,
                     onClick = {
-                        navController.navigate("profile") {
+                        navController.navigate("settings") {
                             popUpTo(navController.graph.findStartDestination().id) {
                                 saveState = true
                             }
@@ -116,39 +117,34 @@ fun MainScreen(audioEngine: AudioEngine, database: AppDatabase) {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = "frequency",
+            startDestination = "matcher", // Default to Matcher
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable("frequency") {
+            composable("matcher") {
                 val viewModel: FrequencyViewModel = viewModel(
                     factory = FrequencyViewModelFactory(audioEngine)
                 )
                 FrequencyMatchingScreen(viewModel)
             }
             
-            composable("diary") {
-                val viewModel: DiaryViewModel = viewModel(
-                    factory = DiaryViewModelFactory(database.diaryDao())
-                )
-                DiaryScreen(
-                    viewModel = viewModel,
-                    onAddEntryClick = { navController.navigate("diary/add") }
-                )
+            composable("therapy") {
+                // AudioEngine is shared, so Notch Frequency set in Matcher applies here.
+                TherapyScreen(audioEngine = audioEngine)
             }
             
-            composable("diary/add") {
-                val viewModel: DiaryViewModel = viewModel(
-                    factory = DiaryViewModelFactory(database.diaryDao())
-                )
-                DiaryEntryScreen(
-                    viewModel = viewModel,
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
-            
-            composable("profile") {
-                ProfileScreen()
+            composable("settings") {
+                SettingsScreen()
             }
         }
+    }
+}
+
+@Composable
+fun SettingsScreen() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text("Settings Placeholder\nVersion 1.0")
     }
 }
