@@ -40,6 +40,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -111,6 +112,11 @@ fun FrequencyMatchingScreen(viewModel: FrequencyMatchingViewModel) {
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
     val showOctaveCheck by viewModel.showOctaveCheck.collectAsStateWithLifecycle()
 
+    val scrollState = rememberScrollState()
+    LaunchedEffect(showOctaveCheck) {
+        if (showOctaveCheck) scrollState.animateScrollTo(scrollState.maxValue)
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -121,7 +127,7 @@ fun FrequencyMatchingScreen(viewModel: FrequencyMatchingViewModel) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -485,7 +491,7 @@ private fun DrawScope.drawDial(hz: Float) {
 @Composable
 private fun StepperButtonRow(onStep: (Int) -> Unit) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        listOf(-10, -1, 1, 10).forEach { delta ->
+        listOf(-100, -10, 10, 100).forEach { delta ->
             StepperButton(
                 label = if (delta > 0) "+$delta" else "$delta",
                 onClick = { onStep(delta) },

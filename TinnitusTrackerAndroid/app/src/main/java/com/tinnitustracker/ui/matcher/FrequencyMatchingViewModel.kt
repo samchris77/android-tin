@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlin.math.log10
 import kotlin.math.pow
+import kotlin.math.roundToInt
 
 class FrequencyMatchingViewModel(
     private val engine: AudioEngine,
@@ -36,10 +37,8 @@ class FrequencyMatchingViewModel(
         _showOctaveCheck.value = false
         octaveCheckJob = viewModelScope.launch {
             delay(2_000L)
-            if (engine.isPlayingFlow.value) {
-                candidateHz = engine.frequency.value
-                _showOctaveCheck.value = true
-            }
+            candidateHz = engine.frequency.value
+            _showOctaveCheck.value = true
         }
     }
 
@@ -52,6 +51,7 @@ class FrequencyMatchingViewModel(
             else -> candidateHz
         }
         engine.setFrequency(hz)
+        if (!engine.isPlayingFlow.value) engine.start()
     }
 
     /** Save the currently playing frequency to DataStore and dismiss the card. */
@@ -82,7 +82,7 @@ class FrequencyMatchingViewModel(
         val lo = log10(MIN_HZ.toDouble())
         val hi = log10(MAX_HZ.toDouble())
         val hz = 10.0.pow(lo + t.coerceIn(0f, 1f) * (hi - lo)).toFloat()
-        engine.setFrequency(hz)
+        engine.setFrequency((hz / 10f).roundToInt() * 10f)
     }
 
     fun setVolume(v: Float) = engine.setVolume(v)
@@ -91,7 +91,7 @@ class FrequencyMatchingViewModel(
 
     fun stepFrequency(delta: Int) {
         val hz = (engine.frequency.value + delta).coerceIn(MIN_HZ, MAX_HZ)
-        engine.setFrequency(hz)
+        engine.setFrequency((hz / 10f).roundToInt() * 10f)
     }
 
     fun togglePlay() {
