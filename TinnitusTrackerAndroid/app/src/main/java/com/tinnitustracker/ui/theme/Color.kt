@@ -2,18 +2,33 @@ package com.tinnitustracker.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Calm Blue Palette
-val BluePrimary = Color(0xFF1565C0) // Deep Blue
-val BlueSecondary = Color(0xFF90CAF9) // Soft Blue
-val BlueTertiary = Color(0xFF80DEEA) // Cyan/Teal Accent
+// Palette mirrors the wiki/app mockup — calm, calibrated, trustworthy.
 
-// Dark Mode variants
-val BluePrimaryDark = Color(0xFF90CAF9)
-val BlueSecondaryDark = Color(0xFFBBDEFB)
-val BlueTertiaryDark = Color(0xFF4DD0E1)
+val Bg          = Color(0xFFF5F1EA) // warm off-white
+val Surface     = Color(0xFFFFFFFF)
+val Ink         = Color(0xFF1A2E2C) // primary text
+val Ink2        = Color(0xFF4A5C5A) // secondary text
+val Muted       = Color(0xFF8B9694)
+val Line        = Color(0xFFE5DED2)
 
-val White = Color(0xFFFFFFFF)
-val Black = Color(0xFF000000)
-val OffWhite = Color(0xFFF5F5F5)
-val DarkBackground = Color(0xFF121212)
-val DarkSurface = Color(0xFF1E1E1E)
+val Teal        = Color(0xFF2D5F5D) // primary accent
+val Teal2       = Color(0xFF3E7A77)
+val TealSoft    = Color(0xFFE8F0EE)
+
+val Coral       = Color(0xFFD67C5C) // active intervention
+val CoralSoft   = Color(0xFFF8E4D9)
+
+val Warn        = Color(0xFFC44536)
+val WarnSoft    = Color(0xFFF7DDD8)
+
+// Dark studio theme + orange accent (FrequencyMatchingScreen)
+val DarkBg        = Color(0xFF0D0D0F)
+val DarkCard      = Color(0xFF1A1A1D)
+val CreamPanel    = Color(0xFFECE5D8)
+val CreamPanel2   = Color(0xFFDDD5C5)
+val InkCream      = Color(0xFF3B3A36)
+val OrangeAccent  = Color(0xFFFF7A1A)
+val OrangeAccent2 = Color(0xFFFF8C33)
+val TextPrimary   = Color(0xFFFFFFFF)
+val TextSecondary = Color(0xFFA8A8A8)
+val TextTertiary  = Color(0xFF6B6B6B)
