@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tinnitustracker.audio.engine.AudioEngine
+import com.tinnitustracker.data.repository.UserSettingsRepository
 import com.tinnitustracker.ui.matcher.FrequencyMatchingScreen
 import com.tinnitustracker.ui.matcher.FrequencyMatchingViewModel
 import com.tinnitustracker.ui.matcher.FrequencyMatchingViewModelFactory
@@ -36,13 +37,15 @@ import com.tinnitustracker.ui.theme.TinnitusTrackerTheme
 class MainActivity : ComponentActivity() {
 
     private lateinit var audioEngine: AudioEngine
+    private lateinit var userSettingsRepository: UserSettingsRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         audioEngine = AudioEngine(applicationContext)
+        userSettingsRepository = UserSettingsRepository(applicationContext)
         setContent {
             TinnitusTrackerTheme {
-                RootScaffold(audioEngine)
+                RootScaffold(audioEngine, userSettingsRepository)
             }
         }
     }
@@ -61,9 +64,9 @@ class MainActivity : ComponentActivity() {
 private enum class Tab(val label: String) { Matcher("톤 찾기"), Settings("설정") }
 
 @Composable
-private fun RootScaffold(engine: AudioEngine) {
+private fun RootScaffold(engine: AudioEngine, repo: UserSettingsRepository) {
     var current by remember { mutableStateOf(Tab.Matcher) }
-    val matcherVm: FrequencyMatchingViewModel = viewModel(factory = FrequencyMatchingViewModelFactory(engine))
+    val matcherVm: FrequencyMatchingViewModel = viewModel(factory = FrequencyMatchingViewModelFactory(engine, repo))
 
     Scaffold(
         bottomBar = {
