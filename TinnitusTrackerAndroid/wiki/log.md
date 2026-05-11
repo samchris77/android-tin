@@ -1,5 +1,25 @@
 # Development Log
 
+## [2026-05-12] feature | 소리 (Sound) screen redesign — Direction A card stack
+
+**Scope:** Complete redesign of stub Sound settings screen per wireframes Direction A (Calm settings list).
+
+**Changes:**
+- Replaced single "frequency matching" card + 3 placeholders with full 5-card layout:
+  1. **Preset switcher card** (TealSoft bg) — "저녁 휴식 ▾" + ghost "+ 저장" button
+  2. **Frequency card** — "4,250 Hz · 고음" + TealSoft "다시 측정 ›" pill (routes to matcher)
+  3. **Processing mode card** — segmented control (노치 active | 증폭) + description
+  4. **Color noise card** — pill selector (핑크 active | 화이트 | 브라운 | 끄기)
+  5. **Ambient mix card** — 빗소리 60% + 파도소리 0% with progress bars
+- Header row: "소리 설정" (18sp) + "미리듣기 ▶" preview button
+- All values hardcoded with `// TODO:` comments for live data wiring
+- Matcher subscreen and MainActivity untouched; "다시 측정" pill preserves existing routing
+
+**Verification:**
+- ✓ Build green (`./gradlew :app:assembleDebug`)
+- ✓ All 5 cards render with correct layout and colors per wireframes
+- ✓ "다시 측정 ›" pill still opens matcher (onOpenMatcher callback preserved)
+
 ## [2026-05-12] feature | Onboarding re-skin — Direction A polish
 
 **Scope:** Polished Direction A onboarding (already structured correctly) with three targeted improvements per wireframes spec.

@@ -2,17 +2,13 @@
 
 ## Now
 
-### 소리 (Sound) page redesign (wireframes Direction A/B/C)
+### TFI questionnaire implementation
 
-Update matcher chrome from dark to light (reuse NavigationBar + status bar patterns from home redesign). Add therapy-preset affordances per wireframes layout. Light card stack direction preferred for consistency with new design system.
+Prompt card on 홈 is ready to wire up. Build questionnaire flow + persistence to DataStore. Hook the 시작 → button to launch the prompt and track responses per week.
 
 ## Next
 
-1. **TFI questionnaire implementation**
-   - Prompt card on 홈 ready to wire up
-   - Needs questionnaire flow + persistence
-
-2. **기록 (Records) page redesign**
+1. **기록 (Records) page redesign**
    - Replace "준비 중" stub with calendar + listening log + TFI trend visualization per wireframes
 
 ## Later (Tier 3 — personalization & education)
@@ -25,6 +21,7 @@ Update matcher chrome from dark to light (reuse NavigationBar + status bar patte
 
 ## Done (recent)
 
+- [2026-05-12] 소리 (Sound) redesign (Direction A card stack: preset switcher, frequency, processing, noise, ambient)
 - [2026-05-12] Onboarding re-skin (Direction A polish: section-specific art, hero height, color token)
 - [2026-05-12] Visual system migration + 홈 redesign (light/teal/coral theme, hero card, week strip)
 - [2026-05-11] Audio service + Room scaffold + processing-mode selector
