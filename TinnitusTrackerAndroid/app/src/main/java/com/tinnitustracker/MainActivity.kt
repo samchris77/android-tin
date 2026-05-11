@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -25,6 +26,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tinnitustracker.data.database.AppDatabase
@@ -42,9 +46,10 @@ import com.tinnitustracker.ui.onboarding.OnboardingViewModelFactory
 import com.tinnitustracker.ui.records.RecordsScreen
 import com.tinnitustracker.ui.settings.SettingsScreen
 import com.tinnitustracker.ui.sounds.SoundSettingsScreen
-import com.tinnitustracker.ui.theme.DarkBg
-import com.tinnitustracker.ui.theme.OrangeAccent
-import com.tinnitustracker.ui.theme.TextTertiary
+import com.tinnitustracker.ui.theme.Line
+import com.tinnitustracker.ui.theme.Muted
+import com.tinnitustracker.ui.theme.Teal
+import com.tinnitustracker.ui.theme.TealSoft
 import com.tinnitustracker.ui.theme.TinnitusTrackerTheme
 import kotlinx.coroutines.launch
 
@@ -133,7 +138,19 @@ private fun RootScaffold(
 
     Scaffold(
         bottomBar = {
-            NavigationBar(containerColor = DarkBg) {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp,
+                modifier = Modifier.drawBehind {
+                    val stroke = 1.dp.toPx()
+                    drawLine(
+                        color = Line,
+                        start = Offset(0f, 0f),
+                        end = Offset(size.width, 0f),
+                        strokeWidth = stroke
+                    )
+                }
+            ) {
                 Tab.values().forEach { tab ->
                     NavigationBarItem(
                         selected = current == tab,
@@ -155,11 +172,11 @@ private fun RootScaffold(
                         },
                         label = { Text(tab.label) },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = OrangeAccent,
-                            selectedTextColor = OrangeAccent,
-                            indicatorColor = OrangeAccent.copy(alpha = 0.2f),
-                            unselectedIconColor = TextTertiary,
-                            unselectedTextColor = TextTertiary
+                            selectedIconColor   = Teal,
+                            selectedTextColor   = Teal,
+                            indicatorColor      = TealSoft,
+                            unselectedIconColor = Muted,
+                            unselectedTextColor = Muted
                         )
                     )
                 }
@@ -169,7 +186,8 @@ private fun RootScaffold(
         Box(Modifier.padding(padding)) {
             when (current) {
                 Tab.Home -> HomeScreen(
-                    onStartTherapy = { current = Tab.Sound }
+                    onStartTherapy = { current = Tab.Sound },
+                    onOpenSettings = { current = Tab.Settings }
                 )
                 Tab.Sound -> when (soundSub) {
                     null -> SoundSettingsScreen(
