@@ -20,11 +20,18 @@ class UserSettingsRepository(private val context: Context) {
     val hasTonalTinnitus: Flow<Boolean?> = context.dataStore.data
         .map { it[PreferenceKeys.HAS_TONAL_TINNITUS] }
 
+    val processingMode: Flow<String> = context.dataStore.data
+        .map { it[PreferenceKeys.PROCESSING_MODE] ?: "notch" }
+
     suspend fun saveMatchedFrequency(hz: Float) {
         context.dataStore.edit { it[PreferenceKeys.MATCHED_FREQUENCY_HZ] = hz }
     }
 
     suspend fun setHasTonalTinnitus(value: Boolean) {
         context.dataStore.edit { it[PreferenceKeys.HAS_TONAL_TINNITUS] = value }
+    }
+
+    suspend fun saveProcessingMode(mode: String) {
+        context.dataStore.edit { it[PreferenceKeys.PROCESSING_MODE] = mode }
     }
 }

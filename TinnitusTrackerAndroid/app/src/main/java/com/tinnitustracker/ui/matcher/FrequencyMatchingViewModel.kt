@@ -4,25 +4,45 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.tinnitustracker.audio.engine.AudioEngine
+import com.tinnitustracker.data.repository.AudioRepository
 import com.tinnitustracker.data.repository.UserSettingsRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlin.math.log10
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
 class FrequencyMatchingViewModel(
-    private val engine: AudioEngine,
+    private val audio: AudioRepository,
     private val repo: UserSettingsRepository
 ) : ViewModel() {
 
-    val frequency  = engine.frequency
-    val volume     = engine.volume
-    val mode       = engine.mode
-    val isPlaying  = engine.isPlayingFlow
+    val frequency  = audio.frequency
+    val volume     = audio.volume
+    val mode       = audio.mode
+    val isPlaying  = audio.isPlayingFlow
+
+    // ── Processing mode (notch / amplify) — persisted ────────────────────
+    val hasTonalTinnitus: StateFlow<Boolean?> = repo.hasTonalTinnitus
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    val processingMode: StateFlow<AudioEngine.Mode> = repo.processingMode
+        .map { if (it == "amplify") AudioEngine.Mode.MASK else AudioEngine.Mode.NOTCH }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, AudioEngine.Mode.NOTCH)
+
+    fun setProcessingMode(target: AudioEngine.Mode) {
+        viewModelScope.launch {
+            repo.saveProcessingMode(if (target == AudioEngine.Mode.MASK) "amplify" else "notch")
+            audio.setMode(target)
+        }
+    }
 
     // ── Octave confusion check ────────────────────────────────────────────
     private val _showOctaveCheck = MutableStateFlow(false)
@@ -37,7 +57,7 @@ class FrequencyMatchingViewModel(
         _showOctaveCheck.value = false
         octaveCheckJob = viewModelScope.launch {
             delay(2_000L)
-            candidateHz = engine.frequency.value
+            candidateHz = audio.frequency.value
             _showOctaveCheck.value = true
         }
     }
@@ -50,15 +70,17 @@ class FrequencyMatchingViewModel(
             1    -> (candidateHz * 2f).coerceIn(MIN_HZ, MAX_HZ)
             else -> candidateHz
         }
-        engine.setFrequency(hz)
-        if (!engine.isPlayingFlow.value) engine.start()
+        audio.setFrequency(hz)
+        if (!audio.isPlayingFlow.value) audio.start()
     }
 
-    /** Save the currently playing frequency to DataStore and dismiss the card. */
+    /** Save the currently playing frequency, switch the audio to the user's
+     *  saved therapy mode (notch/amplify), and dismiss the octave card. */
     fun confirmPitch() {
         viewModelScope.launch {
-            repo.saveMatchedFrequency(engine.frequency.value)
+            repo.saveMatchedFrequency(audio.frequency.value)
             repo.setHasTonalTinnitus(true)
+            audio.setMode(processingMode.value)
             _showOctaveCheck.value = false
         }
     }
@@ -69,7 +91,7 @@ class FrequencyMatchingViewModel(
     }
 
     // ── Volume (safe, hard-capped at 70 %) ───────────────────────────────
-    fun setVolumeSafe(v: Float) = engine.setVolume(v.coerceAtMost(0.70f))
+    fun setVolumeSafe(v: Float) = audio.setVolume(v.coerceAtMost(0.70f))
 
     // ── Existing methods ─────────────────────────────────────────────────
     fun frequencyToSlider(hz: Float): Float {
@@ -82,21 +104,19 @@ class FrequencyMatchingViewModel(
         val lo = log10(MIN_HZ.toDouble())
         val hi = log10(MAX_HZ.toDouble())
         val hz = 10.0.pow(lo + t.coerceIn(0f, 1f) * (hi - lo)).toFloat()
-        engine.setFrequency((hz / 10f).roundToInt() * 10f)
+        audio.setFrequency((hz / 10f).roundToInt() * 10f)
     }
 
-    fun setVolume(v: Float) = engine.setVolume(v)
+    fun setVolume(v: Float) = audio.setVolume(v)
 
-    fun setMode(m: AudioEngine.Mode) = engine.setMode(m)
+    fun setMode(m: AudioEngine.Mode) = audio.setMode(m)
 
     fun stepFrequency(delta: Int) {
-        val hz = (engine.frequency.value + delta).coerceIn(MIN_HZ, MAX_HZ)
-        engine.setFrequency((hz / 10f).roundToInt() * 10f)
+        val hz = (audio.frequency.value + delta).coerceIn(MIN_HZ, MAX_HZ)
+        audio.setFrequency((hz / 10f).roundToInt() * 10f)
     }
 
-    fun togglePlay() {
-        if (isPlaying.value) engine.stop() else engine.start()
-    }
+    fun togglePlay() = audio.togglePlay()
 
     companion object {
         const val MIN_HZ = 100f
@@ -105,12 +125,12 @@ class FrequencyMatchingViewModel(
 }
 
 class FrequencyMatchingViewModelFactory(
-    private val engine: AudioEngine,
+    private val audio: AudioRepository,
     private val repo: UserSettingsRepository
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         require(modelClass.isAssignableFrom(FrequencyMatchingViewModel::class.java))
-        return FrequencyMatchingViewModel(engine, repo) as T
+        return FrequencyMatchingViewModel(audio, repo) as T
     }
 }

@@ -111,6 +111,8 @@ fun FrequencyMatchingScreen(viewModel: FrequencyMatchingViewModel) {
     val volume    by viewModel.volume.collectAsStateWithLifecycle()
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
     val showOctaveCheck by viewModel.showOctaveCheck.collectAsStateWithLifecycle()
+    val hasTonalTinnitus by viewModel.hasTonalTinnitus.collectAsStateWithLifecycle()
+    val processingMode by viewModel.processingMode.collectAsStateWithLifecycle()
 
     val scrollState = rememberScrollState()
     LaunchedEffect(showOctaveCheck) {
@@ -159,6 +161,16 @@ fun FrequencyMatchingScreen(viewModel: FrequencyMatchingViewModel) {
                 exit  = slideOutVertically { it } + fadeOut()
             ) {
                 OctaveConfusionCard(viewModel)
+            }
+            AnimatedVisibility(
+                visible = hasTonalTinnitus == true,
+                enter = slideInVertically { it } + fadeIn(),
+                exit  = slideOutVertically { it } + fadeOut()
+            ) {
+                ProcessingModeCard(
+                    mode = processingMode,
+                    onPick = viewModel::setProcessingMode
+                )
             }
             SkipAffordance(viewModel::skipTonalPitch)
         }
@@ -685,6 +697,49 @@ private fun OctaveButton(
             fontSize = 12.sp,
             textAlign = TextAlign.Center
         )
+    }
+}
+
+// ─── Processing mode card (notch / amplify) ──────────────────────────────
+
+@Composable
+private fun ProcessingModeCard(
+    mode: AudioEngine.Mode,
+    onPick: (AudioEngine.Mode) -> Unit
+) {
+    DarkCard {
+        Text(
+            "이명 치료 모드",
+            color = TextPrimary,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            when (mode) {
+                AudioEngine.Mode.NOTCH -> "광대역 노이즈에서 이명 주파수를 차단해 측방 억제를 유도합니다 (TRT 권장)."
+                AudioEngine.Mode.MASK  -> "이명 주파수 대역을 강조해 들려줍니다 (특정 임상 프로파일용)."
+            },
+            color = TextSecondary,
+            fontSize = 12.sp,
+            lineHeight = 17.sp
+        )
+        Spacer(Modifier.height(16.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OctaveButton(
+                label = "노치",
+                modifier = Modifier.weight(1f),
+                selected = mode == AudioEngine.Mode.NOTCH
+            ) { onPick(AudioEngine.Mode.NOTCH) }
+            OctaveButton(
+                label = "증폭",
+                modifier = Modifier.weight(1f),
+                selected = mode == AudioEngine.Mode.MASK
+            ) { onPick(AudioEngine.Mode.MASK) }
+        }
     }
 }
 

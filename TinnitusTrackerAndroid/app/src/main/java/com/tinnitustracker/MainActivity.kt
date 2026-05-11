@@ -1,6 +1,7 @@
 package com.tinnitustracker
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
@@ -21,8 +22,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.tinnitustracker.audio.engine.AudioEngine
+import com.tinnitustracker.data.database.AppDatabase
+import com.tinnitustracker.data.database.entities.DiaryEntry
+import com.tinnitustracker.data.repository.AudioRepository
+import com.tinnitustracker.data.repository.DiaryRepository
 import com.tinnitustracker.data.repository.UserSettingsRepository
 import com.tinnitustracker.ui.matcher.FrequencyMatchingScreen
 import com.tinnitustracker.ui.matcher.FrequencyMatchingViewModel
@@ -33,40 +38,54 @@ import com.tinnitustracker.ui.theme.OrangeAccent
 import com.tinnitustracker.ui.theme.TextPrimary
 import com.tinnitustracker.ui.theme.TextTertiary
 import com.tinnitustracker.ui.theme.TinnitusTrackerTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var audioEngine: AudioEngine
+    private lateinit var audioRepository: AudioRepository
     private lateinit var userSettingsRepository: UserSettingsRepository
+    private lateinit var diaryRepository: DiaryRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        audioEngine = AudioEngine(applicationContext)
+        val app = application as TinnitusTrackerApp
+        audioRepository = AudioRepository(applicationContext, app.audioEngine)
         userSettingsRepository = UserSettingsRepository(applicationContext)
+        diaryRepository = DiaryRepository(AppDatabase.get(applicationContext).diaryDao())
+
+        // Round-trip sanity check for the Room scaffold. Inserts a marker row,
+        // reads it back, then deletes it — leaves no user-visible residue.
+        lifecycleScope.launch {
+            val id = diaryRepository.upsert(
+                DiaryEntry(
+                    date = System.currentTimeMillis(),
+                    severity = 0,
+                    stressLevel = 0,
+                    note = "room-scaffold-sanity-check"
+                )
+            )
+            val readBack = diaryRepository.latest()
+            diaryRepository.deleteById(id)
+            Log.d(
+                "RoomScaffold",
+                "wrote id=$id readBack='${readBack?.note}' dbFile=${getDatabasePath("tinnitus_tracker.db")}"
+            )
+        }
+
         setContent {
             TinnitusTrackerTheme {
-                RootScaffold(audioEngine, userSettingsRepository)
+                RootScaffold(audioRepository, userSettingsRepository)
             }
         }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        audioEngine.stop()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        audioEngine.release()
     }
 }
 
 private enum class Tab(val label: String) { Matcher("톤 찾기"), Settings("설정") }
 
 @Composable
-private fun RootScaffold(engine: AudioEngine, repo: UserSettingsRepository) {
+private fun RootScaffold(audio: AudioRepository, repo: UserSettingsRepository) {
     var current by remember { mutableStateOf(Tab.Matcher) }
-    val matcherVm: FrequencyMatchingViewModel = viewModel(factory = FrequencyMatchingViewModelFactory(engine, repo))
+    val matcherVm: FrequencyMatchingViewModel = viewModel(factory = FrequencyMatchingViewModelFactory(audio, repo))
 
     Scaffold(
         bottomBar = {
