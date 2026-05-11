@@ -23,6 +23,13 @@ class UserSettingsRepository(private val context: Context) {
     val processingMode: Flow<String> = context.dataStore.data
         .map { it[PreferenceKeys.PROCESSING_MODE] ?: "notch" }
 
+    val onboardingComplete: Flow<Boolean> = context.dataStore.data
+        .map { it[PreferenceKeys.ONBOARDING_COMPLETE] ?: false }
+
+    suspend fun setOnboardingComplete(value: Boolean) {
+        context.dataStore.edit { it[PreferenceKeys.ONBOARDING_COMPLETE] = value }
+    }
+
     suspend fun saveMatchedFrequency(hz: Float) {
         context.dataStore.edit { it[PreferenceKeys.MATCHED_FREQUENCY_HZ] = hz }
     }

@@ -17,9 +17,10 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
@@ -32,10 +33,12 @@ import com.tinnitustracker.data.repository.UserSettingsRepository
 import com.tinnitustracker.ui.matcher.FrequencyMatchingScreen
 import com.tinnitustracker.ui.matcher.FrequencyMatchingViewModel
 import com.tinnitustracker.ui.matcher.FrequencyMatchingViewModelFactory
+import com.tinnitustracker.ui.onboarding.OnboardingScreen
+import com.tinnitustracker.ui.onboarding.OnboardingViewModel
+import com.tinnitustracker.ui.onboarding.OnboardingViewModelFactory
 import com.tinnitustracker.ui.settings.SettingsScreen
 import com.tinnitustracker.ui.theme.DarkBg
 import com.tinnitustracker.ui.theme.OrangeAccent
-import com.tinnitustracker.ui.theme.TextPrimary
 import com.tinnitustracker.ui.theme.TextTertiary
 import com.tinnitustracker.ui.theme.TinnitusTrackerTheme
 import kotlinx.coroutines.launch
@@ -74,16 +77,43 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             TinnitusTrackerTheme {
-                RootScaffold(audioRepository, userSettingsRepository)
+                Root(audioRepository, userSettingsRepository)
             }
         }
+    }
+}
+
+@Composable
+private fun Root(audio: AudioRepository, repo: UserSettingsRepository) {
+    // `onboardingComplete` defaults to false in the repository, so first-launch
+    // users see onboarding immediately (no splash flicker either way).
+    val onboardingComplete by repo.onboardingComplete.collectAsState(initial = false)
+
+    // Lets Settings re-launch the flow without flipping the persisted flag.
+    var replayOnboarding by remember { mutableStateOf(false) }
+
+    val showOnboarding = !onboardingComplete || replayOnboarding
+
+    if (showOnboarding) {
+        val onboardingVm: OnboardingViewModel =
+            viewModel(factory = OnboardingViewModelFactory(repo))
+        OnboardingScreen(
+            onFinished = { replayOnboarding = false },
+            vm = onboardingVm
+        )
+    } else {
+        RootScaffold(audio, repo, onReplayOnboarding = { replayOnboarding = true })
     }
 }
 
 private enum class Tab(val label: String) { Matcher("톤 찾기"), Settings("설정") }
 
 @Composable
-private fun RootScaffold(audio: AudioRepository, repo: UserSettingsRepository) {
+private fun RootScaffold(
+    audio: AudioRepository,
+    repo: UserSettingsRepository,
+    onReplayOnboarding: () -> Unit
+) {
     var current by remember { mutableStateOf(Tab.Matcher) }
     val matcherVm: FrequencyMatchingViewModel = viewModel(factory = FrequencyMatchingViewModelFactory(audio, repo))
 
@@ -119,7 +149,7 @@ private fun RootScaffold(audio: AudioRepository, repo: UserSettingsRepository) {
         Box(Modifier.padding(padding)) {
             when (current) {
                 Tab.Matcher  -> FrequencyMatchingScreen(matcherVm)
-                Tab.Settings -> SettingsScreen()
+                Tab.Settings -> SettingsScreen(onReplayOnboarding = onReplayOnboarding)
             }
         }
     }
