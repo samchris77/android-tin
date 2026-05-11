@@ -1,8 +1,8 @@
 package com.tinnitustracker.ui.onboarding
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,12 +16,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -31,26 +31,34 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.tinnitustracker.ui.theme.DarkBg
-import com.tinnitustracker.ui.theme.DarkCard
-import com.tinnitustracker.ui.theme.OrangeAccent
-import com.tinnitustracker.ui.theme.TextPrimary
-import com.tinnitustracker.ui.theme.TextSecondary
-import com.tinnitustracker.ui.theme.TextTertiary
+import com.tinnitustracker.ui.theme.Bg
+import com.tinnitustracker.ui.theme.Coral
+import com.tinnitustracker.ui.theme.Ink
+import com.tinnitustracker.ui.theme.Ink2
+import com.tinnitustracker.ui.theme.Muted
+import com.tinnitustracker.ui.theme.Teal
+import com.tinnitustracker.ui.theme.Teal2
+import com.tinnitustracker.ui.theme.TealSoft
 import kotlinx.coroutines.launch
 
 /**
- * 7-page onboarding tutorial. Copy is synthesized from the wiki — each page
- * cites its source `wiki/clinical/<file>.md` so the synthesis is traceable.
- * Section 1 (pages 1-3): what tinnitus is + why understanding matters.
- * Section 2 (pages 4-6): therapy approaches available.
- * Section 3 (page 7):    how to navigate this app.
+ * 7-page onboarding tutorial (Direction A — gradient hero + bottom card).
+ * Dark teal gradient on the top half carries atmospheric waveform art and a
+ * coral progress bar; a cream card slides up over it with the title + body
+ * for the current page. Copy is synthesized from `wiki/clinical/<file>.md` —
+ * each page cites its source for traceability.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -63,144 +71,363 @@ fun OnboardingScreen(
     val scope = rememberCoroutineScope()
 
     val finish: () -> Unit = { vm.completeOnboarding(onPersisted = onFinished) }
+    val currentPage = pages[pagerState.currentPage]
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkBg)
-            .windowInsetsPadding(WindowInsets.systemBars)
+            .background(HeroBaseDark)
     ) {
-        TopBar(
+        Hero(
             currentIndex = pagerState.currentPage,
             totalPages = pages.size,
+            sectionLabel = currentPage.section.label,
+            section = currentPage.section,
             onSkip = finish
         )
 
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxWidth().weight(1f),
-            contentPadding = PaddingValues(horizontal = 0.dp)
-        ) { index ->
-            OnboardingPageContent(pages[index])
-        }
+        // Cream card overlapping the hero by -24dp.
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = HERO_HEIGHT_DP.dp - 24.dp)
+                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                .background(Bg)
+                .windowInsetsPadding(WindowInsets.systemBars)
+        ) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentPadding = PaddingValues(horizontal = 0.dp)
+            ) { index ->
+                OnboardingCardContent(pages[index])
+            }
 
-        BottomBar(
-            currentIndex = pagerState.currentPage,
-            totalPages = pages.size,
-            onPrev = {
-                scope.launch {
-                    if (pagerState.currentPage > 0) {
-                        pagerState.animateScrollToPage(pagerState.currentPage - 1)
+            BottomBar(
+                currentIndex = pagerState.currentPage,
+                totalPages = pages.size,
+                onPrev = {
+                    scope.launch {
+                        if (pagerState.currentPage > 0) {
+                            pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                        }
                     }
-                }
-            },
-            onNext = {
-                scope.launch {
-                    val next = pagerState.currentPage + 1
-                    if (next < pages.size) pagerState.animateScrollToPage(next)
-                }
-            },
-            onFinish = finish
-        )
+                },
+                onNext = {
+                    scope.launch {
+                        val next = pagerState.currentPage + 1
+                        if (next < pages.size) pagerState.animateScrollToPage(next)
+                    }
+                },
+                onFinish = finish
+            )
+        }
     }
 }
 
-// ── Layout ────────────────────────────────────────────────────────────────
+private const val HERO_HEIGHT_DP = 320
+private val HeroBaseDark = Color(0xFF0F1F1E)
+private val HeroBaseDarkEnd = Color(0xFF1A2E2C)
+
+// ── Hero ───────────────────────────────────────────────────────────────────
 
 @Composable
-private fun TopBar(currentIndex: Int, totalPages: Int, onSkip: () -> Unit) {
-    Row(
+private fun Hero(
+    currentIndex: Int,
+    totalPages: Int,
+    sectionLabel: String,
+    section: OnboardingSection,
+    onSkip: () -> Unit
+) {
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .height(HERO_HEIGHT_DP.dp)
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(HeroBaseDark, HeroBaseDarkEnd),
+                    start = Offset(0f, 0f),
+                    end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                )
+            )
     ) {
-        Text(
-            "${currentIndex + 1} / $totalPages",
-            color = TextTertiary,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium
-        )
-        Spacer(Modifier.weight(1f))
-        Text(
-            "건너뛰기",
-            color = TextSecondary,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
+        // Soft coral wash bottom-left, soft teal-tone wash top-right.
+        Box(
             modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .clickable(onClick = onSkip)
-                .semantics { contentDescription = "건너뛰기" }
-                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .fillMaxSize()
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(Coral.copy(alpha = 0.18f), Color.Transparent),
+                        center = Offset(0f, Float.POSITIVE_INFINITY),
+                        radius = 700f
+                    )
+                )
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(TealSoft.copy(alpha = 0.18f), Color.Transparent),
+                        center = Offset(Float.POSITIVE_INFINITY, 0f),
+                        radius = 600f
+                    )
+                )
+        )
+
+        when (section) {
+            OnboardingSection.Tinnitus -> WaveformArt(modifier = Modifier.fillMaxSize())
+            OnboardingSection.Therapy -> BrainNetworkArt(modifier = Modifier.fillMaxSize())
+            OnboardingSection.AppGuide -> CheckmarkArt(modifier = Modifier.fillMaxSize())
+        }
+
+        // Status-bar-respecting top row (Skip).
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .padding(horizontal = 20.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(Modifier.weight(1f))
+            Text(
+                "건너뛰기",
+                color = Color.White.copy(alpha = 0.6f),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(onClick = onSkip)
+                    .semantics { contentDescription = "건너뛰기" }
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            )
+        }
+
+        // Bottom-anchored progress bar + page/section labels.
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .fillMaxWidth()
+                .padding(start = 20.dp, end = 20.dp, bottom = 42.dp)
+        ) {
+            ProgressBar(
+                progress = (currentIndex + 1).toFloat() / totalPages.toFloat()
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    "${currentIndex + 1} / $totalPages",
+                    color = Color.White.copy(alpha = 0.55f),
+                    fontSize = 10.5.sp,
+                    letterSpacing = 1.2.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    sectionLabel,
+                    color = Color.White.copy(alpha = 0.55f),
+                    fontSize = 10.5.sp,
+                    letterSpacing = 1.2.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WaveformArt(modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        // Three wave paths layered across the vertical middle, low contrast.
+        fun wave(baseline: Float, amplitude: Float): Path = Path().apply {
+            moveTo(0f, baseline)
+            val pts = 5
+            for (i in 1..pts) {
+                val x = w * i / pts.toFloat()
+                val y = if (i % 2 == 0) baseline + amplitude else baseline - amplitude
+                val cx = w * (i - 0.5f) / pts.toFloat()
+                quadraticBezierTo(cx, y, x, baseline)
+            }
+        }
+        val midY = h * 0.62f
+        drawPath(
+            wave(midY - 14.dp.toPx(), 18.dp.toPx()),
+            color = Color.White.copy(alpha = 0.18f),
+            style = Stroke(width = 1.2.dp.toPx())
+        )
+        drawPath(
+            wave(midY, 22.dp.toPx()),
+            color = Coral.copy(alpha = 0.55f),
+            style = Stroke(width = 1.4.dp.toPx())
+        )
+        drawPath(
+            wave(midY + 16.dp.toPx(), 14.dp.toPx()),
+            color = Color.White.copy(alpha = 0.10f),
+            style = Stroke(width = 1.0.dp.toPx())
         )
     }
 }
 
 @Composable
-private fun OnboardingPageContent(page: OnboardingPage) {
-    // Each clinical/therapy page is a synthesis from the cited wiki source.
+private fun BrainNetworkArt(modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val centerX = w * 0.5f
+        val centerY = h * 0.55f
+        val nodeRadius = 10.dp.toPx()
+        val centerNodeRadius = 14.dp.toPx()
+        val orbitRadius = 60.dp.toPx()
+
+        val colors = listOf(
+            Teal.copy(alpha = 0.55f),
+            Teal2.copy(alpha = 0.55f),
+            Teal.copy(alpha = 0.55f),
+            Teal2.copy(alpha = 0.55f),
+            Teal.copy(alpha = 0.55f),
+            Teal2.copy(alpha = 0.55f)
+        )
+
+        // Draw connecting lines from center to each node
+        for (i in 0 until 6) {
+            val angle = (i * 60f - 90f) * (Math.PI / 180.0)
+            val nodeX = centerX + (orbitRadius * Math.cos(angle)).toFloat()
+            val nodeY = centerY + (orbitRadius * Math.sin(angle)).toFloat()
+            drawLine(
+                color = Teal.copy(alpha = 0.22f),
+                start = Offset(centerX, centerY),
+                end = Offset(nodeX, nodeY),
+                strokeWidth = 1.dp.toPx()
+            )
+        }
+
+        // Draw outer nodes
+        for (i in 0 until 6) {
+            val angle = (i * 60f - 90f) * (Math.PI / 180.0)
+            val nodeX = centerX + (orbitRadius * Math.cos(angle)).toFloat()
+            val nodeY = centerY + (orbitRadius * Math.sin(angle)).toFloat()
+            drawCircle(
+                color = colors[i],
+                radius = nodeRadius,
+                center = Offset(nodeX, nodeY)
+            )
+        }
+
+        // Draw center node (coral)
+        drawCircle(
+            color = Coral.copy(alpha = 0.55f),
+            radius = centerNodeRadius,
+            center = Offset(centerX, centerY)
+        )
+    }
+}
+
+@Composable
+private fun CheckmarkArt(modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val centerX = w * 0.5f
+        val centerY = h * 0.5f
+        val radius = 50.dp.toPx()
+
+        // Draw incomplete circle arc (270°)
+        drawArc(
+            color = Teal.copy(alpha = 0.35f),
+            startAngle = -90f,
+            sweepAngle = 270f,
+            useCenter = false,
+            topLeft = Offset(centerX - radius, centerY - radius),
+            size = androidx.compose.ui.geometry.Size(radius * 2, radius * 2),
+            style = Stroke(width = 2.dp.toPx())
+        )
+
+        // Draw checkmark path
+        val checkmarkPath = Path().apply {
+            moveTo(centerX - 14.dp.toPx(), centerY + 2.dp.toPx())
+            lineTo(centerX - 4.dp.toPx(), centerY + 12.dp.toPx())
+            lineTo(centerX + 14.dp.toPx(), centerY - 8.dp.toPx())
+        }
+        drawPath(
+            path = checkmarkPath,
+            color = Coral.copy(alpha = 0.60f),
+            style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+        )
+
+        // Draw two small dots
+        drawCircle(
+            color = TealSoft.copy(alpha = 0.8f),
+            radius = 4.dp.toPx(),
+            center = Offset(w * 0.3f, h * 0.4f)
+        )
+        drawCircle(
+            color = TealSoft.copy(alpha = 0.8f),
+            radius = 4.dp.toPx(),
+            center = Offset(w * 0.7f, h * 0.4f)
+        )
+    }
+}
+
+@Composable
+private fun ProgressBar(progress: Float) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(3.dp)
+            .clip(RoundedCornerShape(999.dp))
+            .background(Color.White.copy(alpha = 0.15f))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(fraction = progress.coerceIn(0f, 1f))
+                .height(3.dp)
+                .clip(RoundedCornerShape(999.dp))
+                .background(Coral)
+        )
+    }
+}
+
+// ── Card body ──────────────────────────────────────────────────────────────
+
+@Composable
+private fun OnboardingCardContent(page: OnboardingPage) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        Spacer(Modifier.height(8.dp))
-        SectionBadge(page.section)
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(28.dp))
         Text(
             page.title,
-            color = TextPrimary,
-            fontSize = 26.sp,
-            lineHeight = 34.sp,
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = (-0.3).sp
+            color = Ink,
+            fontSize = 24.sp,
+            lineHeight = 32.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = (-0.4).sp
         )
-        Spacer(Modifier.height(24.dp))
-        DarkCardBlock {
-            page.paragraphs.forEachIndexed { i, paragraph ->
-                if (i > 0) Spacer(Modifier.height(14.dp))
-                Text(
-                    paragraph,
-                    color = TextSecondary,
-                    fontSize = 15.sp,
-                    lineHeight = 24.sp
-                )
-            }
+        Spacer(Modifier.height(18.dp))
+        page.paragraphs.forEachIndexed { i, paragraph ->
+            if (i > 0) Spacer(Modifier.height(12.dp))
+            Text(
+                paragraph,
+                color = Ink2,
+                fontSize = 14.sp,
+                lineHeight = 23.sp
+            )
         }
         Spacer(Modifier.height(28.dp))
     }
 }
 
-@Composable
-private fun SectionBadge(section: OnboardingSection) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(999.dp))
-            .background(OrangeAccent.copy(alpha = 0.14f))
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-    ) {
-        Text(
-            section.label,
-            color = OrangeAccent,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            letterSpacing = 0.2.sp
-        )
-    }
-}
-
-@Composable
-private fun DarkCardBlock(content: @Composable () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(DarkCard)
-            .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(18.dp))
-            .padding(horizontal = 20.dp, vertical = 22.dp)
-    ) { Column { content() } }
-}
+// ── Bottom bar ─────────────────────────────────────────────────────────────
 
 @Composable
 private fun BottomBar(
@@ -213,69 +440,50 @@ private fun BottomBar(
     val isLast = currentIndex == totalPages - 1
     val isFirst = currentIndex == 0
 
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 18.dp)) {
-        PageDots(currentIndex, totalPages)
-        Spacer(Modifier.height(18.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                "이전",
-                color = if (isFirst) TextTertiary.copy(alpha = 0.4f) else TextSecondary,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
-                    .let { if (isFirst) it else it.clickable(onClick = onPrev) }
-                    .padding(horizontal = 14.dp, vertical = 10.dp)
-            )
-            Spacer(Modifier.weight(1f))
-            PrimaryButton(
-                label = if (isLast) "시작하기" else "다음",
-                onClick = if (isLast) onFinish else onNext
-            )
-        }
-    }
-}
-
-@Composable
-private fun PageDots(currentIndex: Int, totalPages: Int) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        repeat(totalPages) { i ->
-            val active = i == currentIndex
-            Box(
-                modifier = Modifier
-                    .padding(horizontal = 3.dp)
-                    .size(width = if (active) 18.dp else 6.dp, height = 6.dp)
-                    .clip(CircleShape)
-                    .background(if (active) OrangeAccent else TextTertiary.copy(alpha = 0.4f))
-            )
-        }
+        Text(
+            "이전",
+            color = if (isFirst) Muted.copy(alpha = 0.4f) else Muted,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier
+                .clip(RoundedCornerShape(10.dp))
+                .let { if (isFirst) it else it.clickable(onClick = onPrev) }
+                .padding(horizontal = 14.dp, vertical = 10.dp)
+        )
+        Spacer(Modifier.weight(1f))
+        CoralPill(
+            label = if (isLast) "시작하기" else "다음",
+            onClick = if (isLast) onFinish else onNext
+        )
     }
 }
 
 @Composable
-private fun PrimaryButton(label: String, onClick: () -> Unit) {
+private fun CoralPill(label: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(OrangeAccent)
+            .clip(RoundedCornerShape(999.dp))
+            .background(Coral)
             .clickable(onClick = onClick)
-            .padding(horizontal = 28.dp, vertical = 14.dp)
+            .padding(horizontal = 26.dp, vertical = 12.dp)
             .semantics { contentDescription = label }
     ) {
-        Text(label, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+        Text(label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
 // ── Content (synthesized from wiki/clinical sources) ──────────────────────
 
 private enum class OnboardingSection(val label: String) {
-    Tinnitus("1. 이명에 대해"),
-    Therapy ("2. 치료 접근"),
-    AppGuide("3. 앱 사용법")
+    Tinnitus("이명에 대해"),
+    Therapy ("치료 접근"),
+    AppGuide("앱 사용법")
 }
 
 private data class OnboardingPage(
@@ -345,15 +553,14 @@ private fun onboardingPages(): List<OnboardingPage> = listOf(
             "TRT와 CBT는 서로 보완적입니다. 사운드 치료와 함께 진행할 때 효과가 더 큽니다."
         )
     ),
-    // Source: implemented Android surfaces (MainActivity, FrequencyMatchingScreen)
+    // Source: implemented Android surfaces (MainActivity + 4-tab shell)
     OnboardingPage(
         section = OnboardingSection.AppGuide,
         title = "이 앱 사용법",
         paragraphs = listOf(
-            "이 앱에는 두 개의 탭이 있습니다. \"톤 찾기\"에서는 본인의 이명과 비슷한 주파수를 직접 찾고, 그 주파수를 기준으로 노치(notch) 또는 증폭(amplify) 모드로 사운드 치료를 바로 시작할 수 있습니다.",
-            "\"설정\"에서는 앱 정보를 확인하고 이 튜토리얼을 다시 볼 수 있습니다.",
-            "권장 순서: 먼저 톤 찾기에서 본인의 이명 주파수를 확인하세요. 그다음 혼합점 아래의 편안한 볼륨에서 재생을 시작하세요."
+            "이 앱에는 네 개의 탭이 있습니다. 홈은 일일 청취와 빠른 재생, 소리는 주파수 매칭과 사운드 설정, 기록은 청취 기록과 설문 추이, 설정은 앱과 학습 자료 조정입니다.",
+            "주파수 매칭은 소리 탭의 \"주파수 매칭\" 카드를 눌러 시작할 수 있습니다. 일치하는 주파수를 찾으면 노치 또는 증폭 모드로 바로 사운드 치료를 재생합니다.",
+            "권장 순서: 먼저 주파수 매칭을 마친 다음, 혼합점 아래의 편안한 볼륨에서 길게(하루 8시간 이상) 재생하세요."
         )
     )
 )
-
