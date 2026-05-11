@@ -3,14 +3,16 @@ package com.tinnitustracker
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -20,7 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
@@ -30,13 +32,16 @@ import com.tinnitustracker.data.database.entities.DiaryEntry
 import com.tinnitustracker.data.repository.AudioRepository
 import com.tinnitustracker.data.repository.DiaryRepository
 import com.tinnitustracker.data.repository.UserSettingsRepository
+import com.tinnitustracker.ui.home.HomeScreen
 import com.tinnitustracker.ui.matcher.FrequencyMatchingScreen
 import com.tinnitustracker.ui.matcher.FrequencyMatchingViewModel
 import com.tinnitustracker.ui.matcher.FrequencyMatchingViewModelFactory
 import com.tinnitustracker.ui.onboarding.OnboardingScreen
 import com.tinnitustracker.ui.onboarding.OnboardingViewModel
 import com.tinnitustracker.ui.onboarding.OnboardingViewModelFactory
+import com.tinnitustracker.ui.records.RecordsScreen
 import com.tinnitustracker.ui.settings.SettingsScreen
+import com.tinnitustracker.ui.sounds.SoundSettingsScreen
 import com.tinnitustracker.ui.theme.DarkBg
 import com.tinnitustracker.ui.theme.OrangeAccent
 import com.tinnitustracker.ui.theme.TextTertiary
@@ -85,12 +90,8 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun Root(audio: AudioRepository, repo: UserSettingsRepository) {
-    // `onboardingComplete` defaults to false in the repository, so first-launch
-    // users see onboarding immediately (no splash flicker either way).
     val onboardingComplete by repo.onboardingComplete.collectAsState(initial = false)
-
-    // Lets Settings re-launch the flow without flipping the persisted flag.
-    var replayOnboarding by remember { mutableStateOf(false) }
+    var replayOnboarding by rememberSaveable { mutableStateOf(false) }
 
     val showOnboarding = !onboardingComplete || replayOnboarding
 
@@ -106,7 +107,12 @@ private fun Root(audio: AudioRepository, repo: UserSettingsRepository) {
     }
 }
 
-private enum class Tab(val label: String) { Matcher("톤 찾기"), Settings("설정") }
+private enum class Tab(val label: String) {
+    Home("홈"), Sound("소리"), Records("기록"), Settings("설정")
+}
+
+/** Subscreens reachable from inside the 소리 tab — single level deep for now. */
+private enum class SoundSub { Matcher }
 
 @Composable
 private fun RootScaffold(
@@ -114,8 +120,16 @@ private fun RootScaffold(
     repo: UserSettingsRepository,
     onReplayOnboarding: () -> Unit
 ) {
-    var current by remember { mutableStateOf(Tab.Matcher) }
-    val matcherVm: FrequencyMatchingViewModel = viewModel(factory = FrequencyMatchingViewModelFactory(audio, repo))
+    var current by rememberSaveable { mutableStateOf(Tab.Home) }
+    var soundSub by rememberSaveable { mutableStateOf<SoundSub?>(null) }
+
+    val matcherVm: FrequencyMatchingViewModel =
+        viewModel(factory = FrequencyMatchingViewModelFactory(audio, repo))
+
+    // System back inside a 소리 subscreen returns to the 소리 root.
+    BackHandler(enabled = current == Tab.Sound && soundSub != null) {
+        soundSub = null
+    }
 
     Scaffold(
         bottomBar = {
@@ -123,11 +137,17 @@ private fun RootScaffold(
                 Tab.values().forEach { tab ->
                     NavigationBarItem(
                         selected = current == tab,
-                        onClick = { current = tab },
+                        onClick = {
+                            // Switching tabs collapses any 소리 subscreen.
+                            if (current == Tab.Sound && tab != Tab.Sound) soundSub = null
+                            current = tab
+                        },
                         icon = {
                             Icon(
                                 imageVector = when (tab) {
-                                    Tab.Matcher  -> Icons.Filled.GraphicEq
+                                    Tab.Home     -> Icons.Filled.Home
+                                    Tab.Sound    -> Icons.Filled.GraphicEq
+                                    Tab.Records  -> Icons.Filled.CalendarMonth
                                     Tab.Settings -> Icons.Filled.Settings
                                 },
                                 contentDescription = tab.label
@@ -148,7 +168,16 @@ private fun RootScaffold(
     ) { padding ->
         Box(Modifier.padding(padding)) {
             when (current) {
-                Tab.Matcher  -> FrequencyMatchingScreen(matcherVm)
+                Tab.Home -> HomeScreen(
+                    onStartTherapy = { current = Tab.Sound }
+                )
+                Tab.Sound -> when (soundSub) {
+                    null -> SoundSettingsScreen(
+                        onOpenMatcher = { soundSub = SoundSub.Matcher }
+                    )
+                    SoundSub.Matcher -> FrequencyMatchingScreen(matcherVm)
+                }
+                Tab.Records -> RecordsScreen()
                 Tab.Settings -> SettingsScreen(onReplayOnboarding = onReplayOnboarding)
             }
         }
