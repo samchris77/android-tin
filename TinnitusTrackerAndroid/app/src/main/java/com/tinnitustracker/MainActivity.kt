@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -35,7 +36,12 @@ import com.tinnitustracker.data.database.AppDatabase
 import com.tinnitustracker.data.database.entities.DiaryEntry
 import com.tinnitustracker.data.repository.AudioRepository
 import com.tinnitustracker.data.repository.DiaryRepository
+import com.tinnitustracker.data.repository.TfiRepository
 import com.tinnitustracker.data.repository.UserSettingsRepository
+import com.tinnitustracker.ui.assessment.TfiQuestionnaireScreen
+import com.tinnitustracker.ui.assessment.TfiQuestionnaireViewModel
+import com.tinnitustracker.ui.assessment.TfiQuestionnaireViewModelFactory
+import com.tinnitustracker.ui.assessment.TfiResultsScreen
 import com.tinnitustracker.ui.home.HomeScreen
 import com.tinnitustracker.ui.matcher.FrequencyMatchingScreen
 import com.tinnitustracker.ui.matcher.FrequencyMatchingViewModel
@@ -58,13 +64,16 @@ class MainActivity : ComponentActivity() {
     private lateinit var audioRepository: AudioRepository
     private lateinit var userSettingsRepository: UserSettingsRepository
     private lateinit var diaryRepository: DiaryRepository
+    private lateinit var tfiRepository: TfiRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val app = application as TinnitusTrackerApp
         audioRepository = AudioRepository(applicationContext, app.audioEngine)
         userSettingsRepository = UserSettingsRepository(applicationContext)
-        diaryRepository = DiaryRepository(AppDatabase.get(applicationContext).diaryDao())
+        val db = AppDatabase.get(applicationContext)
+        diaryRepository = DiaryRepository(db.diaryDao())
+        tfiRepository = TfiRepository(db.tfiAssessmentDao(), userSettingsRepository)
 
         // Round-trip sanity check for the Room scaffold. Inserts a marker row,
         // reads it back, then deletes it — leaves no user-visible residue.
@@ -87,14 +96,18 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             TinnitusTrackerTheme {
-                Root(audioRepository, userSettingsRepository)
+                Root(audioRepository, userSettingsRepository, tfiRepository)
             }
         }
     }
 }
 
 @Composable
-private fun Root(audio: AudioRepository, repo: UserSettingsRepository) {
+private fun Root(
+    audio: AudioRepository,
+    repo: UserSettingsRepository,
+    tfi: TfiRepository
+) {
     val onboardingComplete by repo.onboardingComplete.collectAsState(initial = false)
     var replayOnboarding by rememberSaveable { mutableStateOf(false) }
 
@@ -108,7 +121,7 @@ private fun Root(audio: AudioRepository, repo: UserSettingsRepository) {
             vm = onboardingVm
         )
     } else {
-        RootScaffold(audio, repo, onReplayOnboarding = { replayOnboarding = true })
+        RootScaffold(audio, repo, tfi, onReplayOnboarding = { replayOnboarding = true })
     }
 }
 
@@ -119,21 +132,35 @@ private enum class Tab(val label: String) {
 /** Subscreens reachable from inside the 소리 tab — single level deep for now. */
 private enum class SoundSub { Matcher }
 
+/** Subscreens reachable from inside the 설정 tab. */
+private enum class SettingsSub { Tfi, TfiResults }
+
 @Composable
 private fun RootScaffold(
     audio: AudioRepository,
     repo: UserSettingsRepository,
+    tfi: TfiRepository,
     onReplayOnboarding: () -> Unit
 ) {
     var current by rememberSaveable { mutableStateOf(Tab.Home) }
     var soundSub by rememberSaveable { mutableStateOf<SoundSub?>(null) }
+    var settingsSub by rememberSaveable { mutableStateOf<SettingsSub?>(null) }
 
     val matcherVm: FrequencyMatchingViewModel =
         viewModel(factory = FrequencyMatchingViewModelFactory(audio, repo))
+    val tfiVm: TfiQuestionnaireViewModel =
+        viewModel(factory = TfiQuestionnaireViewModelFactory(tfi))
+
+    val tfiCadenceWeeks by repo.tfiCadenceWeeks.collectAsState(initial = 2)
+    val scope = rememberCoroutineScope()
 
     // System back inside a 소리 subscreen returns to the 소리 root.
     BackHandler(enabled = current == Tab.Sound && soundSub != null) {
         soundSub = null
+    }
+    // System back inside a 설정 subscreen returns to the 설정 root.
+    BackHandler(enabled = current == Tab.Settings && settingsSub != null) {
+        settingsSub = null
     }
 
     Scaffold(
@@ -155,8 +182,9 @@ private fun RootScaffold(
                     NavigationBarItem(
                         selected = current == tab,
                         onClick = {
-                            // Switching tabs collapses any 소리 subscreen.
+                            // Switching tabs collapses any open subscreen.
                             if (current == Tab.Sound && tab != Tab.Sound) soundSub = null
+                            if (current == Tab.Settings && tab != Tab.Settings) settingsSub = null
                             current = tab
                         },
                         icon = {
@@ -196,7 +224,30 @@ private fun RootScaffold(
                     SoundSub.Matcher -> FrequencyMatchingScreen(matcherVm)
                 }
                 Tab.Records -> RecordsScreen()
-                Tab.Settings -> SettingsScreen(onReplayOnboarding = onReplayOnboarding)
+                Tab.Settings -> when (settingsSub) {
+                    null -> SettingsScreen(
+                        onReplayOnboarding = onReplayOnboarding,
+                        onOpenTfi = {
+                            tfiVm.reset()
+                            settingsSub = SettingsSub.Tfi
+                        },
+                        tfiCadenceWeeks = tfiCadenceWeeks,
+                        onToggleTfiCadence = {
+                            scope.launch {
+                                repo.setTfiCadenceWeeks(if (tfiCadenceWeeks == 2) 1 else 2)
+                            }
+                        }
+                    )
+                    SettingsSub.Tfi -> TfiQuestionnaireScreen(
+                        vm = tfiVm,
+                        onClose = { settingsSub = null },
+                        onSubmitted = { settingsSub = SettingsSub.TfiResults }
+                    )
+                    SettingsSub.TfiResults -> TfiResultsScreen(
+                        vm = tfiVm,
+                        onDone = { settingsSub = null }
+                    )
+                }
             }
         }
     }

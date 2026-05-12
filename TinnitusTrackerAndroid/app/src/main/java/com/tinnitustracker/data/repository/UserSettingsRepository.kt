@@ -26,6 +26,12 @@ class UserSettingsRepository(private val context: Context) {
     val onboardingComplete: Flow<Boolean> = context.dataStore.data
         .map { it[PreferenceKeys.ONBOARDING_COMPLETE] ?: false }
 
+    val tfiCadenceWeeks: Flow<Int> = context.dataStore.data
+        .map { it[PreferenceKeys.TFI_CADENCE_WEEKS] ?: 2 }
+
+    val lastTfiDate: Flow<Long> = context.dataStore.data
+        .map { it[PreferenceKeys.LAST_TFI_DATE] ?: 0L }
+
     suspend fun setOnboardingComplete(value: Boolean) {
         context.dataStore.edit { it[PreferenceKeys.ONBOARDING_COMPLETE] = value }
     }
@@ -40,5 +46,13 @@ class UserSettingsRepository(private val context: Context) {
 
     suspend fun saveProcessingMode(mode: String) {
         context.dataStore.edit { it[PreferenceKeys.PROCESSING_MODE] = mode }
+    }
+
+    suspend fun setTfiCadenceWeeks(weeks: Int) {
+        context.dataStore.edit { it[PreferenceKeys.TFI_CADENCE_WEEKS] = weeks }
+    }
+
+    suspend fun setLastTfiDate(epochMs: Long) {
+        context.dataStore.edit { it[PreferenceKeys.LAST_TFI_DATE] = epochMs }
     }
 }

@@ -40,7 +40,12 @@ import com.tinnitustracker.ui.theme.pressableClickable
  * preferences (TFI cadence, daily goal, theme, etc.).
  */
 @Composable
-fun SettingsScreen(onReplayOnboarding: () -> Unit) {
+fun SettingsScreen(
+    onReplayOnboarding: () -> Unit,
+    onOpenTfi: () -> Unit,
+    tfiCadenceWeeks: Int,
+    onToggleTfiCadence: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -65,7 +70,9 @@ fun SettingsScreen(onReplayOnboarding: () -> Unit) {
         Spacer(Modifier.height(8.dp))
         ValueRow(label = "일일 청취 목표", value = "120 분", enabled = false)
         Spacer(Modifier.height(8.dp))
-        ValueRow(label = "TFI 주기", value = "2주마다", enabled = false)
+        TfiCadenceRow(weeks = tfiCadenceWeeks, onToggle = onToggleTfiCadence)
+        Spacer(Modifier.height(8.dp))
+        ActionRow(label = "TFI 다시 작성", cta = "작성하기", onClick = onOpenTfi)
 
         Spacer(Modifier.height(24.dp))
         SectionLabel("주파수")
@@ -131,6 +138,29 @@ private fun ActionRow(label: String, cta: String, onClick: (() -> Unit)?) {
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium
             )
+        }
+    }
+}
+
+@Composable
+private fun TfiCadenceRow(weeks: Int, onToggle: () -> Unit) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(14.dp),
+        modifier = Modifier
+            .pressableClickable(onClick = onToggle)
+            .fillMaxWidth()
+            .shadow(1.5.dp, RoundedCornerShape(14.dp))
+            .border(1.dp, Line, RoundedCornerShape(14.dp))
+            .semantics { contentDescription = "TFI 주기 ${weeks}주마다" }
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("TFI 주기", color = Ink, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Text("${weeks}주마다", color = Teal, fontSize = 12.sp, fontWeight = FontWeight.Medium)
         }
     }
 }
