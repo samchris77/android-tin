@@ -3,7 +3,6 @@ package com.tinnitustracker.ui.home
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -48,9 +46,11 @@ import com.tinnitustracker.ui.theme.Ink
 import com.tinnitustracker.ui.theme.Ink2
 import com.tinnitustracker.ui.theme.Line
 import com.tinnitustracker.ui.theme.Muted
+import com.tinnitustracker.ui.theme.PolishedPlayButton
 import com.tinnitustracker.ui.theme.Teal
 import com.tinnitustracker.ui.theme.Teal2
 import com.tinnitustracker.ui.theme.TealSoft
+import com.tinnitustracker.ui.theme.pressableClickable
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -113,11 +113,12 @@ private fun TopBar(onOpenSettings: () -> Unit) {
         }
         Box(
             modifier = Modifier
+                .pressableClickable(onClick = onOpenSettings)
                 .size(36.dp)
+                .shadow(2.dp, CircleShape)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surface)
                 .border(1.dp, Line, CircleShape)
-                .clickable(onClick = onOpenSettings)
                 .semantics { contentDescription = "설정 열기" },
             contentAlignment = Alignment.Center
         ) {
@@ -244,26 +245,17 @@ private fun HeroPlayerCard(onPlay: () -> Unit) {
             }
         }
 
-        // Bottom-right play button (the only functional control: hands off to parent).
-        Box(
+        // Bottom-right play button — polished hero CTA (gradient face,
+        // top gloss, inner rim, coral spot shadow, press-scale + tucked shadow).
+        PolishedPlayButton(
+            onClick = onPlay,
+            contentDescription = "재생",
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 18.dp, bottom = 18.dp)
-                .size(72.dp)
-                .shadow(elevation = 12.dp, shape = CircleShape)
-                .clip(CircleShape)
-                .background(Coral)
-                .clickable(onClick = onPlay)
-                .semantics { contentDescription = "재생" },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                Icons.Filled.PlayArrow,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(34.dp)
-            )
-        }
+                .padding(end = 18.dp, bottom = 18.dp),
+            size = 76.dp,
+            iconSize = 34.dp
+        )
     }
 }
 
@@ -423,11 +415,12 @@ private fun SleepTimerRow() {
         color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, Line, RoundedCornerShape(12.dp))
-            .clickable {
+            .pressableClickable {
                 // TODO: open sleep-timer sheet (15 / 30 / 60 / 90 / 끄지않음)
             }
+            .fillMaxWidth()
+            .shadow(1.dp, RoundedCornerShape(12.dp))
+            .border(1.dp, Line, RoundedCornerShape(12.dp))
             .semantics { contentDescription = "수면 타이머" }
     ) {
         Row(
@@ -473,11 +466,16 @@ private fun TfiPromptCard() {
             }
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Coral)
-                    .clickable {
+                    .pressableClickable {
                         // TODO: launch TFI questionnaire flow
                     }
+                    .shadow(4.dp, RoundedCornerShape(10.dp), spotColor = Coral.copy(alpha = 0.55f))
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color(0xFFE89A7D), Coral, Color(0xFFB85A3E))
+                        )
+                    )
                     .semantics { contentDescription = "설문조사 시작" }
                     .padding(horizontal = 14.dp, vertical = 9.dp)
             ) {

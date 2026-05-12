@@ -9,7 +9,6 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -77,9 +76,12 @@ import com.tinnitustracker.ui.theme.DarkCard
 import com.tinnitustracker.ui.theme.InkCream
 import com.tinnitustracker.ui.theme.OrangeAccent
 import com.tinnitustracker.ui.theme.OrangeAccent2
+import com.tinnitustracker.ui.theme.PlayButtonVariant
+import com.tinnitustracker.ui.theme.PolishedPlayButton
 import com.tinnitustracker.ui.theme.TextPrimary
 import com.tinnitustracker.ui.theme.TextSecondary
 import com.tinnitustracker.ui.theme.TextTertiary
+import com.tinnitustracker.ui.theme.pressableClickable
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -517,8 +519,9 @@ private fun StepperButtonRow(onStep: (Int) -> Unit) {
 private fun StepperButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
+            .pressableClickable(onClick = onClick)
             .height(48.dp)
-            .shadow(3.dp, RoundedCornerShape(12.dp))
+            .shadow(4.dp, RoundedCornerShape(12.dp))
             .background(
                 brush = Brush.verticalGradient(listOf(Color(0xFFFAF4E5), Color(0xFFE6DDC9))),
                 shape = RoundedCornerShape(12.dp)
@@ -529,8 +532,7 @@ private fun StepperButton(label: String, onClick: () -> Unit, modifier: Modifier
                     listOf(Color.White.copy(alpha = 0.7f), Color(0xFFB6AC97).copy(alpha = 0.45f))
                 ),
                 shape = RoundedCornerShape(12.dp)
-            )
-            .clickable(onClick = onClick),
+            ),
         contentAlignment = Alignment.Center
     ) {
         Text(label, color = InkCream, fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
@@ -597,20 +599,14 @@ private fun VolumeSafetyCard(
         )
         Spacer(Modifier.height(8.dp))
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .background(OrangeAccent, CircleShape)
-                    .clickable(onClick = onPlayToggle),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (isPlaying) Icons.Filled.Stop else Icons.Filled.PlayArrow,
-                    contentDescription = if (isPlaying) "정지" else "재생",
-                    tint = Color.White,
-                    modifier = Modifier.size(26.dp)
-                )
-            }
+            PolishedPlayButton(
+                onClick = onPlayToggle,
+                contentDescription = if (isPlaying) "정지" else "재생",
+                size = 60.dp,
+                icon = if (isPlaying) Icons.Filled.Stop else Icons.Filled.PlayArrow,
+                iconSize = 28.dp,
+                variant = PlayButtonVariant.Orange
+            )
         }
     }
 }
@@ -653,9 +649,19 @@ private fun OctaveConfusionCard(viewModel: FrequencyMatchingViewModel) {
         Spacer(Modifier.height(12.dp))
         Box(
             modifier = Modifier
+                .pressableClickable { viewModel.confirmPitch() }
                 .fillMaxWidth()
-                .background(OrangeAccent, RoundedCornerShape(12.dp))
-                .clickable { viewModel.confirmPitch() }
+                .shadow(
+                    8.dp,
+                    RoundedCornerShape(12.dp),
+                    spotColor = OrangeAccent.copy(alpha = 0.65f)
+                )
+                .background(
+                    brush = Brush.verticalGradient(
+                        listOf(OrangeAccent2, OrangeAccent, Color(0xFFD15A00))
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                )
                 .padding(vertical = 14.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -678,6 +684,7 @@ private fun OctaveButton(
 ) {
     Box(
         modifier = modifier
+            .pressableClickable(onClick = onClick)
             .height(44.dp)
             .background(
                 if (selected) OrangeAccent.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.06f),
@@ -687,8 +694,7 @@ private fun OctaveButton(
                 1.dp,
                 if (selected) OrangeAccent.copy(alpha = 0.40f) else Color.White.copy(alpha = 0.08f),
                 RoundedCornerShape(10.dp)
-            )
-            .clickable(onClick = onClick),
+            ),
         contentAlignment = Alignment.Center
     ) {
         Text(

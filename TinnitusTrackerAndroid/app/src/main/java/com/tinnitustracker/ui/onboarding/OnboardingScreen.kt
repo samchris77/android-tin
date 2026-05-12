@@ -3,7 +3,6 @@ package com.tinnitustracker.ui.onboarding
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +42,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.draw.shadow
 import com.tinnitustracker.ui.theme.Bg
 import com.tinnitustracker.ui.theme.Coral
 import com.tinnitustracker.ui.theme.Ink
@@ -51,6 +51,7 @@ import com.tinnitustracker.ui.theme.Muted
 import com.tinnitustracker.ui.theme.Teal
 import com.tinnitustracker.ui.theme.Teal2
 import com.tinnitustracker.ui.theme.TealSoft
+import com.tinnitustracker.ui.theme.pressableClickable
 import kotlinx.coroutines.launch
 
 /**
@@ -198,8 +199,8 @@ private fun Hero(
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier
+                    .pressableClickable(onClick = onSkip)
                     .clip(RoundedCornerShape(8.dp))
-                    .clickable(onClick = onSkip)
                     .semantics { contentDescription = "건너뛰기" }
                     .padding(horizontal = 12.dp, vertical = 8.dp)
             )
@@ -452,8 +453,8 @@ private fun BottomBar(
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
             modifier = Modifier
+                .let { if (isFirst) it else it.pressableClickable(onClick = onPrev) }
                 .clip(RoundedCornerShape(10.dp))
-                .let { if (isFirst) it else it.clickable(onClick = onPrev) }
                 .padding(horizontal = 14.dp, vertical = 10.dp)
         )
         Spacer(Modifier.weight(1f))
@@ -468,9 +469,14 @@ private fun BottomBar(
 private fun CoralPill(label: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
+            .pressableClickable(onClick = onClick)
+            .shadow(8.dp, RoundedCornerShape(999.dp), spotColor = Coral.copy(alpha = 0.65f))
             .clip(RoundedCornerShape(999.dp))
-            .background(Coral)
-            .clickable(onClick = onClick)
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFFE89A7D), Coral, Color(0xFFAB4B2C))
+                )
+            )
             .padding(horizontal = 26.dp, vertical = 12.dp)
             .semantics { contentDescription = label }
     ) {

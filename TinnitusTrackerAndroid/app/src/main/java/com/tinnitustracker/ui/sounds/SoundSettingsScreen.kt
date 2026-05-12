@@ -2,7 +2,6 @@ package com.tinnitustracker.ui.sounds
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -33,6 +33,7 @@ import com.tinnitustracker.ui.theme.Line
 import com.tinnitustracker.ui.theme.Muted
 import com.tinnitustracker.ui.theme.Teal
 import com.tinnitustracker.ui.theme.TealSoft
+import com.tinnitustracker.ui.theme.pressableClickable
 
 /**
  * Sound settings page (Direction A: Card stack). Five cards: preset switcher,
@@ -63,7 +64,9 @@ fun SoundSettingsScreen(onOpenMatcher: () -> Unit) {
                 "미리듣기 ▶",
                 color = Muted,
                 fontSize = 11.sp,
-                modifier = Modifier.clickable { /* TODO: play full-preset preview */ }
+                modifier = Modifier
+                    .pressableClickable { /* TODO: play full-preset preview */ }
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
             )
         }
 
@@ -99,6 +102,7 @@ private fun PresetSwitcherCard() {
         shape = RoundedCornerShape(20.dp),
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(2.dp, RoundedCornerShape(20.dp), spotColor = Teal.copy(alpha = 0.18f))
             .border(1.dp, Teal.copy(alpha = 0.14f), RoundedCornerShape(20.dp))
     ) {
         Row(
@@ -118,16 +122,18 @@ private fun PresetSwitcherCard() {
                 )
             }
             Surface(
-                color = Color.Transparent,
+                color = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
-                    .clickable { /* TODO: save preset */ }
+                    .pressableClickable { /* TODO: save preset */ }
+                    .shadow(1.dp, RoundedCornerShape(8.dp))
                     .border(1.dp, Line, RoundedCornerShape(8.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Text(
                     "+ 저장",
                     color = Ink,
-                    fontSize = 11.5.sp
+                    fontSize = 11.5.sp,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
                 )
             }
         }
@@ -143,6 +149,7 @@ private fun FrequencyCard(onOpenMatcher: () -> Unit) {
         shape = RoundedCornerShape(20.dp),
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(2.dp, RoundedCornerShape(20.dp))
             .border(1.dp, Line, RoundedCornerShape(20.dp))
     ) {
         Row(
@@ -173,13 +180,16 @@ private fun FrequencyCard(onOpenMatcher: () -> Unit) {
             Surface(
                 color = TealSoft,
                 shape = RoundedCornerShape(999.dp),
-                modifier = Modifier.clickable(onClick = onOpenMatcher)
+                modifier = Modifier
+                    .pressableClickable(onClick = onOpenMatcher)
+                    .shadow(2.dp, RoundedCornerShape(999.dp), spotColor = Teal.copy(alpha = 0.35f))
             ) {
                 Text(
                     "다시 측정 ›",
                     color = Teal,
                     fontSize = 11.sp,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                 )
             }
         }
@@ -195,6 +205,7 @@ private fun ProcessingModeCard() {
         shape = RoundedCornerShape(20.dp),
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(2.dp, RoundedCornerShape(20.dp))
             .border(1.dp, Line, RoundedCornerShape(20.dp))
     ) {
         Column(
@@ -205,7 +216,8 @@ private fun ProcessingModeCard() {
             Eyebrow("처리 방식")
             Spacer(Modifier.height(10.dp))
 
-            // Segmented control
+            // Segmented control — active segment is the raised tile; inactive
+            // segments are flat within the track.
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -215,26 +227,21 @@ private fun ProcessingModeCard() {
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 // Active segment: 노치
-                Surface(
-                    color = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(8.dp),
+                Box(
                     modifier = Modifier
                         .weight(1f)
                         .height(40.dp)
+                        .pressableClickable { /* TODO: wire to AudioRepository.setProcessingMode(NOTCH) */ }
+                        .shadow(2.dp, RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clickable { /* TODO: wire to AudioRepository.setProcessingMode(NOTCH) */ },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            "노치",
-                            color = Ink,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    Text(
+                        "노치",
+                        color = Ink,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
 
                 // Inactive segment: 증폭
@@ -242,7 +249,7 @@ private fun ProcessingModeCard() {
                     modifier = Modifier
                         .weight(1f)
                         .height(40.dp)
-                        .clickable { /* TODO: wire to AudioRepository.setProcessingMode(AMPLIFY) */ },
+                        .pressableClickable { /* TODO: wire to AudioRepository.setProcessingMode(AMPLIFY) */ },
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -273,6 +280,7 @@ private fun ColorNoiseCard() {
         shape = RoundedCornerShape(20.dp),
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(2.dp, RoundedCornerShape(20.dp))
             .border(1.dp, Line, RoundedCornerShape(20.dp))
     ) {
         Column(
@@ -290,7 +298,9 @@ private fun ColorNoiseCard() {
                     "▶ 미리듣기",
                     color = Muted,
                     fontSize = 10.sp,
-                    modifier = Modifier.clickable { /* TODO: play color noise preview */ }
+                    modifier = Modifier
+                        .pressableClickable { /* TODO: play color noise preview */ }
+                        .padding(horizontal = 6.dp, vertical = 4.dp)
                 )
             }
             Spacer(Modifier.height(10.dp))
@@ -300,65 +310,47 @@ private fun ColorNoiseCard() {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                // Active pill: 핑크
-                Surface(
-                    color = Teal,
-                    shape = RoundedCornerShape(999.dp),
-                    modifier = Modifier
-                        .clickable { /* TODO: wire to AudioRepository.setColorNoise(PINK) */ }
-                ) {
-                    Text(
-                        "핑크",
-                        color = Color.White,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
-                }
-
-                // Inactive pills
-                Surface(
-                    color = Color.Transparent,
-                    modifier = Modifier
-                        .clickable { /* TODO: wire to AudioRepository.setColorNoise(WHITE) */ }
-                        .border(1.dp, Line, RoundedCornerShape(999.dp))
-                ) {
-                    Text(
-                        "화이트",
-                        color = Ink2,
-                        fontSize = 11.sp,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
-                }
-
-                Surface(
-                    color = Color.Transparent,
-                    modifier = Modifier
-                        .clickable { /* TODO: wire to AudioRepository.setColorNoise(BROWN) */ }
-                        .border(1.dp, Line, RoundedCornerShape(999.dp))
-                ) {
-                    Text(
-                        "브라운",
-                        color = Ink2,
-                        fontSize = 11.sp,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
-                }
-
-                Surface(
-                    color = Color.Transparent,
-                    modifier = Modifier
-                        .clickable { /* TODO: wire to AudioRepository.setColorNoise(OFF) */ }
-                        .border(1.dp, Line, RoundedCornerShape(999.dp))
-                ) {
-                    Text(
-                        "끄기",
-                        color = Ink2,
-                        fontSize = 11.sp,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
-                }
+                ColorPill(label = "핑크", selected = true) { /* TODO: setColorNoise(PINK) */ }
+                ColorPill(label = "화이트", selected = false) { /* TODO: setColorNoise(WHITE) */ }
+                ColorPill(label = "브라운", selected = false) { /* TODO: setColorNoise(BROWN) */ }
+                ColorPill(label = "끄기", selected = false) { /* TODO: setColorNoise(OFF) */ }
             }
+        }
+    }
+}
+
+@Composable
+private fun ColorPill(label: String, selected: Boolean, onClick: () -> Unit) {
+    if (selected) {
+        Surface(
+            color = Teal,
+            shape = RoundedCornerShape(999.dp),
+            modifier = Modifier
+                .pressableClickable(onClick = onClick)
+                .shadow(2.dp, RoundedCornerShape(999.dp), spotColor = Teal.copy(alpha = 0.50f))
+        ) {
+            Text(
+                label,
+                color = Color.White,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+            )
+        }
+    } else {
+        Surface(
+            color = Color.Transparent,
+            shape = RoundedCornerShape(999.dp),
+            modifier = Modifier
+                .pressableClickable(onClick = onClick)
+                .border(1.dp, Line, RoundedCornerShape(999.dp))
+        ) {
+            Text(
+                label,
+                color = Ink2,
+                fontSize = 11.sp,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+            )
         }
     }
 }
@@ -372,6 +364,7 @@ private fun AmbientMixCard() {
         shape = RoundedCornerShape(20.dp),
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(2.dp, RoundedCornerShape(20.dp))
             .border(1.dp, Line, RoundedCornerShape(20.dp))
     ) {
         Column(

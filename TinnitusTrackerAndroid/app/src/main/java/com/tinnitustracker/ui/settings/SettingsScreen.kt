@@ -2,7 +2,6 @@ package com.tinnitustracker.ui.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -31,6 +31,7 @@ import com.tinnitustracker.ui.theme.Ink2
 import com.tinnitustracker.ui.theme.Line
 import com.tinnitustracker.ui.theme.Muted
 import com.tinnitustracker.ui.theme.Teal
+import com.tinnitustracker.ui.theme.pressableClickable
 
 /**
  * 설정 — Settings root. Re-skinned to the wireframes' design system: section
@@ -107,9 +108,10 @@ private fun ActionRow(label: String, cta: String, onClick: (() -> Unit)?) {
         color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(14.dp),
         modifier = Modifier
+            .let { if (clickable) it.pressableClickable { onClick!!() } else it }
             .fillMaxWidth()
+            .shadow(if (clickable) 1.5.dp else 0.dp, RoundedCornerShape(14.dp))
             .border(1.dp, Line, RoundedCornerShape(14.dp))
-            .let { if (clickable) it.clickable { onClick!!() } else it }
             .semantics { contentDescription = label }
     ) {
         Row(
