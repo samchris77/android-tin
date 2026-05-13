@@ -36,6 +36,7 @@ import com.tinnitustracker.data.database.AppDatabase
 import com.tinnitustracker.data.database.entities.DiaryEntry
 import com.tinnitustracker.data.repository.AudioRepository
 import com.tinnitustracker.data.repository.DiaryRepository
+import com.tinnitustracker.data.repository.ListeningSessionRepository
 import com.tinnitustracker.data.repository.TfiRepository
 import com.tinnitustracker.data.repository.UserSettingsRepository
 import com.tinnitustracker.ui.assessment.TfiQuestionnaireScreen
@@ -50,6 +51,8 @@ import com.tinnitustracker.ui.onboarding.OnboardingScreen
 import com.tinnitustracker.ui.onboarding.OnboardingViewModel
 import com.tinnitustracker.ui.onboarding.OnboardingViewModelFactory
 import com.tinnitustracker.ui.records.RecordsScreen
+import com.tinnitustracker.ui.records.RecordsViewModel
+import com.tinnitustracker.ui.records.RecordsViewModelFactory
 import com.tinnitustracker.ui.settings.SettingsScreen
 import com.tinnitustracker.ui.sounds.SoundSettingsScreen
 import com.tinnitustracker.ui.theme.Line
@@ -65,15 +68,17 @@ class MainActivity : ComponentActivity() {
     private lateinit var userSettingsRepository: UserSettingsRepository
     private lateinit var diaryRepository: DiaryRepository
     private lateinit var tfiRepository: TfiRepository
+    private lateinit var listeningSessionRepository: ListeningSessionRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val app = application as TinnitusTrackerApp
-        audioRepository = AudioRepository(applicationContext, app.audioEngine)
         userSettingsRepository = UserSettingsRepository(applicationContext)
         val db = AppDatabase.get(applicationContext)
         diaryRepository = DiaryRepository(db.diaryDao())
         tfiRepository = TfiRepository(db.tfiAssessmentDao(), userSettingsRepository)
+        listeningSessionRepository = ListeningSessionRepository(db.listeningSessionDao())
+        audioRepository = AudioRepository(applicationContext, app.audioEngine, listeningSessionRepository)
 
         // Round-trip sanity check for the Room scaffold. Inserts a marker row,
         // reads it back, then deletes it — leaves no user-visible residue.
@@ -96,7 +101,12 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             TinnitusTrackerTheme {
-                Root(audioRepository, userSettingsRepository, tfiRepository)
+                Root(
+                    audioRepository,
+                    userSettingsRepository,
+                    tfiRepository,
+                    listeningSessionRepository
+                )
             }
         }
     }
@@ -106,7 +116,8 @@ class MainActivity : ComponentActivity() {
 private fun Root(
     audio: AudioRepository,
     repo: UserSettingsRepository,
-    tfi: TfiRepository
+    tfi: TfiRepository,
+    sessions: ListeningSessionRepository
 ) {
     val onboardingComplete by repo.onboardingComplete.collectAsState(initial = false)
     var replayOnboarding by rememberSaveable { mutableStateOf(false) }
@@ -121,7 +132,7 @@ private fun Root(
             vm = onboardingVm
         )
     } else {
-        RootScaffold(audio, repo, tfi, onReplayOnboarding = { replayOnboarding = true })
+        RootScaffold(audio, repo, tfi, sessions, onReplayOnboarding = { replayOnboarding = true })
     }
 }
 
@@ -140,6 +151,7 @@ private fun RootScaffold(
     audio: AudioRepository,
     repo: UserSettingsRepository,
     tfi: TfiRepository,
+    sessions: ListeningSessionRepository,
     onReplayOnboarding: () -> Unit
 ) {
     var current by rememberSaveable { mutableStateOf(Tab.Home) }
@@ -150,6 +162,8 @@ private fun RootScaffold(
         viewModel(factory = FrequencyMatchingViewModelFactory(audio, repo))
     val tfiVm: TfiQuestionnaireViewModel =
         viewModel(factory = TfiQuestionnaireViewModelFactory(tfi))
+    val recordsVm: RecordsViewModel =
+        viewModel(factory = RecordsViewModelFactory(sessions))
 
     val tfiCadenceWeeks by repo.tfiCadenceWeeks.collectAsState(initial = 2)
     val scope = rememberCoroutineScope()
@@ -223,7 +237,7 @@ private fun RootScaffold(
                     )
                     SoundSub.Matcher -> FrequencyMatchingScreen(matcherVm)
                 }
-                Tab.Records -> RecordsScreen()
+                Tab.Records -> RecordsScreen(recordsVm)
                 Tab.Settings -> when (settingsSub) {
                     null -> SettingsScreen(
                         onReplayOnboarding = onReplayOnboarding,

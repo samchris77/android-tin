@@ -8,14 +8,16 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.tinnitustracker.data.database.dao.DiaryDao
+import com.tinnitustracker.data.database.dao.ListeningSessionDao
 import com.tinnitustracker.data.database.dao.TfiAssessmentDao
 import com.tinnitustracker.data.database.entities.DiaryEntry
+import com.tinnitustracker.data.database.entities.ListeningSession
 import com.tinnitustracker.data.database.entities.MapTypeConverters
 import com.tinnitustracker.data.database.entities.TFIAssessment
 
 @Database(
-    entities = [DiaryEntry::class, TFIAssessment::class],
-    version = 2,
+    entities = [DiaryEntry::class, TFIAssessment::class, ListeningSession::class],
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(MapTypeConverters::class)
@@ -23,6 +25,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun diaryDao(): DiaryDao
     abstract fun tfiAssessmentDao(): TfiAssessmentDao
+    abstract fun listeningSessionDao(): ListeningSessionDao
 
     companion object {
         private const val DB_NAME = "tinnitus_tracker.db"
@@ -45,6 +48,23 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // Additive: introduces listening_sessions alongside existing tables.
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `listening_sessions` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `startedAtEpochMs` INTEGER NOT NULL,
+                        `endedAtEpochMs` INTEGER NOT NULL,
+                        `durationMs` INTEGER NOT NULL,
+                        `presetLabel` TEXT
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
         @Volatile private var instance: AppDatabase? = null
 
         fun get(context: Context): AppDatabase =
@@ -54,7 +74,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DB_NAME
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                     .also { instance = it }
             }

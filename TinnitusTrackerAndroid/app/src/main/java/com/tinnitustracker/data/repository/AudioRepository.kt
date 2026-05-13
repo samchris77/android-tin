@@ -8,6 +8,10 @@ import androidx.core.content.ContextCompat
 import com.tinnitustracker.audio.engine.AudioEngine
 import com.tinnitustracker.audio.routing.AudioFocusController
 import com.tinnitustracker.audio.service.TherapyAudioService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /**
  * Single point of access for audio playback. Forwards the engine's flows
@@ -23,10 +27,17 @@ import com.tinnitustracker.audio.service.TherapyAudioService
  *  - `LOSS` (another media app took focus for the foreseeable future): full
  *    teardown — engine off, service stopped, the latch is cleared so we do
  *    *not* spuriously auto-resume later.
+ *
+ * Session logging: a session is opened on [start] and finalised on [stop] or
+ * full `LOSS`. Transient losses do NOT close the session — pausing for a call
+ * and resuming counts as one session for the heatmap. The repository drops
+ * sessions shorter than its minimum-duration filter (see
+ * [ListeningSessionRepository.MIN_DURATION_MS]).
  */
 class AudioRepository(
     private val appContext: Context,
-    private val engine: AudioEngine
+    private val engine: AudioEngine,
+    private val sessionRepo: ListeningSessionRepository
 ) {
     private val tag = "AudioRepository"
 
@@ -34,6 +45,11 @@ class AudioRepository(
 
     /** True iff playback was active when an audio-focus transient loss arrived. */
     @Volatile private var wasPlayingBeforeInterruption = false
+
+    /** Wall-clock start of the currently-open session, or null when nothing is playing. */
+    @Volatile private var currentSessionStartedAtMs: Long? = null
+
+    private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     // ── Engine flows — same StateFlow instances the ViewModel used to read ──
     val frequency     = engine.frequency
@@ -59,11 +75,13 @@ class AudioRepository(
             Intent(appContext, TherapyAudioService::class.java)
                 .setAction(TherapyAudioService.ACTION_START)
         )
+        currentSessionStartedAtMs = System.currentTimeMillis()
         engine.start()
     }
 
     fun stop() {
         wasPlayingBeforeInterruption = false
+        finaliseSession()
         engine.stop()
         focus.abandon()
         appContext.stopService(Intent(appContext, TherapyAudioService::class.java))
@@ -74,6 +92,7 @@ class AudioRepository(
             AudioManager.AUDIOFOCUS_LOSS -> {
                 Log.d(tag, "focus LOSS → full stop")
                 wasPlayingBeforeInterruption = false
+                finaliseSession()
                 engine.stop()
                 appContext.stopService(Intent(appContext, TherapyAudioService::class.java))
             }
@@ -82,6 +101,7 @@ class AudioRepository(
                 if (engine.isPlayingFlow.value) {
                     Log.d(tag, "focus LOSS_TRANSIENT → pause engine, keep service")
                     wasPlayingBeforeInterruption = true
+                    // Session stays open — a transient loss does not split a session.
                     engine.stop()
                 }
             }
@@ -91,6 +111,17 @@ class AudioRepository(
                     wasPlayingBeforeInterruption = false
                     engine.start()
                 }
+            }
+        }
+    }
+
+    private fun finaliseSession() {
+        val start = currentSessionStartedAtMs ?: return
+        currentSessionStartedAtMs = null
+        val end = System.currentTimeMillis()
+        ioScope.launch {
+            sessionRepo.logSession(start, end)?.also {
+                Log.d(tag, "logged session id=$it duration=${end - start}ms")
             }
         }
     }

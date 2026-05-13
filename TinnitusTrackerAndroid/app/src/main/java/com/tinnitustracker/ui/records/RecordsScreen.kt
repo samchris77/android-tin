@@ -7,36 +7,49 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.tinnitustracker.ui.theme.Coral
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.tinnitustracker.ui.theme.Heat0
+import com.tinnitustracker.ui.theme.Heat1
+import com.tinnitustracker.ui.theme.Heat2
+import com.tinnitustracker.ui.theme.Heat3
+import com.tinnitustracker.ui.theme.Heat4
 import com.tinnitustracker.ui.theme.Ink
 import com.tinnitustracker.ui.theme.Ink2
-import com.tinnitustracker.ui.theme.Line
 import com.tinnitustracker.ui.theme.Muted
+import com.tinnitustracker.ui.theme.Surface as SurfaceColor
 import com.tinnitustracker.ui.theme.Teal
-import com.tinnitustracker.ui.theme.TealSoft
+import com.tinnitustracker.ui.theme.pressableClickable
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
-/**
- * Stub for the Records tab, re-skinned to the wireframes' design system.
- * Final design carries three lenses (달력 / 청취 로그 / TFI 추이); for now
- * we render a faint week-strip preview + chip row to hint at what's coming.
- */
 @Composable
-fun RecordsScreen() {
+fun RecordsScreen(vm: RecordsViewModel) {
+    val state by vm.state.collectAsStateWithLifecycle()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -44,123 +57,225 @@ fun RecordsScreen() {
             .padding(horizontal = 20.dp)
     ) {
         Spacer(Modifier.height(20.dp))
-        Text("기록", color = Ink, fontSize = 28.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp)
-        Spacer(Modifier.height(6.dp))
         Text(
-            "청취 적응 진도와 설문 추이를 한눈에 확인합니다.",
-            color = Muted,
-            fontSize = 13.sp,
-            lineHeight = 20.sp
+            "기록",
+            color = Ink,
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = (-0.5).sp
         )
 
-        // Faded week-strip preview — visual hint at the calendar lens.
-        Spacer(Modifier.height(28.dp))
-        Eyebrow("미리보기")
-        Spacer(Modifier.height(8.dp))
-        FadedWeekPreview()
+        Spacer(Modifier.height(16.dp))
+        CalendarCard(
+            state = state,
+            onPrev = vm::previousMonth,
+            onNext = vm::nextMonth
+        )
+    }
+}
 
-        Spacer(Modifier.height(36.dp))
+@Composable
+private fun CalendarCard(
+    state: RecordsUiState,
+    onPrev: () -> Unit,
+    onNext: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(2.dp, RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(12.dp))
+            .background(SurfaceColor)
+            .padding(16.dp)
+    ) {
+        CalendarHeader(state, onPrev, onNext)
+        Spacer(Modifier.height(12.dp))
+        WeekdayRow()
+        Spacer(Modifier.height(6.dp))
+        DayGrid(state.cells, state.maxDayMs)
+        Spacer(Modifier.height(12.dp))
+        LegendRow(state.monthTotalMs)
+    }
+}
 
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+@Composable
+private fun CalendarHeader(
+    state: RecordsUiState,
+    onPrev: () -> Unit,
+    onNext: () -> Unit
+) {
+    val fmt = DateTimeFormatter.ofPattern("MMM yyyy", Locale.ENGLISH)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            "기록 달력",
+            color = Ink,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(Modifier.weight(1f))
+        Box(
+            modifier = Modifier
+                .pressableClickable(onClick = onPrev)
+                .size(28.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                "준비 중",
-                color = Ink2,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                "청취 기록, 일일 목표 달성, TFI 추이가 곧 표시됩니다.",
-                color = Muted,
-                fontSize = 13.sp,
-                lineHeight = 20.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
+            Icon(
+                imageVector = Icons.Filled.ChevronLeft,
+                contentDescription = "이전 달",
+                tint = Ink2,
+                modifier = Modifier.size(22.dp)
             )
         }
-
-        Spacer(Modifier.height(20.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+        Text(
+            state.monthYear.format(fmt),
+            color = Ink,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(horizontal = 8.dp)
+        )
+        Box(
+            modifier = Modifier
+                .pressableClickable(onClick = onNext)
+                .size(28.dp),
+            contentAlignment = Alignment.Center
         ) {
-            PreviewChip("달력")
-            PreviewChip("청취 로그")
-            PreviewChip("TFI 추이")
+            Icon(
+                imageVector = Icons.Filled.ChevronRight,
+                contentDescription = "다음 달",
+                tint = Ink2,
+                modifier = Modifier.size(22.dp)
+            )
         }
     }
 }
 
 @Composable
-private fun Eyebrow(text: String) {
-    Text(
-        text,
-        color = Coral,
-        fontSize = 10.sp,
-        letterSpacing = 1.5.sp,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(start = 4.dp)
-    )
+private fun WeekdayRow() {
+    val labels = listOf("S", "M", "T", "W", "T", "F", "S")
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        labels.forEach { label ->
+            Text(
+                label,
+                color = Muted,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
+    }
 }
 
 @Composable
-private fun FadedWeekPreview() {
-    // Seven small cells, mostly TealSoft, one Teal "today" — at low contrast
-    // so it reads as preview chrome, not real data.
-    Row(
+private fun DayGrid(cells: List<DayCell>, maxDayMs: Long) {
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        val days = listOf("월", "화", "수", "목", "금", "토", "일")
-        days.forEachIndexed { i, label ->
-            val isToday = i == 4
-            Column(
-                modifier = Modifier.weight(if (isToday) 1.4f else 1f),
-                horizontalAlignment = Alignment.CenterHorizontally
+        for (row in 0 until 6) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(if (isToday) 54.dp else 44.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(
-                            when {
-                                isToday -> Teal.copy(alpha = 0.85f)
-                                i < 4 -> TealSoft
-                                else -> MaterialTheme.colorScheme.background
-                            }
-                        )
-                        .border(
-                            width = if (isToday || i < 4) 0.dp else 1.dp,
-                            color = Line,
-                            shape = RoundedCornerShape(10.dp)
-                        )
-                )
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    label,
-                    color = if (isToday) Coral else Muted,
-                    fontSize = 10.sp,
-                    fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal
-                )
+                for (col in 0 until 7) {
+                    val cell = cells[row * 7 + col]
+                    DayCellView(cell, maxDayMs, modifier = Modifier.weight(1f))
+                }
             }
         }
     }
 }
 
 @Composable
-private fun PreviewChip(label: String) {
+private fun DayCellView(cell: DayCell, maxDayMs: Long, modifier: Modifier) {
+    val bg = when {
+        !cell.inCurrentMonth -> Heat0
+        else -> heatColor(cell.totalMs, maxDayMs)
+    }
+    val textColor = if (cell.inCurrentMonth) {
+        // High-intensity cells need light text for legibility.
+        if (cell.totalMs > 0 && maxDayMs > 0 && cell.totalMs > maxDayMs * 0.5) Color.White
+        else Ink
+    } else {
+        Muted
+    }
     Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(999.dp))
-            .background(TealSoft)
-            .border(1.dp, Teal.copy(alpha = 0.14f), RoundedCornerShape(999.dp))
-            .padding(horizontal = 14.dp, vertical = 8.dp)
+        modifier = modifier
+            .aspectRatio(1f)
+            .clip(RoundedCornerShape(8.dp))
+            .background(bg)
+            .then(
+                if (cell.isToday) Modifier.border(
+                    width = 2.dp,
+                    color = Teal,
+                    shape = RoundedCornerShape(8.dp)
+                ) else Modifier
+            ),
+        contentAlignment = Alignment.Center
     ) {
-        Text(label, color = Teal, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+        Text(
+            cell.date.dayOfMonth.toString(),
+            color = textColor,
+            fontSize = 13.sp,
+            fontWeight = if (cell.isToday) FontWeight.SemiBold else FontWeight.Normal
+        )
+    }
+}
+
+@Composable
+private fun LegendRow(monthTotalMs: Long) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("적음", color = Muted, fontSize = 11.sp)
+        Spacer(Modifier.width(6.dp))
+        listOf(Heat1, Heat2, Heat3, Heat4).forEach { c ->
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(c)
+            )
+            Spacer(Modifier.width(3.dp))
+        }
+        Spacer(Modifier.width(3.dp))
+        Text("많음", color = Muted, fontSize = 11.sp)
+        Spacer(Modifier.weight(1f))
+        Text("이번 달: ", color = Muted, fontSize = 12.sp)
+        Text(
+            formatDuration(monthTotalMs),
+            color = Ink,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
+private fun heatColor(ms: Long, maxMs: Long): Color {
+    if (ms <= 0L || maxMs <= 0L) return Heat0
+    val ratio = ms.toDouble() / maxMs.toDouble()
+    return when {
+        ratio <= 0.25 -> Heat1
+        ratio <= 0.50 -> Heat2
+        ratio <= 0.75 -> Heat3
+        else          -> Heat4
+    }
+}
+
+private fun formatDuration(ms: Long): String {
+    if (ms <= 0L) return "0m"
+    val totalMin = ms / 60_000L
+    val h = totalMin / 60L
+    val m = totalMin % 60L
+    return when {
+        h > 0L -> "${h}h ${m}m"
+        else   -> "${m}m"
     }
 }

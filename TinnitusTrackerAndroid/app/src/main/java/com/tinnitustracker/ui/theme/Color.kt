@@ -21,6 +21,14 @@ val CoralSoft   = Color(0xFFF8E4D9)
 val Warn        = Color(0xFFC44536)
 val WarnSoft    = Color(0xFFF7DDD8)
 
+// Heatmap intensity ramp for the Records calendar — 0-state + 4 steps.
+// Heat0 is a touch darker than `Bg` so empty day cells still read as cells.
+val Heat0       = Color(0xFFEFEAE0)
+val Heat1       = Color(0xFFDDE8E5)
+val Heat2       = Color(0xFFB8D2CD)
+val Heat3       = Color(0xFF6E9C97)
+val Heat4       = Teal
+
 // Dark studio theme + orange accent (FrequencyMatchingScreen)
 val DarkBg        = Color(0xFF0D0D0F)
 val DarkCard      = Color(0xFF1A1A1D)
