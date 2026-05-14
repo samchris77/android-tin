@@ -76,6 +76,7 @@ fun RecordsScreen(vm: RecordsViewModel, onStartTfi: () -> Unit) {
     val state by vm.state.collectAsStateWithLifecycle()
     val recentEntries by vm.recentEntries.collectAsStateWithLifecycle()
     val tfiAssessments by vm.tfiAssessments.collectAsStateWithLifecycle()
+    val dayDetail by vm.dayDetail.collectAsStateWithLifecycle()
 
     val pagerState = rememberPagerState(pageCount = { 2 })
     val scope = rememberCoroutineScope()
@@ -110,7 +111,8 @@ fun RecordsScreen(vm: RecordsViewModel, onStartTfi: () -> Unit) {
                         state = state,
                         entries = recentEntries,
                         onPrev = vm::previousMonth,
-                        onNext = vm::nextMonth
+                        onNext = vm::nextMonth,
+                        onDayTap = vm::selectDay
                     )
                     1 -> TfiScoresTab(
                         assessments = tfiAssessments,
@@ -134,6 +136,14 @@ fun RecordsScreen(vm: RecordsViewModel, onStartTfi: () -> Unit) {
                     vm.addDiaryEntry(severity, stress, tags)
                     showQuickLog = false
                 }
+            )
+        }
+
+        val detail = dayDetail
+        if (detail != null) {
+            DayDetailBottomSheet(
+                detail = detail,
+                onDismiss = { vm.selectDay(null) }
             )
         }
     }
@@ -203,7 +213,8 @@ private fun OverviewHistoryTab(
     state: RecordsUiState,
     entries: List<RecentEntry>,
     onPrev: () -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
+    onDayTap: (java.time.LocalDate) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -212,7 +223,7 @@ private fun OverviewHistoryTab(
         contentPadding = PaddingValues(top = 16.dp, bottom = 96.dp)
     ) {
         item {
-            CalendarCard(state = state, onPrev = onPrev, onNext = onNext)
+            CalendarCard(state = state, onPrev = onPrev, onNext = onNext, onDayTap = onDayTap)
         }
         item { Spacer(Modifier.height(16.dp)) }
         item { WeeklySummaryPlaceholder() }
@@ -354,7 +365,7 @@ private fun TfiScoresTab(
             .padding(horizontal = 20.dp),
         contentPadding = PaddingValues(top = 16.dp, bottom = 96.dp)
     ) {
-        item { TfiTrendPlaceholder(assessments) }
+        item { TfiTrendCard(assessments) }
         item { Spacer(Modifier.height(20.dp)) }
         item { SectionHeader("이전 검사") }
         item { Spacer(Modifier.height(8.dp)) }
@@ -369,7 +380,14 @@ private fun TfiScoresTab(
 }
 
 @Composable
-private fun TfiTrendPlaceholder(assessments: List<TFIAssessment>) {
+private fun TfiTrendCard(assessments: List<TFIAssessment>) {
+    // observeAll() returns newest-first. The sparkline draws oldest → newest left-to-right.
+    val chronological = remember(assessments) { assessments.asReversed() }
+    val latest = assessments.firstOrNull()
+    val first = chronological.firstOrNull()
+    val delta = if (latest != null && first != null && latest.id != first.id)
+        latest.totalScore - first.totalScore else null
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -379,14 +397,8 @@ private fun TfiTrendPlaceholder(assessments: List<TFIAssessment>) {
             .padding(16.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                "TFI 추이",
-                color = Ink,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold
-            )
+            Text("TFI 추이", color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.weight(1f))
-            val latest = assessments.firstOrNull()
             if (latest != null) {
                 Text(
                     "최근 ${latest.totalScore}점",
@@ -396,13 +408,155 @@ private fun TfiTrendPlaceholder(assessments: List<TFIAssessment>) {
                 )
             }
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(4.dp))
         Text(
-            "준비 중 — 추이 차트 (MCID 13점)",
+            trendSubtitle(chronological.size, delta),
             color = Muted,
             fontSize = 12.sp
         )
-        Spacer(Modifier.height(80.dp))
+
+        Spacer(Modifier.height(14.dp))
+        if (chronological.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("아직 표시할 추이가 없습니다", color = Muted, fontSize = 12.sp)
+            }
+        } else {
+            TfiSparkline(
+                scores = chronological.map { it.totalScore },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // MCID legend marker
+            Box(
+                modifier = Modifier
+                    .size(width = 14.dp, height = 14.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(TealSoft)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                "MCID 13점 — 임상적으로 유의미한 변화",
+                color = Muted,
+                fontSize = 11.sp
+            )
+        }
+    }
+}
+
+private fun trendSubtitle(n: Int, delta: Int?): String {
+    if (n == 0) return "검사를 시작하면 추이가 표시됩니다"
+    if (n == 1 || delta == null) return "$n 회 기록"
+    val arrow = when {
+        delta <= -13 -> "↓ ${-delta}점 (호전)"
+        delta >= 13  -> "↑ ${delta}점 (악화)"
+        delta < 0    -> "↓ ${-delta}점"
+        delta > 0    -> "↑ ${delta}점"
+        else         -> "변화 없음"
+    }
+    return "$n 회 기록 · 첫 검사 대비 $arrow"
+}
+
+@Composable
+private fun TfiSparkline(scores: List<Int>, modifier: Modifier = Modifier) {
+    val latestPointColor = Teal
+    val lineColor = Teal
+    val mcidBandColor = TealSoft
+    val gridColor = Line
+    val mutedDot = Muted
+    val mcidWorseColor = Color(0xFFE07A5F)   // coral-ish — worsening jump
+    val mcidBetterColor = Color(0xFF2A9D8F)  // green-teal — improving jump
+
+    androidx.compose.foundation.Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val padL = 28f
+        val padR = 8f
+        val padT = 8f
+        val padB = 18f
+        val plotW = (w - padL - padR).coerceAtLeast(1f)
+        val plotH = (h - padT - padB).coerceAtLeast(1f)
+
+        fun xAt(i: Int): Float =
+            if (scores.size <= 1) padL + plotW / 2f
+            else padL + plotW * i / (scores.size - 1).toFloat()
+
+        fun yAt(score: Int): Float {
+            val clamped = score.coerceIn(0, 100)
+            return padT + plotH * (1f - clamped / 100f)
+        }
+
+        // Grid lines + Y labels at 0/50/100
+        listOf(0, 50, 100).forEach { tick ->
+            val y = yAt(tick)
+            drawLine(
+                color = gridColor,
+                start = androidx.compose.ui.geometry.Offset(padL, y),
+                end   = androidx.compose.ui.geometry.Offset(w - padR, y),
+                strokeWidth = 1f
+            )
+        }
+
+        // MCID band around latest score (±13)
+        val latest = scores.last()
+        val bandTop = yAt((latest + 13).coerceAtMost(100))
+        val bandBot = yAt((latest - 13).coerceAtLeast(0))
+        drawRect(
+            color = mcidBandColor.copy(alpha = 0.35f),
+            topLeft = androidx.compose.ui.geometry.Offset(padL, bandTop),
+            size = androidx.compose.ui.geometry.Size(plotW, (bandBot - bandTop).coerceAtLeast(1f))
+        )
+
+        // Polyline
+        if (scores.size >= 2) {
+            val path = androidx.compose.ui.graphics.Path().apply {
+                moveTo(xAt(0), yAt(scores[0]))
+                for (i in 1 until scores.size) lineTo(xAt(i), yAt(scores[i]))
+            }
+            drawPath(
+                path = path,
+                color = lineColor,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(
+                    width = 3f,
+                    cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                    join = androidx.compose.ui.graphics.StrokeJoin.Round
+                )
+            )
+        }
+
+        // Points + MCID-significant deltas
+        scores.forEachIndexed { i, s ->
+            val center = androidx.compose.ui.geometry.Offset(xAt(i), yAt(s))
+            val isLatest = i == scores.lastIndex
+            val deltaFromPrev = if (i == 0) 0 else s - scores[i - 1]
+            val markerColor = when {
+                isLatest -> latestPointColor
+                deltaFromPrev >= 13 -> mcidWorseColor
+                deltaFromPrev <= -13 -> mcidBetterColor
+                else -> mutedDot
+            }
+            // Outer halo on MCID-significant or latest
+            val isSignificant = isLatest || kotlin.math.abs(deltaFromPrev) >= 13
+            if (isSignificant) {
+                drawCircle(
+                    color = markerColor.copy(alpha = 0.18f),
+                    radius = 9f,
+                    center = center
+                )
+            }
+            drawCircle(color = markerColor, radius = if (isLatest) 5f else 3.5f, center = center)
+            if (isLatest) {
+                drawCircle(color = Color.White, radius = 2f, center = center)
+            }
+        }
     }
 }
 
@@ -494,7 +648,8 @@ private fun StartTfiCta(onStartTfi: () -> Unit) {
 private fun CalendarCard(
     state: RecordsUiState,
     onPrev: () -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
+    onDayTap: (java.time.LocalDate) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -508,7 +663,7 @@ private fun CalendarCard(
         Spacer(Modifier.height(12.dp))
         WeekdayRow()
         Spacer(Modifier.height(6.dp))
-        DayGrid(state.cells, state.maxDayMs)
+        DayGrid(state.cells, state.maxDayMs, onDayTap)
         Spacer(Modifier.height(12.dp))
         LegendRow(state.monthTotalMs)
     }
@@ -589,7 +744,7 @@ private fun WeekdayRow() {
 }
 
 @Composable
-private fun DayGrid(cells: List<DayCell>, maxDayMs: Long) {
+private fun DayGrid(cells: List<DayCell>, maxDayMs: Long, onDayTap: (java.time.LocalDate) -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -601,7 +756,12 @@ private fun DayGrid(cells: List<DayCell>, maxDayMs: Long) {
             ) {
                 for (col in 0 until 7) {
                     val cell = cells[row * 7 + col]
-                    DayCellView(cell, maxDayMs, modifier = Modifier.weight(1f))
+                    DayCellView(
+                        cell = cell,
+                        maxDayMs = maxDayMs,
+                        modifier = Modifier.weight(1f),
+                        onClick = { onDayTap(cell.date) }
+                    )
                 }
             }
         }
@@ -609,7 +769,7 @@ private fun DayGrid(cells: List<DayCell>, maxDayMs: Long) {
 }
 
 @Composable
-private fun DayCellView(cell: DayCell, maxDayMs: Long, modifier: Modifier) {
+private fun DayCellView(cell: DayCell, maxDayMs: Long, modifier: Modifier, onClick: () -> Unit) {
     val bg = when {
         !cell.inCurrentMonth -> Heat0
         else -> heatColor(cell.totalMs, maxDayMs)
@@ -626,6 +786,7 @@ private fun DayCellView(cell: DayCell, maxDayMs: Long, modifier: Modifier) {
             .aspectRatio(1f)
             .clip(RoundedCornerShape(8.dp))
             .background(bg)
+            .pressableClickable(onClick = onClick)
             .then(
                 if (cell.isToday) Modifier.border(
                     width = 2.dp,

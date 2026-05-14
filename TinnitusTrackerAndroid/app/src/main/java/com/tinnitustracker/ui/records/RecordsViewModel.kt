@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import java.time.DayOfWeek
@@ -29,6 +30,15 @@ data class DayCell(
     val isToday: Boolean,
     val totalMs: Long
 )
+
+data class DayDetail(
+    val date: LocalDate,
+    val sessions: List<RecentEntry.Session>,
+    val diaries: List<RecentEntry.Diary>
+) {
+    val isEmpty: Boolean get() = sessions.isEmpty() && diaries.isEmpty()
+    val totalListenMs: Long get() = sessions.sumOf { it.durationMs }
+}
 
 data class RecordsUiState(
     val monthYear: YearMonth,
@@ -120,6 +130,49 @@ class RecordsViewModel(
 
     val tfiAssessments: StateFlow<List<TFIAssessment>> = tfiRepo.observeAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private val selectedDay = MutableStateFlow<LocalDate?>(null)
+
+    val dayDetail: StateFlow<DayDetail?> = selectedDay.flatMapLatest { day ->
+        if (day == null) flowOf(null)
+        else {
+            val start = day.atStartOfDay(zone).toInstant().toEpochMilli()
+            val end = day.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            combine(
+                sessionRepo.observeRange(start, end),
+                diaryRepo.observeRange(start, end)
+            ) { sessions, diaries ->
+                DayDetail(
+                    date = day,
+                    sessions = sessions
+                        .map {
+                            RecentEntry.Session(
+                                id = it.id,
+                                timestampEpochMs = it.startedAtEpochMs,
+                                durationMs = it.durationMs,
+                                presetLabel = it.presetLabel
+                            )
+                        }
+                        .sortedByDescending { it.timestampEpochMs },
+                    diaries = diaries
+                        .map {
+                            RecentEntry.Diary(
+                                id = it.id,
+                                timestampEpochMs = it.date,
+                                severity = it.severity,
+                                stressLevel = it.stressLevel,
+                                note = it.note
+                            )
+                        }
+                        .sortedByDescending { it.timestampEpochMs }
+                )
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun selectDay(date: LocalDate?) {
+        selectedDay.value = date
+    }
 
     /**
      * Persists a quick-log diary entry. Tags are joined into [DiaryEntry.note]
