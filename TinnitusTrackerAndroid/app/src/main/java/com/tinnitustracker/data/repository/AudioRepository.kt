@@ -11,6 +11,10 @@ import com.tinnitustracker.audio.service.TherapyAudioService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -49,6 +53,11 @@ class AudioRepository(
     /** Wall-clock start of the currently-open session, or null when nothing is playing. */
     @Volatile private var currentSessionStartedAtMs: Long? = null
 
+    // Mock labels frozen at session start — replaced by real preset state in plan #11.
+    @Volatile private var currentColorNoise: String? = null
+    @Volatile private var currentAmbient: String? = null
+    @Volatile private var currentActivity: String? = null
+
     private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     // ── Engine flows — same StateFlow instances the ViewModel used to read ──
@@ -56,6 +65,16 @@ class AudioRepository(
     val volume        = engine.volume
     val mode          = engine.mode
     val isPlayingFlow = engine.isPlayingFlow
+
+    /**
+     * Live state of the in-flight listening session, surfaced to the UI for the
+     * `LiveSessionPill`. `null` when nothing is being tracked. `isPaused = true`
+     * means a transient focus loss has muted the engine but the session is
+     * still open and will resume on GAIN.
+     */
+    data class LiveSession(val startedAtEpochMs: Long, val isPaused: Boolean)
+    private val _liveSession = MutableStateFlow<LiveSession?>(null)
+    val liveSession: StateFlow<LiveSession?> = _liveSession.asStateFlow()
 
     // ── Engine setters (1-to-1 forwarding) ─────────────────────────────────
     fun setFrequency(hz: Float)      = engine.setFrequency(hz)
@@ -75,7 +94,12 @@ class AudioRepository(
             Intent(appContext, TherapyAudioService::class.java)
                 .setAction(TherapyAudioService.ACTION_START)
         )
-        currentSessionStartedAtMs = System.currentTimeMillis()
+        val startedAt = System.currentTimeMillis()
+        currentSessionStartedAtMs = startedAt
+        currentColorNoise = MockSessionLabels.COLOR_NOISES.random()
+        currentAmbient    = MockSessionLabels.AMBIENTS.random()
+        currentActivity   = MockSessionLabels.ACTIVITIES.random()
+        _liveSession.value = LiveSession(startedAt, isPaused = false)
         engine.start()
     }
 
@@ -102,6 +126,7 @@ class AudioRepository(
                     Log.d(tag, "focus LOSS_TRANSIENT → pause engine, keep service")
                     wasPlayingBeforeInterruption = true
                     // Session stays open — a transient loss does not split a session.
+                    _liveSession.update { it?.copy(isPaused = true) }
                     engine.stop()
                 }
             }
@@ -109,6 +134,7 @@ class AudioRepository(
                 if (wasPlayingBeforeInterruption) {
                     Log.d(tag, "focus GAIN after transient loss → resume engine")
                     wasPlayingBeforeInterruption = false
+                    _liveSession.update { it?.copy(isPaused = false) }
                     engine.start()
                 }
             }
@@ -118,11 +144,31 @@ class AudioRepository(
     private fun finaliseSession() {
         val start = currentSessionStartedAtMs ?: return
         currentSessionStartedAtMs = null
+        _liveSession.value = null
         val end = System.currentTimeMillis()
+        val colorNoise = currentColorNoise; currentColorNoise = null
+        val ambient    = currentAmbient;    currentAmbient = null
+        val activity   = currentActivity;   currentActivity = null
         ioScope.launch {
-            sessionRepo.logSession(start, end)?.also {
-                Log.d(tag, "logged session id=$it duration=${end - start}ms")
+            sessionRepo.logSession(
+                startedAtEpochMs = start,
+                endedAtEpochMs = end,
+                colorNoise = colorNoise,
+                ambient = ambient,
+                activity = activity
+            )?.also {
+                Log.d(
+                    tag,
+                    "logged session id=$it duration=${end - start}ms " +
+                        "labels=[$colorNoise / $ambient / $activity]"
+                )
             }
         }
     }
+}
+
+private object MockSessionLabels {
+    val COLOR_NOISES = listOf("white", "pink", "brown")
+    val AMBIENTS     = listOf("rain", "wind", "waves", "traffic")
+    val ACTIVITIES   = listOf("commute", "resting", "sleeping", "working", "studying")
 }

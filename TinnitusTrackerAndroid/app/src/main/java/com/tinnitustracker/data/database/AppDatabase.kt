@@ -17,7 +17,7 @@ import com.tinnitustracker.data.database.entities.TFIAssessment
 
 @Database(
     entities = [DiaryEntry::class, TFIAssessment::class, ListeningSession::class],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(MapTypeConverters::class)
@@ -65,6 +65,16 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // Additive: three nullable mock-label columns on listening_sessions
+        // (colorNoise, ambient, activity). Mock until presets ship — plan #11.
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `listening_sessions` ADD COLUMN `colorNoise` TEXT")
+                db.execSQL("ALTER TABLE `listening_sessions` ADD COLUMN `ambient` TEXT")
+                db.execSQL("ALTER TABLE `listening_sessions` ADD COLUMN `activity` TEXT")
+            }
+        }
+
         @Volatile private var instance: AppDatabase? = null
 
         fun get(context: Context): AppDatabase =
@@ -74,7 +84,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DB_NAME
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build()
                     .also { instance = it }
             }

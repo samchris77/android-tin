@@ -17,7 +17,10 @@ class ListeningSessionRepository(private val dao: ListeningSessionDao) {
     suspend fun logSession(
         startedAtEpochMs: Long,
         endedAtEpochMs: Long,
-        presetLabel: String? = null
+        presetLabel: String? = null,
+        colorNoise: String? = null,
+        ambient: String? = null,
+        activity: String? = null
     ): Long? {
         val duration = endedAtEpochMs - startedAtEpochMs
         if (duration < MIN_DURATION_MS) return null
@@ -26,7 +29,10 @@ class ListeningSessionRepository(private val dao: ListeningSessionDao) {
                 startedAtEpochMs = startedAtEpochMs,
                 endedAtEpochMs = endedAtEpochMs,
                 durationMs = duration,
-                presetLabel = presetLabel
+                presetLabel = presetLabel,
+                colorNoise = colorNoise,
+                ambient = ambient,
+                activity = activity
             )
         )
     }
@@ -34,6 +40,8 @@ class ListeningSessionRepository(private val dao: ListeningSessionDao) {
     suspend fun deleteById(id: Long) = dao.deleteById(id)
 
     companion object {
-        const val MIN_DURATION_MS = 5_000L
+        // 3 min: filters out tap-noise and low-signal short plays without
+        // silently dropping legitimate short TRT exposures.
+        const val MIN_DURATION_MS = 180_000L
     }
 }

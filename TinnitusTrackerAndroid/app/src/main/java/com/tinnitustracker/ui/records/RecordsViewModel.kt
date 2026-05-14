@@ -3,12 +3,18 @@ package com.tinnitustracker.ui.records
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.tinnitustracker.data.database.entities.DiaryEntry
 import com.tinnitustracker.data.database.entities.ListeningSession
+import com.tinnitustracker.data.database.entities.TFIAssessment
+import com.tinnitustracker.data.repository.DiaryRepository
 import com.tinnitustracker.data.repository.ListeningSessionRepository
+import com.tinnitustracker.data.repository.TfiRepository
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -31,9 +37,32 @@ data class RecordsUiState(
     val maxDayMs: Long
 )
 
+/** One row in the Recent Entries list — either an auto-logged session or a diary note. */
+sealed class RecentEntry {
+    abstract val id: Long
+    abstract val timestampEpochMs: Long
+
+    data class Session(
+        override val id: Long,
+        override val timestampEpochMs: Long,
+        val durationMs: Long,
+        val presetLabel: String?
+    ) : RecentEntry()
+
+    data class Diary(
+        override val id: Long,
+        override val timestampEpochMs: Long,
+        val severity: Int,
+        val stressLevel: Int,
+        val note: String
+    ) : RecentEntry()
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class RecordsViewModel(
     private val sessionRepo: ListeningSessionRepository,
+    private val diaryRepo: DiaryRepository,
+    private val tfiRepo: TfiRepository,
     private val zone: ZoneId = ZoneId.systemDefault(),
     private val today: () -> LocalDate = { LocalDate.now() }
 ) : ViewModel() {
@@ -62,6 +91,53 @@ class RecordsViewModel(
                 maxDayMs = 0L
             )
         )
+
+    /** Merged session + diary rows, newest first, capped at 50. */
+    val recentEntries: StateFlow<List<RecentEntry>> = combine(
+        sessionRepo.observeRange(0L, Long.MAX_VALUE),
+        diaryRepo.observeRange(0L, Long.MAX_VALUE)
+    ) { sessions, diaries ->
+        val merged = ArrayList<RecentEntry>(sessions.size + diaries.size)
+        sessions.forEach {
+            merged += RecentEntry.Session(
+                id = it.id,
+                timestampEpochMs = it.startedAtEpochMs,
+                durationMs = it.durationMs,
+                presetLabel = it.presetLabel
+            )
+        }
+        diaries.forEach {
+            merged += RecentEntry.Diary(
+                id = it.id,
+                timestampEpochMs = it.date,
+                severity = it.severity,
+                stressLevel = it.stressLevel,
+                note = it.note
+            )
+        }
+        merged.sortedByDescending { it.timestampEpochMs }.take(50)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val tfiAssessments: StateFlow<List<TFIAssessment>> = tfiRepo.observeAll()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /**
+     * Persists a quick-log diary entry. Tags are joined into [DiaryEntry.note]
+     * with comma separators; v1 has no free-form note field in the bottom
+     * sheet, so the column is effectively a packed tag list for now.
+     */
+    fun addDiaryEntry(severity: Int, stressLevel: Int, tags: List<String>) {
+        viewModelScope.launch {
+            diaryRepo.upsert(
+                DiaryEntry(
+                    date = System.currentTimeMillis(),
+                    severity = severity.coerceIn(0, 10),
+                    stressLevel = stressLevel.coerceIn(0, 10),
+                    note = tags.joinToString(",")
+                )
+            )
+        }
+    }
 
     fun previousMonth() {
         visibleMonth.value = visibleMonth.value.minusMonths(1)
@@ -119,11 +195,13 @@ class RecordsViewModel(
 }
 
 class RecordsViewModelFactory(
-    private val sessionRepo: ListeningSessionRepository
+    private val sessionRepo: ListeningSessionRepository,
+    private val diaryRepo: DiaryRepository,
+    private val tfiRepo: TfiRepository
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         require(modelClass.isAssignableFrom(RecordsViewModel::class.java))
-        return RecordsViewModel(sessionRepo) as T
+        return RecordsViewModel(sessionRepo, diaryRepo, tfiRepo) as T
     }
 }

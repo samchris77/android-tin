@@ -64,7 +64,9 @@ import java.util.Locale
 @Composable
 fun HomeScreen(
     onStartTherapy: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    onStartTfi: () -> Unit,
+    showTfiPrompt: Boolean
 ) {
     Column(
         modifier = Modifier
@@ -85,8 +87,10 @@ fun HomeScreen(
         Spacer(Modifier.height(14.dp))
         SleepTimerRow()
 
-        Spacer(Modifier.height(10.dp))
-        TfiPromptCard()
+        if (showTfiPrompt) {
+            Spacer(Modifier.height(10.dp))
+            TfiPromptCard(onStart = onStartTfi)
+        }
 
         Spacer(Modifier.height(96.dp))
     }
@@ -441,7 +445,7 @@ private fun SleepTimerRow() {
 // ── TFI prompt card ────────────────────────────────────────────────────────
 
 @Composable
-private fun TfiPromptCard() {
+private fun TfiPromptCard(onStart: () -> Unit) {
     Surface(
         color = CoralSoft,
         shape = RoundedCornerShape(12.dp),
@@ -466,9 +470,7 @@ private fun TfiPromptCard() {
             }
             Box(
                 modifier = Modifier
-                    .pressableClickable {
-                        // TODO: launch TFI questionnaire flow
-                    }
+                    .pressableClickable(onClick = onStart)
                     .shadow(4.dp, RoundedCornerShape(10.dp), spotColor = Coral.copy(alpha = 0.55f))
                     .clip(RoundedCornerShape(10.dp))
                     .background(

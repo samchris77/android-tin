@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -43,6 +44,7 @@ import com.tinnitustracker.ui.assessment.TfiQuestionnaireScreen
 import com.tinnitustracker.ui.assessment.TfiQuestionnaireViewModel
 import com.tinnitustracker.ui.assessment.TfiQuestionnaireViewModelFactory
 import com.tinnitustracker.ui.assessment.TfiResultsScreen
+import com.tinnitustracker.ui.components.LiveSessionPill
 import com.tinnitustracker.ui.home.HomeScreen
 import com.tinnitustracker.ui.matcher.FrequencyMatchingScreen
 import com.tinnitustracker.ui.matcher.FrequencyMatchingViewModel
@@ -105,7 +107,8 @@ class MainActivity : ComponentActivity() {
                     audioRepository,
                     userSettingsRepository,
                     tfiRepository,
-                    listeningSessionRepository
+                    listeningSessionRepository,
+                    diaryRepository
                 )
             }
         }
@@ -117,7 +120,8 @@ private fun Root(
     audio: AudioRepository,
     repo: UserSettingsRepository,
     tfi: TfiRepository,
-    sessions: ListeningSessionRepository
+    sessions: ListeningSessionRepository,
+    diary: DiaryRepository
 ) {
     val onboardingComplete by repo.onboardingComplete.collectAsState(initial = false)
     var replayOnboarding by rememberSaveable { mutableStateOf(false) }
@@ -132,7 +136,7 @@ private fun Root(
             vm = onboardingVm
         )
     } else {
-        RootScaffold(audio, repo, tfi, sessions, onReplayOnboarding = { replayOnboarding = true })
+        RootScaffold(audio, repo, tfi, sessions, diary, onReplayOnboarding = { replayOnboarding = true })
     }
 }
 
@@ -152,6 +156,7 @@ private fun RootScaffold(
     repo: UserSettingsRepository,
     tfi: TfiRepository,
     sessions: ListeningSessionRepository,
+    diary: DiaryRepository,
     onReplayOnboarding: () -> Unit
 ) {
     var current by rememberSaveable { mutableStateOf(Tab.Home) }
@@ -163,9 +168,13 @@ private fun RootScaffold(
     val tfiVm: TfiQuestionnaireViewModel =
         viewModel(factory = TfiQuestionnaireViewModelFactory(tfi))
     val recordsVm: RecordsViewModel =
-        viewModel(factory = RecordsViewModelFactory(sessions))
+        viewModel(factory = RecordsViewModelFactory(sessions, diary, tfi))
 
     val tfiCadenceWeeks by repo.tfiCadenceWeeks.collectAsState(initial = 2)
+    val lastTfiDate by repo.lastTfiDate.collectAsState(initial = 0L)
+    val liveSession by audio.liveSession.collectAsState()
+    val showTfiPrompt = System.currentTimeMillis() >=
+        lastTfiDate + tfiCadenceWeeks * 7L * 24L * 60L * 60L * 1000L
     val scope = rememberCoroutineScope()
 
     // System back inside a 소리 subscreen returns to the 소리 root.
@@ -179,6 +188,14 @@ private fun RootScaffold(
 
     Scaffold(
         bottomBar = {
+          Column {
+            LiveSessionPill(
+                session = liveSession,
+                onClick = {
+                    if (current == Tab.Sound) soundSub = null
+                    current = Tab.Sound
+                }
+            )
             NavigationBar(
                 containerColor = MaterialTheme.colorScheme.surface,
                 tonalElevation = 0.dp,
@@ -223,13 +240,20 @@ private fun RootScaffold(
                     )
                 }
             }
+          }
         }
     ) { padding ->
         Box(Modifier.padding(padding)) {
             when (current) {
                 Tab.Home -> HomeScreen(
                     onStartTherapy = { current = Tab.Sound },
-                    onOpenSettings = { current = Tab.Settings }
+                    onOpenSettings = { current = Tab.Settings },
+                    onStartTfi = {
+                        tfiVm.reset()
+                        current = Tab.Settings
+                        settingsSub = SettingsSub.Tfi
+                    },
+                    showTfiPrompt = showTfiPrompt
                 )
                 Tab.Sound -> when (soundSub) {
                     null -> SoundSettingsScreen(
@@ -237,7 +261,14 @@ private fun RootScaffold(
                     )
                     SoundSub.Matcher -> FrequencyMatchingScreen(matcherVm)
                 }
-                Tab.Records -> RecordsScreen(recordsVm)
+                Tab.Records -> RecordsScreen(
+                    vm = recordsVm,
+                    onStartTfi = {
+                        tfiVm.reset()
+                        current = Tab.Settings
+                        settingsSub = SettingsSub.Tfi
+                    }
+                )
                 Tab.Settings -> when (settingsSub) {
                     null -> SettingsScreen(
                         onReplayOnboarding = onReplayOnboarding,
