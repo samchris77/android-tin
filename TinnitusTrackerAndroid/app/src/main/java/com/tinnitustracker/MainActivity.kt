@@ -38,13 +38,14 @@ import com.tinnitustracker.data.database.entities.DiaryEntry
 import com.tinnitustracker.data.repository.AudioRepository
 import com.tinnitustracker.data.repository.DiaryRepository
 import com.tinnitustracker.data.repository.ListeningSessionRepository
+import com.tinnitustracker.data.repository.SoundPresetRepository
 import com.tinnitustracker.data.repository.TfiRepository
 import com.tinnitustracker.data.repository.UserSettingsRepository
 import com.tinnitustracker.ui.assessment.TfiQuestionnaireScreen
 import com.tinnitustracker.ui.assessment.TfiQuestionnaireViewModel
 import com.tinnitustracker.ui.assessment.TfiQuestionnaireViewModelFactory
 import com.tinnitustracker.ui.assessment.TfiResultsScreen
-import com.tinnitustracker.ui.components.LiveSessionPill
+import com.tinnitustracker.ui.components.MiniPlayer
 import com.tinnitustracker.ui.home.HomeScreen
 import com.tinnitustracker.ui.matcher.FrequencyMatchingScreen
 import com.tinnitustracker.ui.matcher.FrequencyMatchingViewModel
@@ -62,6 +63,8 @@ import com.tinnitustracker.ui.theme.Muted
 import com.tinnitustracker.ui.theme.Teal
 import com.tinnitustracker.ui.theme.TealSoft
 import com.tinnitustracker.ui.theme.TinnitusTrackerTheme
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -71,6 +74,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var diaryRepository: DiaryRepository
     private lateinit var tfiRepository: TfiRepository
     private lateinit var listeningSessionRepository: ListeningSessionRepository
+    private lateinit var soundPresetRepository: SoundPresetRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -80,7 +84,8 @@ class MainActivity : ComponentActivity() {
         diaryRepository = DiaryRepository(db.diaryDao())
         tfiRepository = TfiRepository(db.tfiAssessmentDao(), userSettingsRepository)
         listeningSessionRepository = ListeningSessionRepository(db.listeningSessionDao())
-        audioRepository = AudioRepository(applicationContext, app.audioEngine, listeningSessionRepository)
+        soundPresetRepository = SoundPresetRepository(db.soundPresetDao())
+        audioRepository = AudioRepository(applicationContext, app.audioEngine, listeningSessionRepository, soundPresetRepository, userSettingsRepository)
 
         // Round-trip sanity check for the Room scaffold. Inserts a marker row,
         // reads it back, then deletes it — leaves no user-visible residue.
@@ -108,7 +113,8 @@ class MainActivity : ComponentActivity() {
                     userSettingsRepository,
                     tfiRepository,
                     listeningSessionRepository,
-                    diaryRepository
+                    diaryRepository,
+                    soundPresetRepository
                 )
             }
         }
@@ -121,7 +127,8 @@ private fun Root(
     repo: UserSettingsRepository,
     tfi: TfiRepository,
     sessions: ListeningSessionRepository,
-    diary: DiaryRepository
+    diary: DiaryRepository,
+    preset: SoundPresetRepository
 ) {
     val onboardingComplete by repo.onboardingComplete.collectAsState(initial = false)
     var replayOnboarding by rememberSaveable { mutableStateOf(false) }
@@ -136,7 +143,7 @@ private fun Root(
             vm = onboardingVm
         )
     } else {
-        RootScaffold(audio, repo, tfi, sessions, diary, onReplayOnboarding = { replayOnboarding = true })
+        RootScaffold(audio, repo, tfi, sessions, diary, preset, onReplayOnboarding = { replayOnboarding = true })
     }
 }
 
@@ -150,6 +157,7 @@ private enum class SoundSub { Matcher }
 /** Subscreens reachable from inside the 설정 tab. */
 private enum class SettingsSub { Tfi, TfiResults }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @Composable
 private fun RootScaffold(
     audio: AudioRepository,
@@ -157,6 +165,7 @@ private fun RootScaffold(
     tfi: TfiRepository,
     sessions: ListeningSessionRepository,
     diary: DiaryRepository,
+    preset: SoundPresetRepository,
     onReplayOnboarding: () -> Unit
 ) {
     var current by rememberSaveable { mutableStateOf(Tab.Home) }
@@ -172,7 +181,11 @@ private fun RootScaffold(
 
     val tfiCadenceWeeks by repo.tfiCadenceWeeks.collectAsState(initial = 2)
     val lastTfiDate by repo.lastTfiDate.collectAsState(initial = 0L)
-    val liveSession by audio.liveSession.collectAsState()
+    val isPlaying by audio.isPlayingFlow.collectAsState(initial = false)
+    val activePreset by repo.activePresetId
+        .flatMapLatest { id -> preset.observeById(id) }
+        .collectAsState(initial = null)
+        
     val showTfiPrompt = System.currentTimeMillis() >=
         lastTfiDate + tfiCadenceWeeks * 7L * 24L * 60L * 60L * 1000L
     val scope = rememberCoroutineScope()
@@ -189,8 +202,11 @@ private fun RootScaffold(
     Scaffold(
         bottomBar = {
           Column {
-            LiveSessionPill(
-                session = liveSession,
+            MiniPlayer(
+                visible = !(current == Tab.Sound && soundSub == SoundSub.Matcher),
+                presetName = activePreset?.name,
+                isPlaying = isPlaying,
+                onTogglePlay = { audio.togglePlay() },
                 onClick = {
                     if (current == Tab.Sound) soundSub = null
                     current = Tab.Sound
@@ -257,6 +273,9 @@ private fun RootScaffold(
                 )
                 Tab.Sound -> when (soundSub) {
                     null -> SoundSettingsScreen(
+                        audioRepo = audio,
+                        settingsRepo = repo,
+                        presetRepo = preset,
                         onOpenMatcher = { soundSub = SoundSub.Matcher }
                     )
                     SoundSub.Matcher -> FrequencyMatchingScreen(matcherVm)

@@ -4,7 +4,9 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
+import android.media.MediaPlayer
 import android.util.Log
+import com.tinnitustracker.R
 import kotlin.math.tanh
 import kotlin.random.Random
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
  *   NOTCH — broadband white noise with a notch carved out at the matched frequency.
  *           Used for notched-sound therapy (drives lateral inhibition around the tone).
  */
-class AudioEngine(@Suppress("UNUSED_PARAMETER") context: Context) {
+class AudioEngine(private val context: Context) {
 
     enum class Mode { MASK, NOTCH }
 
@@ -55,7 +57,21 @@ class AudioEngine(@Suppress("UNUSED_PARAMETER") context: Context) {
     private val _isPlayingFlow = MutableStateFlow(false)
     val isPlayingFlow: StateFlow<Boolean> = _isPlayingFlow.asStateFlow()
 
-    init { createAudioTrack() }
+    private val _colorNoise = MutableStateFlow("off")
+    val colorNoise: StateFlow<String> = _colorNoise.asStateFlow()
+
+    private val _colorNoiseVolume = MutableStateFlow(0.5f)
+    val colorNoiseVolume: StateFlow<Float> = _colorNoiseVolume.asStateFlow()
+
+    private val _ambientMix = MutableStateFlow<Map<String, Float>>(emptyMap())
+    val ambientMix: StateFlow<Map<String, Float>> = _ambientMix.asStateFlow()
+
+    private val ambientPlayers = mutableMapOf<String, MediaPlayer>()
+
+    init { 
+        createAudioTrack() 
+        setupAmbientPlayers()
+    }
 
     private fun createAudioTrack() {
         val attributes = AudioAttributes.Builder()
@@ -75,11 +91,36 @@ class AudioEngine(@Suppress("UNUSED_PARAMETER") context: Context) {
             .build()
     }
 
+    private fun setupAmbientPlayers() {
+        val attributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .build()
+
+        try {
+            ambientPlayers["rain"] = MediaPlayer.create(context, R.raw.rain).apply {
+                setAudioAttributes(attributes)
+                isLooping = true
+                setVolume(0f, 0f)
+            }
+            ambientPlayers["beach"] = MediaPlayer.create(context, R.raw.beach).apply {
+                setAudioAttributes(attributes)
+                isLooping = true
+                setVolume(0f, 0f)
+            }
+        } catch (e: Exception) {
+            Log.e(tag, "Failed to load ambient sounds", e)
+        }
+    }
+
     fun start() {
         if (isPlaying) return
         isPlaying = true
         _isPlayingFlow.value = true
         try { audioTrack?.play() } catch (e: Exception) { Log.e(tag, "play failed", e) }
+        ambientPlayers.values.forEach { 
+            try { it.start() } catch (e: Exception) { Log.e(tag, "ambient play failed", e) }
+        }
         processingThread = Thread { generate() }.apply { start() }
     }
 
@@ -92,12 +133,19 @@ class AudioEngine(@Suppress("UNUSED_PARAMETER") context: Context) {
             audioTrack?.pause()
             audioTrack?.flush()
         } catch (e: Exception) { Log.e(tag, "stop failed", e) }
+        ambientPlayers.values.forEach { 
+            try { if (it.isPlaying) it.pause() } catch (e: Exception) {}
+        }
     }
 
     fun release() {
         stop()
         audioTrack?.release()
         audioTrack = null
+        ambientPlayers.values.forEach { 
+            try { it.release() } catch (e: Exception) {}
+        }
+        ambientPlayers.clear()
     }
 
     fun setFrequency(hz: Float) {
@@ -117,6 +165,22 @@ class AudioEngine(@Suppress("UNUSED_PARAMETER") context: Context) {
         }
     }
 
+    fun setColorNoise(type: String) {
+        _colorNoise.value = type
+    }
+
+    fun setColorNoiseVolume(v: Float) {
+        _colorNoiseVolume.value = v.coerceIn(0f, 1f)
+    }
+
+    fun setAmbientMix(mix: Map<String, Float>) {
+        _ambientMix.value = mix
+        mix.forEach { (source, volume) ->
+            val v = volume.coerceIn(0f, 1f)
+            ambientPlayers[source]?.setVolume(v, v)
+        }
+    }
+
     private fun generate() {
         val buffer = FloatArray(1024)
         filter.reset()
@@ -125,6 +189,8 @@ class AudioEngine(@Suppress("UNUSED_PARAMETER") context: Context) {
         // NOTCH uses low Q (~3 octaves) so the cut is clearly audible.
         val maskGain = 5.0f
         val notchGain = 1.6f
+
+        var cNoiseState = 0.0 // for simple color noise filtering
 
         while (isPlaying) {
             currentFrequency += (targetFrequency - currentFrequency) * smoothing
@@ -137,7 +203,29 @@ class AudioEngine(@Suppress("UNUSED_PARAMETER") context: Context) {
             for (i in buffer.indices) {
                 val noise = Random.nextFloat() * 2f - 1f
                 var s = filter.process(noise)
+                
+                // Color noise processing
+                var cNoise = 0f
+                if (_colorNoise.value != "off") {
+                    val cnRaw = Random.nextFloat() * 2f - 1f
+                    when (_colorNoise.value) {
+                        "white" -> cNoise = cnRaw
+                        "pink" -> {
+                            // Simple 1-pole lowpass
+                            cNoiseState = 0.997 * cNoiseState + 0.029591 * cnRaw
+                            cNoise = (cNoiseState * 0.1f).toFloat()
+                        }
+                        "brown" -> {
+                            // Deeper 1-pole lowpass
+                            cNoiseState = 0.99 * cNoiseState + 0.01 * cnRaw
+                            cNoise = (cNoiseState * 0.2f).toFloat()
+                        }
+                    }
+                }
+
                 s *= currentVolume * if (_mode.value == Mode.MASK) maskGain else notchGain
+                s += cNoise * _colorNoiseVolume.value
+                
                 buffer[i] = tanh(s.toDouble()).toFloat()
             }
 

@@ -35,14 +35,33 @@ import com.tinnitustracker.ui.theme.Teal
 import com.tinnitustracker.ui.theme.TealSoft
 import com.tinnitustracker.ui.theme.pressableClickable
 
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.tinnitustracker.data.repository.AudioRepository
+import com.tinnitustracker.data.repository.SoundPresetRepository
+import com.tinnitustracker.data.repository.UserSettingsRepository
+
 /**
  * Sound settings page (Direction A: Card stack). Five cards: preset switcher,
  * frequency display, processing mode, color noise picker, ambient mix. The
- * frequency card's "다시 측정" pill opens the matcher subscreen. All values
- * are currently hardcoded; each card has a TODO for live data wiring.
+ * frequency card's "다시 측정" pill opens the matcher subscreen.
  */
 @Composable
-fun SoundSettingsScreen(onOpenMatcher: () -> Unit) {
+fun SoundSettingsScreen(
+    audioRepo: AudioRepository,
+    settingsRepo: UserSettingsRepository,
+    presetRepo: SoundPresetRepository,
+    onOpenMatcher: () -> Unit
+) {
+    val vm: SoundSettingsViewModel = viewModel(
+        factory = SoundSettingsViewModelFactory(audioRepo, settingsRepo, presetRepo)
+    )
+    
+    val activePreset by vm.activePreset.collectAsState()
+    val frequency by audioRepo.frequency.collectAsState()
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -71,23 +90,32 @@ fun SoundSettingsScreen(onOpenMatcher: () -> Unit) {
         }
 
         // 1. Preset switcher card
-        PresetSwitcherCard()
+        PresetSwitcherCard(presetName = activePreset?.name ?: "저녁 휴식")
         Spacer(Modifier.height(12.dp))
 
         // 2. Frequency card
-        FrequencyCard(onOpenMatcher = onOpenMatcher)
+        FrequencyCard(frequency = frequency, onOpenMatcher = onOpenMatcher)
         Spacer(Modifier.height(12.dp))
 
         // 3. Processing mode card
-        ProcessingModeCard()
+        ProcessingModeCard(
+            mode = activePreset?.processingMode ?: "notch",
+            onModeChanged = { vm.updateProcessingMode(it) }
+        )
         Spacer(Modifier.height(12.dp))
 
         // 4. Color noise card
-        ColorNoiseCard()
+        ColorNoiseCard(
+            currentColor = activePreset?.colorNoise ?: "off",
+            onColorChanged = { vm.updateColorNoise(it) }
+        )
         Spacer(Modifier.height(12.dp))
 
         // 5. Ambient mix card
-        AmbientMixCard()
+        AmbientMixCard(
+            ambientMix = activePreset?.ambientMix ?: emptyMap(),
+            onVolumeChanged = { source, volume -> vm.updateAmbientMix(source, volume) }
+        )
 
         Spacer(Modifier.height(96.dp))
     }
@@ -96,7 +124,7 @@ fun SoundSettingsScreen(onOpenMatcher: () -> Unit) {
 // ── Preset Switcher Card ────────────────────────────────────────────────────
 
 @Composable
-private fun PresetSwitcherCard() {
+private fun PresetSwitcherCard(presetName: String) {
     Surface(
         color = TealSoft,
         shape = RoundedCornerShape(20.dp),
@@ -115,7 +143,7 @@ private fun PresetSwitcherCard() {
             Column(modifier = Modifier.weight(1f)) {
                 Eyebrow("현재 프리셋")
                 Text(
-                    "저녁 휴식 ▾",
+                    "$presetName ▾",
                     color = Ink,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
@@ -143,7 +171,7 @@ private fun PresetSwitcherCard() {
 // ── Frequency Card ──────────────────────────────────────────────────────────
 
 @Composable
-private fun FrequencyCard(onOpenMatcher: () -> Unit) {
+private fun FrequencyCard(frequency: Float, onOpenMatcher: () -> Unit) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(20.dp),
@@ -163,7 +191,7 @@ private fun FrequencyCard(onOpenMatcher: () -> Unit) {
                 Eyebrow("이명 주파수")
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        "4,250",
+                        String.format("%,d", frequency.toInt()),
                         color = Ink,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.W300,
@@ -199,7 +227,7 @@ private fun FrequencyCard(onOpenMatcher: () -> Unit) {
 // ── Processing Mode Card ────────────────────────────────────────────────────
 
 @Composable
-private fun ProcessingModeCard() {
+private fun ProcessingModeCard(mode: String, onModeChanged: (String) -> Unit) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(20.dp),
@@ -227,35 +255,48 @@ private fun ProcessingModeCard() {
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 // Active segment: 노치
+                val isNotch = mode == "notch"
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .height(40.dp)
-                        .pressableClickable { /* TODO: wire to AudioRepository.setProcessingMode(NOTCH) */ }
-                        .shadow(2.dp, RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)),
+                        .pressableClickable { onModeChanged("notch") }
+                        .let { 
+                            if (isNotch) {
+                                it.shadow(2.dp, RoundedCornerShape(8.dp))
+                                  .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
+                            } else it
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         "노치",
-                        color = Ink,
+                        color = if (isNotch) Ink else Ink2,
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = if (isNotch) FontWeight.Bold else FontWeight.Normal
                     )
                 }
 
                 // Inactive segment: 증폭
+                val isAmplify = mode == "amplify"
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .height(40.dp)
-                        .pressableClickable { /* TODO: wire to AudioRepository.setProcessingMode(AMPLIFY) */ },
+                        .pressableClickable { onModeChanged("amplify") }
+                        .let { 
+                            if (isAmplify) {
+                                it.shadow(2.dp, RoundedCornerShape(8.dp))
+                                  .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
+                            } else it
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         "증폭",
-                        color = Ink2,
-                        fontSize = 12.sp
+                        color = if (isAmplify) Ink else Ink2,
+                        fontSize = 12.sp,
+                        fontWeight = if (isAmplify) FontWeight.Bold else FontWeight.Normal
                     )
                 }
             }
@@ -274,7 +315,7 @@ private fun ProcessingModeCard() {
 // ── Color Noise Card ────────────────────────────────────────────────────────
 
 @Composable
-private fun ColorNoiseCard() {
+private fun ColorNoiseCard(currentColor: String, onColorChanged: (String) -> Unit) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(20.dp),
@@ -310,10 +351,10 @@ private fun ColorNoiseCard() {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                ColorPill(label = "핑크", selected = true) { /* TODO: setColorNoise(PINK) */ }
-                ColorPill(label = "화이트", selected = false) { /* TODO: setColorNoise(WHITE) */ }
-                ColorPill(label = "브라운", selected = false) { /* TODO: setColorNoise(BROWN) */ }
-                ColorPill(label = "끄기", selected = false) { /* TODO: setColorNoise(OFF) */ }
+                ColorPill(label = "핑크", selected = currentColor == "pink") { onColorChanged("pink") }
+                ColorPill(label = "화이트", selected = currentColor == "white") { onColorChanged("white") }
+                ColorPill(label = "브라운", selected = currentColor == "brown") { onColorChanged("brown") }
+                ColorPill(label = "끄기", selected = currentColor == "off") { onColorChanged("off") }
             }
         }
     }
@@ -358,7 +399,7 @@ private fun ColorPill(label: String, selected: Boolean, onClick: () -> Unit) {
 // ── Ambient Mix Card ────────────────────────────────────────────────────────
 
 @Composable
-private fun AmbientMixCard() {
+private fun AmbientMixCard(ambientMix: Map<String, Float>, onVolumeChanged: (String, Float) -> Unit) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(20.dp),
@@ -376,54 +417,48 @@ private fun AmbientMixCard() {
             Spacer(Modifier.height(12.dp))
 
             // Rain row + progress bar
+            val rainVol = ambientMix["rain"] ?: 0f
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("🌧 빗소리", fontSize = 13.sp, color = Ink)
-                Text("60%", fontSize = 13.sp, color = Teal, fontWeight = FontWeight.Bold)
+                Text("🌧 빗소리", fontSize = 13.sp, color = if (rainVol > 0f) Ink else Muted)
+                Text("${(rainVol * 100).toInt()}%", fontSize = 13.sp, color = if (rainVol > 0f) Teal else Muted, fontWeight = if (rainVol > 0f) FontWeight.Bold else FontWeight.Normal)
             }
             Spacer(Modifier.height(6.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(4.dp)
-                    .background(Line, RoundedCornerShape(2.dp))
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.60f)
-                        .height(4.dp)
-                        .background(Teal, RoundedCornerShape(2.dp))
+            Slider(
+                value = rainVol,
+                onValueChange = { onVolumeChanged("rain", it) },
+                colors = SliderDefaults.colors(
+                    thumbColor = Teal,
+                    activeTrackColor = Teal,
+                    inactiveTrackColor = Line
                 )
-            }
+            )
 
             Spacer(Modifier.height(12.dp))
 
             // Wave row + progress bar
+            val wavesVol = ambientMix["beach"] ?: 0f
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("🌊 파도소리", fontSize = 13.sp, color = Muted)
-                Text("0%", fontSize = 13.sp, color = Muted)
+                Text("🌊 파도소리", fontSize = 13.sp, color = if (wavesVol > 0f) Ink else Muted)
+                Text("${(wavesVol * 100).toInt()}%", fontSize = 13.sp, color = if (wavesVol > 0f) Teal else Muted, fontWeight = if (wavesVol > 0f) FontWeight.Bold else FontWeight.Normal)
             }
             Spacer(Modifier.height(6.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(4.dp)
-                    .background(Line, RoundedCornerShape(2.dp))
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0f)
-                        .height(4.dp)
-                        .background(Teal, RoundedCornerShape(2.dp))
+            Slider(
+                value = wavesVol,
+                onValueChange = { onVolumeChanged("beach", it) },
+                colors = SliderDefaults.colors(
+                    thumbColor = Teal,
+                    activeTrackColor = Teal,
+                    inactiveTrackColor = Line
                 )
-            }
+            )
         }
     }
 }

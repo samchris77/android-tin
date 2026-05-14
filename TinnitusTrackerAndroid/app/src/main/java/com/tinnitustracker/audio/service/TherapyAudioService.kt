@@ -28,7 +28,15 @@ class TherapyAudioService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> {
-                startForeground(AudioNotification.NOTIF_ID, AudioNotification.build(this))
+                startForeground(AudioNotification.NOTIF_ID, AudioNotification.build(this, isPlaying = true))
+            }
+            ACTION_PAUSE -> {
+                engine.stop()
+                startForeground(AudioNotification.NOTIF_ID, AudioNotification.build(this, isPlaying = false))
+            }
+            ACTION_RESUME -> {
+                engine.start()
+                startForeground(AudioNotification.NOTIF_ID, AudioNotification.build(this, isPlaying = true))
             }
             ACTION_STOP -> {
                 engine.stop() // idempotent — guarded inside AudioEngine
@@ -41,6 +49,8 @@ class TherapyAudioService : Service() {
 
     companion object {
         const val ACTION_START = "com.tinnitustracker.audio.action.START"
+        const val ACTION_PAUSE = "com.tinnitustracker.audio.action.PAUSE"
+        const val ACTION_RESUME = "com.tinnitustracker.audio.action.RESUME"
         const val ACTION_STOP  = "com.tinnitustracker.audio.action.STOP"
     }
 }

@@ -47,4 +47,20 @@ class MapTypeConverters {
         obj.keys().forEach { k -> out[k] = obj.getInt(k) }
         return out
     }
+
+    @TypeConverter
+    fun fromStringFloatMap(value: Map<String, Float>): String {
+        val obj = JSONObject()
+        value.forEach { (k, v) -> obj.put(k, v.toDouble()) }
+        return obj.toString()
+    }
+
+    @TypeConverter
+    fun toStringFloatMap(value: String): Map<String, Float> {
+        if (value.isBlank()) return emptyMap()
+        val obj = JSONObject(value)
+        val out = mutableMapOf<String, Float>()
+        obj.keys().forEach { k -> out[k] = obj.getDouble(k).toFloat() }
+        return out
+    }
 }

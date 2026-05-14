@@ -15,7 +15,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 /**
  * Single point of access for audio playback. Forwards the engine's flows
@@ -38,10 +40,13 @@ import kotlinx.coroutines.launch
  * sessions shorter than its minimum-duration filter (see
  * [ListeningSessionRepository.MIN_DURATION_MS]).
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class AudioRepository(
     private val appContext: Context,
     private val engine: AudioEngine,
-    private val sessionRepo: ListeningSessionRepository
+    private val sessionRepo: ListeningSessionRepository,
+    private val presetRepo: SoundPresetRepository,
+    private val settingsRepo: UserSettingsRepository
 ) {
     private val tag = "AudioRepository"
 
@@ -53,12 +58,52 @@ class AudioRepository(
     /** Wall-clock start of the currently-open session, or null when nothing is playing. */
     @Volatile private var currentSessionStartedAtMs: Long? = null
 
-    // Mock labels frozen at session start — replaced by real preset state in plan #11.
-    @Volatile private var currentColorNoise: String? = null
-    @Volatile private var currentAmbient: String? = null
-    @Volatile private var currentActivity: String? = null
+    // Store current preset for session logging
+    @Volatile private var currentPresetName: String? = null
+    
+    // Segment tracking
+    private data class ActiveSegment(val startedAtEpochMs: Long, val presetName: String?)
+    private var currentSegment: ActiveSegment? = null
+    private val currentSessionSegments = mutableListOf<SessionSegmentDraft>()
 
     private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    init {
+        ioScope.launch {
+            settingsRepo.activePresetId
+                .flatMapLatest { id -> presetRepo.observeById(id) }
+                .collect { preset ->
+                    if (preset != null) {
+                        val m = if (preset.processingMode == "amplify") AudioEngine.Mode.MASK else AudioEngine.Mode.NOTCH
+                        engine.setMode(m)
+                        engine.setColorNoise(preset.colorNoise)
+                        engine.setColorNoiseVolume(preset.colorNoiseVolume)
+                        engine.setAmbientMix(preset.ambientMix)
+                        
+                        synchronized(this@AudioRepository) {
+                            // If the preset actually changed (e.g., name or we just want to track config changes)
+                            // We can split the segment if preset config changed, but for now we just track name.
+                            // The wiki says "onSoundChanged" - any config change or just name?
+                            // Let's track whenever we get a new preset config.
+                            val nameChanged = currentPresetName != preset.name
+                            currentPresetName = preset.name
+                            
+                            // If we are currently playing and name changed, finalize the current segment and start a new one
+                            if (engine.isPlayingFlow.value && currentSessionStartedAtMs != null && nameChanged) {
+                                val now = System.currentTimeMillis()
+                                currentSegment?.let { seg ->
+                                    val duration = now - seg.startedAtEpochMs
+                                    if (duration > 0) {
+                                        currentSessionSegments.add(SessionSegmentDraft(seg.startedAtEpochMs, duration, seg.presetName))
+                                    }
+                                }
+                                currentSegment = ActiveSegment(now, preset.name)
+                            }
+                        }
+                    }
+                }
+        }
+    }
 
     // ── Engine flows — same StateFlow instances the ViewModel used to read ──
     val frequency     = engine.frequency
@@ -83,7 +128,15 @@ class AudioRepository(
 
     // ── Playback control (also drives focus + foreground service) ─────────
     fun togglePlay() {
-        if (engine.isPlayingFlow.value) stop() else start()
+        if (engine.isPlayingFlow.value) {
+            pause()
+        } else {
+            if (_liveSession.value != null && _liveSession.value!!.isPaused) {
+                resume()
+            } else {
+                start()
+            }
+        }
     }
 
     fun start() {
@@ -95,11 +148,35 @@ class AudioRepository(
                 .setAction(TherapyAudioService.ACTION_START)
         )
         val startedAt = System.currentTimeMillis()
-        currentSessionStartedAtMs = startedAt
-        currentColorNoise = MockSessionLabels.COLOR_NOISES.random()
-        currentAmbient    = MockSessionLabels.AMBIENTS.random()
-        currentActivity   = MockSessionLabels.ACTIVITIES.random()
+        
+        synchronized(this) {
+            currentSessionStartedAtMs = startedAt
+            currentSessionSegments.clear()
+            currentSegment = ActiveSegment(startedAt, currentPresetName)
+        }
+        
         _liveSession.value = LiveSession(startedAt, isPaused = false)
+        engine.start()
+    }
+
+    fun pause() {
+        if (!engine.isPlayingFlow.value) return
+        engine.stop()
+        _liveSession.update { it?.copy(isPaused = true) }
+        appContext.startService(
+            Intent(appContext, TherapyAudioService::class.java)
+                .setAction(TherapyAudioService.ACTION_PAUSE)
+        )
+    }
+
+    fun resume() {
+        if (engine.isPlayingFlow.value) return
+        if (!focus.request()) return
+        _liveSession.update { it?.copy(isPaused = false) }
+        appContext.startService(
+            Intent(appContext, TherapyAudioService::class.java)
+                .setAction(TherapyAudioService.ACTION_RESUME)
+        )
         engine.start()
     }
 
@@ -142,33 +219,54 @@ class AudioRepository(
     }
 
     private fun finaliseSession() {
-        val start = currentSessionStartedAtMs ?: return
-        currentSessionStartedAtMs = null
-        _liveSession.value = null
+        val start: Long
         val end = System.currentTimeMillis()
-        val colorNoise = currentColorNoise; currentColorNoise = null
-        val ambient    = currentAmbient;    currentAmbient = null
-        val activity   = currentActivity;   currentActivity = null
+        val segmentsToLog: List<SessionSegmentDraft>
+        val dominantPresetName: String?
+
+        synchronized(this) {
+            start = currentSessionStartedAtMs ?: return
+            currentSessionStartedAtMs = null
+            
+            // Finalize the active segment
+            currentSegment?.let { seg ->
+                val duration = end - seg.startedAtEpochMs
+                if (duration > 0) {
+                    currentSessionSegments.add(SessionSegmentDraft(seg.startedAtEpochMs, duration, seg.presetName))
+                }
+            }
+            currentSegment = null
+            
+            segmentsToLog = currentSessionSegments.toList()
+            currentSessionSegments.clear()
+            
+            // Find the preset with the most duration for backwards compat
+            val presetDurations = mutableMapOf<String, Long>()
+            for (seg in segmentsToLog) {
+                if (seg.presetName != null) {
+                    presetDurations[seg.presetName] = presetDurations.getOrDefault(seg.presetName, 0L) + seg.durationMs
+                }
+            }
+            dominantPresetName = presetDurations.maxByOrNull { it.value }?.key
+        }
+
+        _liveSession.value = null
+        
         ioScope.launch {
             sessionRepo.logSession(
                 startedAtEpochMs = start,
                 endedAtEpochMs = end,
-                colorNoise = colorNoise,
-                ambient = ambient,
-                activity = activity
+                segments = segmentsToLog,
+                presetLabel = dominantPresetName
             )?.also {
                 Log.d(
                     tag,
                     "logged session id=$it duration=${end - start}ms " +
-                        "labels=[$colorNoise / $ambient / $activity]"
+                        "dominantPreset=$dominantPresetName segmentCount=${segmentsToLog.size}"
                 )
             }
         }
     }
 }
 
-private object MockSessionLabels {
-    val COLOR_NOISES = listOf("white", "pink", "brown")
-    val AMBIENTS     = listOf("rain", "wind", "waves", "traffic")
-    val ACTIVITIES   = listOf("commute", "resting", "sleeping", "working", "studying")
-}
+

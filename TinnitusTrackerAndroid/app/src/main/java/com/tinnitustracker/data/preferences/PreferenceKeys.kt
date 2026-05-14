@@ -13,4 +13,5 @@ object PreferenceKeys {
     val PROCESSING_MODE      = stringPreferencesKey("processing_mode") // "notch" | "amplify"
     val TFI_CADENCE_WEEKS    = intPreferencesKey("tfi_cadence_weeks")  // 1 | 2 (default 2)
     val LAST_TFI_DATE        = longPreferencesKey("last_tfi_date")     // epoch ms (0 = never)
+    val ACTIVE_PRESET_ID     = longPreferencesKey("active_preset_id")
 }

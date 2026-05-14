@@ -15,9 +15,12 @@ import com.tinnitustracker.data.database.entities.ListeningSession
 import com.tinnitustracker.data.database.entities.MapTypeConverters
 import com.tinnitustracker.data.database.entities.TFIAssessment
 
+import com.tinnitustracker.data.database.dao.SoundPresetDao
+import com.tinnitustracker.data.database.entities.SoundPreset
+
 @Database(
-    entities = [DiaryEntry::class, TFIAssessment::class, ListeningSession::class],
-    version = 4,
+    entities = [DiaryEntry::class, TFIAssessment::class, ListeningSession::class, SoundPreset::class, com.tinnitustracker.data.database.entities.ListeningSessionSegment::class],
+    version = 6,
     exportSchema = true
 )
 @TypeConverters(MapTypeConverters::class)
@@ -26,6 +29,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun diaryDao(): DiaryDao
     abstract fun tfiAssessmentDao(): TfiAssessmentDao
     abstract fun listeningSessionDao(): ListeningSessionDao
+    abstract fun soundPresetDao(): SoundPresetDao
 
     companion object {
         private const val DB_NAME = "tinnitus_tracker.db"
@@ -75,6 +79,49 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // Additive: introduces sound_presets table and a default preset.
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `sound_presets` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `processingMode` TEXT NOT NULL,
+                        `colorNoise` TEXT NOT NULL,
+                        `colorNoiseVolume` REAL NOT NULL,
+                        `ambientMix` TEXT NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO `sound_presets` (`name`, `processingMode`, `colorNoise`, `colorNoiseVolume`, `ambientMix`)
+                    VALUES ('저녁 휴식', 'notch', 'pink', 0.5, '{"rain":0.6,"waves":0.0}')
+                    """.trimIndent()
+                )
+            }
+        }
+
+        // Additive: introduces listening_session_segments table.
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `listening_session_segments` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `sessionId` INTEGER NOT NULL,
+                        `startedAtEpochMs` INTEGER NOT NULL,
+                        `durationMs` INTEGER NOT NULL,
+                        `presetName` TEXT,
+                        FOREIGN KEY(`sessionId`) REFERENCES `listening_sessions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_listening_session_segments_sessionId` ON `listening_session_segments` (`sessionId`)")
+            }
+        }
+
         @Volatile private var instance: AppDatabase? = null
 
         fun get(context: Context): AppDatabase =
@@ -84,7 +131,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DB_NAME
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .build()
                     .also { instance = it }
             }

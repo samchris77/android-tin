@@ -32,6 +32,9 @@ class UserSettingsRepository(private val context: Context) {
     val lastTfiDate: Flow<Long> = context.dataStore.data
         .map { it[PreferenceKeys.LAST_TFI_DATE] ?: 0L }
 
+    val activePresetId: Flow<Long> = context.dataStore.data
+        .map { it[PreferenceKeys.ACTIVE_PRESET_ID] ?: 1L }
+
     suspend fun setOnboardingComplete(value: Boolean) {
         context.dataStore.edit { it[PreferenceKeys.ONBOARDING_COMPLETE] = value }
     }
@@ -54,5 +57,9 @@ class UserSettingsRepository(private val context: Context) {
 
     suspend fun setLastTfiDate(epochMs: Long) {
         context.dataStore.edit { it[PreferenceKeys.LAST_TFI_DATE] = epochMs }
+    }
+
+    suspend fun setActivePresetId(presetId: Long) {
+        context.dataStore.edit { it[PreferenceKeys.ACTIVE_PRESET_ID] = presetId }
     }
 }

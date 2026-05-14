@@ -33,7 +33,7 @@ object AudioNotification {
         )
     }
 
-    fun build(context: Context): android.app.Notification {
+    fun build(context: Context, isPlaying: Boolean): android.app.Notification {
         val openIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
@@ -42,24 +42,29 @@ object AudioNotification {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val stopIntent = Intent(context, TherapyAudioService::class.java)
-            .setAction(TherapyAudioService.ACTION_STOP)
-        val stopPi = PendingIntent.getService(
-            context, REQ_STOP, stopIntent,
+        // The action toggles between PAUSE and RESUME
+        val actionIntent = Intent(context, TherapyAudioService::class.java).apply {
+            action = if (isPlaying) TherapyAudioService.ACTION_PAUSE else TherapyAudioService.ACTION_RESUME
+        }
+        val actionPi = PendingIntent.getService(
+            context, REQ_STOP, actionIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+
+        val actionIcon = if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
+        val actionLabel = if (isPlaying) "일시정지" else "재생"
 
         return NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification_wave)
             .setContentTitle("이명 치료 재생 중")
             .setContentText("탭하면 앱으로 돌아갑니다.")
             .setContentIntent(contentPi)
-            .setOngoing(true)
+            .setOngoing(isPlaying)
             .setOnlyAlertOnce(true)
             .setSilent(true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .addAction(android.R.drawable.ic_media_pause, "정지", stopPi)
+            .addAction(actionIcon, actionLabel, actionPi)
             .build()
     }
 }
