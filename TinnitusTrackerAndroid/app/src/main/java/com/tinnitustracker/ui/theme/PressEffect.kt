@@ -192,5 +192,13 @@ enum class PlayButtonVariant(
         gradientBottom = Color(0xFFD15A00),
         spotShadow     = OrangeAccent.copy(alpha = 0.75f),
         restElevation  = 12.dp
+    ),
+    /** Secondary CTA — used on coral-soft / teal-soft cards (TfiPromptCard etc.). */
+    Teal(
+        gradientTop    = Color(0xFF4F8A87),
+        gradientMid    = com.tinnitustracker.ui.theme.Teal,
+        gradientBottom = Color(0xFF1F4A48),
+        spotShadow     = com.tinnitustracker.ui.theme.Teal.copy(alpha = 0.55f),
+        restElevation  = 10.dp
     )
 }
