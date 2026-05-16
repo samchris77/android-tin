@@ -39,6 +39,8 @@ import com.tinnitustracker.ui.theme.Ink
 import com.tinnitustracker.ui.theme.Ink2
 import com.tinnitustracker.ui.theme.Line
 import com.tinnitustracker.ui.theme.Muted
+import com.tinnitustracker.ui.theme.Radius
+import com.tinnitustracker.ui.theme.Spacing
 import com.tinnitustracker.ui.theme.Teal
 import com.tinnitustracker.ui.theme.TealSoft
 import com.tinnitustracker.ui.theme.pressableClickable
@@ -95,7 +97,7 @@ fun TfiResultsScreen(
         Spacer(Modifier.height(8.dp))
         SubscaleBars(scores = subscaleScores)
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(Spacing.section))
         Text(
             "TFI 점수는 0–100 범위로, 점수가 낮을수록 이명의 영향이 적음을 의미합니다.",
             color = Muted,
@@ -103,7 +105,7 @@ fun TfiResultsScreen(
             lineHeight = 17.sp
         )
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(Spacing.section))
         DoneButton(onClick = onDone)
         Spacer(Modifier.height(40.dp))
     }
@@ -135,7 +137,7 @@ private fun TotalCard(total: Int, severity: String) {
                     color = Muted,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(bottom = 10.dp, start = 4.dp)
+                    modifier = Modifier.padding(bottom = Spacing.sm, start = Spacing.xs)
                 )
             }
             Spacer(Modifier.height(8.dp))
@@ -148,7 +150,7 @@ private fun TotalCard(total: Int, severity: String) {
                     color = Teal,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    modifier = Modifier.padding(horizontal = Spacing.sm, vertical = Spacing.xs)
                 )
             }
         }
@@ -190,18 +192,18 @@ private fun SubscaleRow(label: String, score: Int) {
             Text(label, color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Medium)
             Text("$score", color = Ink2, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(Spacing.sm))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(6.dp)
+                .height(Spacing.sm)
                 .clip(RoundedCornerShape(3.dp))
                 .background(Line)
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth(score.coerceIn(0, 100) / 100f)
-                    .height(6.dp)
+                    .height(Spacing.sm)
                     .background(Teal, RoundedCornerShape(3.dp))
             )
         }
@@ -214,10 +216,10 @@ private fun DoneButton(onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .pressableClickable(onClick = onClick)
-            .shadow(3.dp, RoundedCornerShape(14.dp), spotColor = Teal.copy(alpha = 0.45f))
-            .clip(RoundedCornerShape(14.dp))
+            .shadow(3.dp, RoundedCornerShape(Radius.card), spotColor = Teal.copy(alpha = 0.45f))
+            .clip(RoundedCornerShape(Radius.card))
             .background(Teal)
-            .padding(vertical = 14.dp)
+            .padding(vertical = Spacing.md)
             .semantics { contentDescription = "완료" },
         contentAlignment = Alignment.Center
     ) {

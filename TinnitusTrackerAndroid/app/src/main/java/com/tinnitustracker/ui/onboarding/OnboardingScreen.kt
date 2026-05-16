@@ -48,6 +48,8 @@ import com.tinnitustracker.ui.theme.Coral
 import com.tinnitustracker.ui.theme.Ink
 import com.tinnitustracker.ui.theme.Ink2
 import com.tinnitustracker.ui.theme.Muted
+import com.tinnitustracker.ui.theme.Radius
+import com.tinnitustracker.ui.theme.Spacing
 import com.tinnitustracker.ui.theme.Teal
 import com.tinnitustracker.ui.theme.Teal2
 import com.tinnitustracker.ui.theme.TealSoft
@@ -92,7 +94,7 @@ fun OnboardingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = HERO_HEIGHT_DP.dp - 24.dp)
-                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                .clip(RoundedCornerShape(topStart = Spacing.xxl, topEnd = Spacing.xxl))
                 .background(Bg)
                 .windowInsetsPadding(WindowInsets.systemBars)
         ) {
@@ -189,7 +191,7 @@ private fun Hero(
             modifier = Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(horizontal = 20.dp, vertical = 14.dp),
+                .padding(horizontal = 20.dp, vertical = Spacing.md),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Spacer(Modifier.weight(1f))
@@ -405,7 +407,7 @@ private fun OnboardingCardContent(page: OnboardingPage) {
             .padding(horizontal = 24.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(Spacing.section))
         Text(
             page.title,
             color = Ink,
@@ -414,7 +416,7 @@ private fun OnboardingCardContent(page: OnboardingPage) {
             fontWeight = FontWeight.Bold,
             letterSpacing = (-0.4).sp
         )
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(Spacing.xl))
         page.paragraphs.forEachIndexed { i, paragraph ->
             if (i > 0) Spacer(Modifier.height(12.dp))
             Text(
@@ -424,7 +426,7 @@ private fun OnboardingCardContent(page: OnboardingPage) {
                 lineHeight = 23.sp
             )
         }
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(Spacing.section))
     }
 }
 
@@ -444,7 +446,7 @@ private fun BottomBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 18.dp),
+            .padding(horizontal = 20.dp, vertical = Spacing.xl),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
@@ -454,8 +456,8 @@ private fun BottomBar(
             fontWeight = FontWeight.Medium,
             modifier = Modifier
                 .let { if (isFirst) it else it.pressableClickable(onClick = onPrev) }
-                .clip(RoundedCornerShape(10.dp))
-                .padding(horizontal = 14.dp, vertical = 10.dp)
+                .clip(RoundedCornerShape(Radius.button))
+                .padding(horizontal = Spacing.md, vertical = Spacing.sm)
         )
         Spacer(Modifier.weight(1f))
         CoralPill(
@@ -477,7 +479,7 @@ private fun CoralPill(label: String, onClick: () -> Unit) {
                     listOf(Color(0xFFE89A7D), Coral, Color(0xFFAB4B2C))
                 )
             )
-            .padding(horizontal = 26.dp, vertical = 12.dp)
+            .padding(horizontal = Spacing.xxl, vertical = Spacing.md)
             .semantics { contentDescription = label }
     ) {
         Text(label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)

@@ -44,8 +44,24 @@ data class RecordsUiState(
     val monthYear: YearMonth,
     val cells: List<DayCell>,
     val monthTotalMs: Long,
-    val maxDayMs: Long
+    val maxDayMs: Long,
+    val weeklySummaries: List<WeekSummary>
 )
+
+/**
+ * Aggregates for a single Sunday-anchored week, visible under the calendar.
+ * Each metric is null/zero when no data exists for that bucket.
+ */
+data class WeekSummary(
+    val startDate: LocalDate,
+    val endDate: LocalDate,
+    val tinnitusAvg: Float?,
+    val stressAvg: Float?,
+    val listenMs: Long,
+    val daysWithData: Int
+) {
+    val isEmpty: Boolean get() = tinnitusAvg == null && stressAvg == null && listenMs == 0L
+}
 
 /** One row in the Recent Entries list — either an auto-logged session or a diary note. */
 sealed class RecentEntry {
@@ -86,8 +102,10 @@ class RecordsViewModel(
             // Exclusive upper bound: start of the day AFTER the last grid cell.
             val rangeEndExclusive = grid.last().plusDays(1)
                 .atStartOfDay(zone).toInstant().toEpochMilli()
-            sessionRepo.observeRange(rangeStart, rangeEndExclusive)
-                .map { sessions -> assemble(ym, grid, sessions) }
+            combine(
+                sessionRepo.observeRange(rangeStart, rangeEndExclusive),
+                diaryRepo.observeRange(rangeStart, rangeEndExclusive)
+            ) { sessions, diaries -> assemble(ym, grid, sessions, diaries) }
         }
         .stateIn(
             scope = viewModelScope,
@@ -98,7 +116,8 @@ class RecordsViewModel(
                     DayCell(it, it.month == visibleMonth.value.month, it == today(), 0L)
                 },
                 monthTotalMs = 0L,
-                maxDayMs = 0L
+                maxDayMs = 0L,
+                weeklySummaries = emptyList()
             )
         )
 
@@ -217,15 +236,23 @@ class RecordsViewModel(
     private fun assemble(
         ym: YearMonth,
         grid: List<LocalDate>,
-        sessions: List<ListeningSession>
+        sessions: List<ListeningSession>,
+        diaries: List<DiaryEntry>
     ): RecordsUiState {
         val today = today()
         // Bucket sessions by local date (start-of-day in `zone`).
-        val byDate = HashMap<LocalDate, Long>(sessions.size * 2)
+        val sessionMsByDate = HashMap<LocalDate, Long>(sessions.size * 2)
         for (s in sessions) {
             val d = java.time.Instant.ofEpochMilli(s.startedAtEpochMs)
                 .atZone(zone).toLocalDate()
-            byDate[d] = (byDate[d] ?: 0L) + s.durationMs
+            sessionMsByDate[d] = (sessionMsByDate[d] ?: 0L) + s.durationMs
+        }
+        // Bucket diary entries by local date.
+        val diariesByDate = HashMap<LocalDate, MutableList<DiaryEntry>>(diaries.size * 2)
+        for (e in diaries) {
+            val d = java.time.Instant.ofEpochMilli(e.date)
+                .atZone(zone).toLocalDate()
+            diariesByDate.getOrPut(d) { mutableListOf() } += e
         }
         val cells = grid.map { d ->
             val inMonth = YearMonth.from(d) == ym
@@ -233,18 +260,52 @@ class RecordsViewModel(
                 date = d,
                 inCurrentMonth = inMonth,
                 isToday = d == today,
-                totalMs = byDate[d] ?: 0L
+                totalMs = sessionMsByDate[d] ?: 0L
             )
         }
         val monthTotalMs = cells.filter { it.inCurrentMonth }.sumOf { it.totalMs }
         val maxDayMs = cells.filter { it.inCurrentMonth }.maxOfOrNull { it.totalMs } ?: 0L
+        val weeklySummaries = buildWeekSummaries(ym, grid, sessionMsByDate, diariesByDate)
         return RecordsUiState(
             monthYear = ym,
             cells = cells,
             monthTotalMs = monthTotalMs,
-            maxDayMs = maxDayMs
+            maxDayMs = maxDayMs,
+            weeklySummaries = weeklySummaries
         )
     }
+
+    /**
+     * Chunk the 42-day Sunday-anchored grid into 6 weeks; keep only weeks that
+     * contain at least one day from [ym]. Aggregate listen minutes from
+     * [sessionMsByDate] and tinnitus/stress means from [diariesByDate].
+     */
+    private fun buildWeekSummaries(
+        ym: YearMonth,
+        grid: List<LocalDate>,
+        sessionMsByDate: Map<LocalDate, Long>,
+        diariesByDate: Map<LocalDate, List<DiaryEntry>>
+    ): List<WeekSummary> = grid.chunked(7)
+        .filter { week -> week.any { YearMonth.from(it) == ym } }
+        .map { week ->
+            val weekDiaries = week.flatMap { diariesByDate[it].orEmpty() }
+            val listenMs = week.sumOf { sessionMsByDate[it] ?: 0L }
+            val tinnitusAvg = weekDiaries.takeIf { it.isNotEmpty() }
+                ?.map { it.severity }?.average()?.toFloat()
+            val stressAvg = weekDiaries.takeIf { it.isNotEmpty() }
+                ?.map { it.stressLevel }?.average()?.toFloat()
+            val daysWithData = week.count { d ->
+                (sessionMsByDate[d] ?: 0L) > 0L || !diariesByDate[d].isNullOrEmpty()
+            }
+            WeekSummary(
+                startDate = week.first(),
+                endDate = week.last(),
+                tinnitusAvg = tinnitusAvg,
+                stressAvg = stressAvg,
+                listenMs = listenMs,
+                daysWithData = daysWithData
+            )
+        }
 }
 
 class RecordsViewModelFactory(

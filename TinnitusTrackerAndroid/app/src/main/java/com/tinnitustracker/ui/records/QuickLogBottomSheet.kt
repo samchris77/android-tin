@@ -40,6 +40,7 @@ import com.tinnitustracker.ui.theme.Ink
 import com.tinnitustracker.ui.theme.Ink2
 import com.tinnitustracker.ui.theme.Line
 import com.tinnitustracker.ui.theme.Muted
+import com.tinnitustracker.ui.theme.Spacing
 import com.tinnitustracker.ui.theme.Surface as SurfaceColor
 import com.tinnitustracker.ui.theme.Teal
 import com.tinnitustracker.ui.theme.TealSoft
@@ -125,7 +126,7 @@ fun QuickLogBottomSheet(
                     .shadow(3.dp, RoundedCornerShape(12.dp), spotColor = Teal.copy(alpha = 0.45f))
                     .clip(RoundedCornerShape(12.dp))
                     .background(Teal)
-                    .padding(vertical = 14.dp),
+                    .padding(vertical = Spacing.md),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -146,7 +147,7 @@ private fun SliderRow(label: String, value: Int, onChange: (Int) -> Unit) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(SurfaceColor)
-            .padding(horizontal = 14.dp, vertical = 10.dp)
+            .padding(horizontal = Spacing.md, vertical = Spacing.sm)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(label, color = Ink, fontSize = 14.sp, fontWeight = FontWeight.Medium)
@@ -188,7 +189,7 @@ private fun TagChip(label: String, selected: Boolean, onClick: () -> Unit) {
                 color = if (selected) Teal else Line,
                 shape = RoundedCornerShape(100.dp)
             )
-            .padding(horizontal = 14.dp, vertical = 8.dp)
+            .padding(horizontal = Spacing.md, vertical = Spacing.sm)
     ) {
         Text(
             label,

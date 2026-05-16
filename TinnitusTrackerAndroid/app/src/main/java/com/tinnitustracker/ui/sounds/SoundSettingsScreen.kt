@@ -31,14 +31,23 @@ import com.tinnitustracker.ui.theme.Ink
 import com.tinnitustracker.ui.theme.Ink2
 import com.tinnitustracker.ui.theme.Line
 import com.tinnitustracker.ui.theme.Muted
+import com.tinnitustracker.ui.theme.Spacing
 import com.tinnitustracker.ui.theme.Teal
 import com.tinnitustracker.ui.theme.TealSoft
 import com.tinnitustracker.ui.theme.pressableClickable
+import androidx.compose.ui.text.style.TextOverflow
 
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tinnitustracker.data.repository.AudioRepository
 import com.tinnitustracker.data.repository.SoundPresetRepository
@@ -62,6 +71,10 @@ fun SoundSettingsScreen(
     
     val activePreset by vm.activePreset.collectAsState()
     val frequency by audioRepo.frequency.collectAsState()
+    val isPlaying by audioRepo.isPlayingFlow.collectAsState()
+    
+    var showSaveDialog by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -80,17 +93,20 @@ fun SoundSettingsScreen(
         ) {
             Text("소리 설정", color = Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Text(
-                "미리듣기 ▶",
-                color = Muted,
+                if (isPlaying) "정지 ⏹" else "미리듣기 ▶",
+                color = if (isPlaying) Teal else Muted,
                 fontSize = 11.sp,
                 modifier = Modifier
-                    .pressableClickable { /* TODO: play full-preset preview */ }
+                    .pressableClickable { vm.togglePreview() }
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             )
         }
 
         // 1. Preset switcher card
-        PresetSwitcherCard(presetName = activePreset?.name ?: "저녁 휴식")
+        PresetSwitcherCard(
+            presetName = activePreset?.name ?: "저녁 휴식",
+            onSaveClick = { showSaveDialog = true }
+        )
         Spacer(Modifier.height(12.dp))
 
         // 2. Frequency card
@@ -119,12 +135,54 @@ fun SoundSettingsScreen(
 
         Spacer(Modifier.height(96.dp))
     }
+
+    if (showSaveDialog) {
+        var newName by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showSaveDialog = false },
+            title = { Text("새 프리셋 저장", fontWeight = FontWeight.SemiBold, fontSize = 18.sp) },
+            text = {
+                Column {
+                    Text("현재 설정된 소리 조합을 새로운 프리셋으로 저장합니다.", fontSize = 14.sp, color = Ink2)
+                    Spacer(Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = newName,
+                        onValueChange = { newName = it },
+                        label = { Text("프리셋 이름") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (newName.isNotBlank()) {
+                            vm.saveAsNewPreset(newName)
+                            showSaveDialog = false
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Teal)
+                ) {
+                    Text("저장", color = Color.White)
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { showSaveDialog = false },
+                    colors = ButtonDefaults.textButtonColors()
+                ) {
+                    Text("취소", color = Teal)
+                }
+            }
+        )
+    }
 }
 
 // ── Preset Switcher Card ────────────────────────────────────────────────────
 
 @Composable
-private fun PresetSwitcherCard(presetName: String) {
+private fun PresetSwitcherCard(presetName: String, onSaveClick: () -> Unit) {
     Surface(
         color = TealSoft,
         shape = RoundedCornerShape(20.dp),
@@ -136,7 +194,7 @@ private fun PresetSwitcherCard(presetName: String) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(horizontal = Spacing.md, vertical = Spacing.md),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -146,14 +204,16 @@ private fun PresetSwitcherCard(presetName: String) {
                     "$presetName ▾",
                     color = Ink,
                     fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
             Surface(
                 color = MaterialTheme.colorScheme.surface,
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
-                    .pressableClickable { /* TODO: save preset */ }
+                    .pressableClickable(onClick = onSaveClick)
                     .shadow(1.dp, RoundedCornerShape(8.dp))
                     .border(1.dp, Line, RoundedCornerShape(8.dp))
             ) {
@@ -183,7 +243,7 @@ private fun FrequencyCard(frequency: Float, onOpenMatcher: () -> Unit) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(horizontal = 16.dp, vertical = Spacing.md),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -217,7 +277,7 @@ private fun FrequencyCard(frequency: Float, onOpenMatcher: () -> Unit) {
                     color = Teal,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = Spacing.sm)
                 )
             }
         }
@@ -239,10 +299,10 @@ private fun ProcessingModeCard(mode: String, onModeChanged: (String) -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp)
+                .padding(horizontal = 16.dp, vertical = Spacing.md)
         ) {
             Eyebrow("처리 방식")
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(Spacing.md))
 
             // Segmented control — active segment is the raised tile; inactive
             // segments are flat within the track.
@@ -327,7 +387,7 @@ private fun ColorNoiseCard(currentColor: String, onColorChanged: (String) -> Uni
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp)
+                .padding(horizontal = 16.dp, vertical = Spacing.md)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -336,20 +396,20 @@ private fun ColorNoiseCard(currentColor: String, onColorChanged: (String) -> Uni
             ) {
                 Eyebrow("컬러 노이즈")
                 Text(
-                    "▶ 미리듣기",
+                    "▶ 듣기 테스트",
                     color = Muted,
                     fontSize = 10.sp,
                     modifier = Modifier
-                        .pressableClickable { /* TODO: play color noise preview */ }
-                        .padding(horizontal = 6.dp, vertical = 4.dp)
+                        .pressableClickable { onColorChanged(currentColor) /* triggers save implicitly */ }
+                        .padding(horizontal = Spacing.sm, vertical = Spacing.xs)
                 )
             }
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(Spacing.md))
 
             // Pill selector row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
             ) {
                 ColorPill(label = "핑크", selected = currentColor == "pink") { onColorChanged("pink") }
                 ColorPill(label = "화이트", selected = currentColor == "white") { onColorChanged("white") }
@@ -375,7 +435,7 @@ private fun ColorPill(label: String, selected: Boolean, onClick: () -> Unit) {
                 color = Color.White,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = Spacing.sm)
             )
         }
     } else {
@@ -390,7 +450,7 @@ private fun ColorPill(label: String, selected: Boolean, onClick: () -> Unit) {
                 label,
                 color = Ink2,
                 fontSize = 11.sp,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = Spacing.sm)
             )
         }
     }
@@ -411,7 +471,7 @@ private fun AmbientMixCard(ambientMix: Map<String, Float>, onVolumeChanged: (Str
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp)
+                .padding(horizontal = 16.dp, vertical = Spacing.md)
         ) {
             Eyebrow("자연음 믹스")
             Spacer(Modifier.height(12.dp))
@@ -426,7 +486,7 @@ private fun AmbientMixCard(ambientMix: Map<String, Float>, onVolumeChanged: (Str
                 Text("🌧 빗소리", fontSize = 13.sp, color = if (rainVol > 0f) Ink else Muted)
                 Text("${(rainVol * 100).toInt()}%", fontSize = 13.sp, color = if (rainVol > 0f) Teal else Muted, fontWeight = if (rainVol > 0f) FontWeight.Bold else FontWeight.Normal)
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(Spacing.sm))
             Slider(
                 value = rainVol,
                 onValueChange = { onVolumeChanged("rain", it) },
@@ -449,10 +509,56 @@ private fun AmbientMixCard(ambientMix: Map<String, Float>, onVolumeChanged: (Str
                 Text("🌊 파도소리", fontSize = 13.sp, color = if (wavesVol > 0f) Ink else Muted)
                 Text("${(wavesVol * 100).toInt()}%", fontSize = 13.sp, color = if (wavesVol > 0f) Teal else Muted, fontWeight = if (wavesVol > 0f) FontWeight.Bold else FontWeight.Normal)
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(Spacing.sm))
             Slider(
                 value = wavesVol,
                 onValueChange = { onVolumeChanged("beach", it) },
+                colors = SliderDefaults.colors(
+                    thumbColor = Teal,
+                    activeTrackColor = Teal,
+                    inactiveTrackColor = Line
+                )
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            // Brook row + progress bar
+            val brookVol = ambientMix["brook"] ?: 0f
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("🌲 시냇물", fontSize = 13.sp, color = if (brookVol > 0f) Ink else Muted)
+                Text("${(brookVol * 100).toInt()}%", fontSize = 13.sp, color = if (brookVol > 0f) Teal else Muted, fontWeight = if (brookVol > 0f) FontWeight.Bold else FontWeight.Normal)
+            }
+            Spacer(Modifier.height(Spacing.sm))
+            Slider(
+                value = brookVol,
+                onValueChange = { onVolumeChanged("brook", it) },
+                colors = SliderDefaults.colors(
+                    thumbColor = Teal,
+                    activeTrackColor = Teal,
+                    inactiveTrackColor = Line
+                )
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            // Fireplace row + progress bar
+            val fireVol = ambientMix["fireplace"] ?: 0f
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("🔥 모닥불", fontSize = 13.sp, color = if (fireVol > 0f) Ink else Muted)
+                Text("${(fireVol * 100).toInt()}%", fontSize = 13.sp, color = if (fireVol > 0f) Teal else Muted, fontWeight = if (fireVol > 0f) FontWeight.Bold else FontWeight.Normal)
+            }
+            Spacer(Modifier.height(Spacing.sm))
+            Slider(
+                value = fireVol,
+                onValueChange = { onVolumeChanged("fireplace", it) },
                 colors = SliderDefaults.colors(
                     thumbColor = Teal,
                     activeTrackColor = Teal,

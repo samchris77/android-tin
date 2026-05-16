@@ -45,9 +45,11 @@ import com.tinnitustracker.ui.theme.Ink
 import com.tinnitustracker.ui.theme.Ink2
 import com.tinnitustracker.ui.theme.Line
 import com.tinnitustracker.ui.theme.Muted
+import com.tinnitustracker.ui.theme.Spacing
 import com.tinnitustracker.ui.theme.Teal
 import com.tinnitustracker.ui.theme.TealSoft
 import com.tinnitustracker.ui.theme.pressableClickable
+import androidx.compose.ui.text.style.TextOverflow
 import kotlinx.coroutines.launch
 
 /**
@@ -135,7 +137,7 @@ private fun TopBar(current: Int, total: Int, onClose: () -> Unit) {
                 fontWeight = FontWeight.Medium
             )
         }
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(Spacing.md))
         // Thin progress bar.
         Box(
             modifier = Modifier
@@ -213,9 +215,11 @@ private fun QuestionCard(item: TfiContent.Item, selected: Int?, onSelect: (Int) 
                 color = Ink,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                lineHeight = 20.sp
+                lineHeight = 20.sp,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
             )
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(Spacing.lg))
             ScaleRow(selected = selected, onSelect = onSelect)
             Spacer(Modifier.height(8.dp))
             Row(

@@ -24,12 +24,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tinnitustracker.ui.theme.Bg
 import com.tinnitustracker.ui.theme.Ink
 import com.tinnitustracker.ui.theme.Line
 import com.tinnitustracker.ui.theme.Muted
+import com.tinnitustracker.ui.theme.Spacing
 import com.tinnitustracker.ui.theme.Surface as SurfaceColor
 import com.tinnitustracker.ui.theme.Teal
 import com.tinnitustracker.ui.theme.TealSoft
@@ -140,7 +142,7 @@ private fun SessionRow(s: RecentEntry.Session) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .padding(horizontal = Spacing.md, vertical = Spacing.md),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconBadge(filledGraphicEq = true)
@@ -155,7 +157,7 @@ private fun SessionRow(s: RecentEntry.Session) {
             Spacer(Modifier.height(2.dp))
             val dur = formatDurationKoFull(s.durationMs)
             val sub = if (s.presetLabel.isNullOrBlank()) dur else "$dur · ${s.presetLabel}"
-            Text(sub, color = Muted, fontSize = 12.sp)
+            Text(sub, color = Muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -180,7 +182,7 @@ private fun DiaryRow(d: RecentEntry.Diary) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .padding(horizontal = Spacing.md, vertical = Spacing.md),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconBadge(filledGraphicEq = false)
@@ -196,7 +198,7 @@ private fun DiaryRow(d: RecentEntry.Diary) {
             val head = "이명 ${d.severity} · 스트레스 ${d.stressLevel}"
             val sub = if (d.note.isBlank()) head
             else "$head · ${d.note.split(",").joinToString(" · ")}"
-            Text(sub, color = Muted, fontSize = 12.sp)
+            Text(sub, color = Muted, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -214,7 +216,7 @@ private fun IconBadge(filledGraphicEq: Boolean) {
             imageVector = if (filledGraphicEq) Icons.Filled.GraphicEq else Icons.Filled.EditNote,
             contentDescription = null,
             tint = Teal,
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(Spacing.xl)
         )
     }
 }

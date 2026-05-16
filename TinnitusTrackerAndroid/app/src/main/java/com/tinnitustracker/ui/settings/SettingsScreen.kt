@@ -30,6 +30,8 @@ import com.tinnitustracker.ui.theme.Ink
 import com.tinnitustracker.ui.theme.Ink2
 import com.tinnitustracker.ui.theme.Line
 import com.tinnitustracker.ui.theme.Muted
+import com.tinnitustracker.ui.theme.Radius
+import com.tinnitustracker.ui.theme.Spacing
 import com.tinnitustracker.ui.theme.Teal
 import com.tinnitustracker.ui.theme.pressableClickable
 
@@ -55,10 +57,10 @@ fun SettingsScreen(
     ) {
         Spacer(Modifier.height(20.dp))
         Text("설정", color = Ink, fontSize = 28.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp)
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(Spacing.sm))
         Text("앱과 학습 자료를 조정합니다.", color = Muted, fontSize = 13.sp)
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(Spacing.xxl))
         SectionLabel("학습 자료")
         Spacer(Modifier.height(8.dp))
         ActionRow(label = "튜토리얼 다시 보기", cta = "열기", onClick = onReplayOnboarding)
@@ -113,16 +115,16 @@ private fun ActionRow(label: String, cta: String, onClick: (() -> Unit)?) {
     val clickable = onClick != null
     Surface(
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(Radius.card),
         modifier = Modifier
             .let { if (clickable) it.pressableClickable { onClick!!() } else it }
             .fillMaxWidth()
-            .shadow(if (clickable) 1.5.dp else 0.dp, RoundedCornerShape(14.dp))
-            .border(1.dp, Line, RoundedCornerShape(14.dp))
+            .shadow(if (clickable) 1.5.dp else 0.dp, RoundedCornerShape(Radius.card))
+            .border(1.dp, Line, RoundedCornerShape(Radius.card))
             .semantics { contentDescription = label }
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = Spacing.md),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -146,16 +148,16 @@ private fun ActionRow(label: String, cta: String, onClick: (() -> Unit)?) {
 private fun TfiCadenceRow(weeks: Int, onToggle: () -> Unit) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(Radius.card),
         modifier = Modifier
             .pressableClickable(onClick = onToggle)
             .fillMaxWidth()
-            .shadow(1.5.dp, RoundedCornerShape(14.dp))
-            .border(1.dp, Line, RoundedCornerShape(14.dp))
+            .shadow(1.5.dp, RoundedCornerShape(Radius.card))
+            .border(1.dp, Line, RoundedCornerShape(Radius.card))
             .semantics { contentDescription = "TFI 주기 ${weeks}주마다" }
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = Spacing.md),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -169,13 +171,13 @@ private fun TfiCadenceRow(weeks: Int, onToggle: () -> Unit) {
 private fun ValueRow(label: String, value: String, enabled: Boolean) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(Radius.card),
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Line, RoundedCornerShape(14.dp))
+            .border(1.dp, Line, RoundedCornerShape(Radius.card))
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = Spacing.md),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {

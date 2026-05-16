@@ -45,6 +45,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -59,7 +60,10 @@ import com.tinnitustracker.ui.theme.Heat4
 import com.tinnitustracker.ui.theme.Ink
 import com.tinnitustracker.ui.theme.Ink2
 import com.tinnitustracker.ui.theme.Line
+import com.tinnitustracker.ui.theme.Elevation
 import com.tinnitustracker.ui.theme.Muted
+import com.tinnitustracker.ui.theme.Radius
+import com.tinnitustracker.ui.theme.Spacing
 import com.tinnitustracker.ui.theme.Surface as SurfaceColor
 import com.tinnitustracker.ui.theme.Teal
 import com.tinnitustracker.ui.theme.TealSoft
@@ -154,7 +158,7 @@ private fun QuickLogFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .pressableClickable(onClick = onClick)
-            .shadow(6.dp, CircleShape, spotColor = Teal.copy(alpha = 0.6f))
+            .shadow(Elevation.hero, CircleShape, spotColor = Teal.copy(alpha = 0.6f))
             .clip(CircleShape)
             .background(Teal)
             .padding(16.dp),
@@ -226,7 +230,7 @@ private fun OverviewHistoryTab(
             CalendarCard(state = state, onPrev = onPrev, onNext = onNext, onDayTap = onDayTap)
         }
         item { Spacer(Modifier.height(16.dp)) }
-        item { WeeklySummaryPlaceholder() }
+        item { WeeklySummarySection(state.weeklySummaries) }
         item { Spacer(Modifier.height(20.dp)) }
         item {
             SectionHeader("최근 기록")
@@ -241,29 +245,115 @@ private fun OverviewHistoryTab(
 }
 
 @Composable
-private fun WeeklySummaryPlaceholder() {
+private fun WeeklySummarySection(weeks: List<WeekSummary>) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        SectionHeader("주간 요약")
+        Spacer(Modifier.height(Spacing.sm))
+        weeks.forEachIndexed { i, w ->
+            if (i > 0) Spacer(Modifier.height(Spacing.md))
+            if (w.isEmpty) WeeklySummaryEmptyCard(weekLabel = formatWeekLabel(w))
+            else WeeklySummaryCard(week = w)
+        }
+    }
+}
+
+@Composable
+private fun WeeklySummaryCard(week: WeekSummary) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(2.dp, RoundedCornerShape(12.dp))
-            .clip(RoundedCornerShape(12.dp))
+            .shadow(2.dp, RoundedCornerShape(Radius.card))
+            .clip(RoundedCornerShape(Radius.card))
             .background(SurfaceColor)
-            .padding(16.dp)
+            .padding(Spacing.lg)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                formatWeekLabel(week),
+                color = Ink,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(Radius.pill))
+                    .background(TealSoft)
+                    .padding(horizontal = Spacing.sm, vertical = Spacing.xs)
+            ) {
+                Text(
+                    "${week.daysWithData}일",
+                    color = Teal,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+        Spacer(Modifier.height(Spacing.md))
+        MetricRow(label = "이명 평균", value = formatScoreValue(week.tinnitusAvg))
+        Spacer(Modifier.height(Spacing.sm))
+        MetricRow(label = "스트레스 평균", value = formatScoreValue(week.stressAvg))
+        Spacer(Modifier.height(Spacing.sm))
+        MetricRow(label = "청취 시간", value = formatListenValue(week.listenMs))
+    }
+}
+
+@Composable
+private fun MetricRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, color = Ink2, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+        Text(value, color = Ink, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+@Composable
+private fun WeeklySummaryEmptyCard(weekLabel: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(1.dp, RoundedCornerShape(Radius.card))
+            .clip(RoundedCornerShape(Radius.card))
+            .background(SurfaceColor)
+            .padding(Spacing.lg),
+        horizontalAlignment = Alignment.Start
     ) {
         Text(
-            "주간 요약",
-            color = Ink,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold
+            weekLabel,
+            color = Ink2,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium
         )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "준비 중",
-            color = Muted,
-            fontSize = 12.sp
-        )
-        Spacer(Modifier.height(80.dp))
+        Spacer(Modifier.height(Spacing.xs))
+        Text("데이터 없음", color = Muted, fontSize = 12.sp)
     }
+}
+
+private fun formatWeekLabel(week: WeekSummary): String {
+    val s = week.startDate
+    val e = week.endDate
+    return if (s.month == e.month) {
+        "${s.monthValue}.${"%02d".format(s.dayOfMonth)} – ${"%02d".format(e.dayOfMonth)}"
+    } else {
+        "${s.monthValue}.${"%02d".format(s.dayOfMonth)} – ${e.monthValue}.${"%02d".format(e.dayOfMonth)}"
+    }
+}
+
+private fun formatScoreValue(avg: Float?): String =
+    if (avg == null) "—" else "%.1f / 10".format(avg)
+
+private fun formatListenValue(ms: Long): String {
+    if (ms == 0L) return "0분"
+    val totalMin = ms / 60_000L
+    val h = totalMin / 60L
+    val m = totalMin % 60L
+    return if (h > 0L) "${h}시간 ${m}분" else "${m}분"
 }
 
 @Composable
@@ -294,7 +384,7 @@ private fun RecentEntryRow(entry: RecentEntry) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .padding(horizontal = Spacing.md, vertical = Spacing.md),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
@@ -311,7 +401,7 @@ private fun RecentEntryRow(entry: RecentEntry) {
                 },
                 contentDescription = null,
                 tint = Teal,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(Spacing.xl)
             )
         }
         Spacer(Modifier.width(12.dp))
@@ -326,7 +416,9 @@ private fun RecentEntryRow(entry: RecentEntry) {
             Text(
                 subtitleFor(entry),
                 color = Muted,
-                fontSize = 12.sp
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
         Text(
@@ -415,7 +507,7 @@ private fun TfiTrendCard(assessments: List<TFIAssessment>) {
             fontSize = 12.sp
         )
 
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(Spacing.lg))
         if (chronological.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -438,11 +530,11 @@ private fun TfiTrendCard(assessments: List<TFIAssessment>) {
             // MCID legend marker
             Box(
                 modifier = Modifier
-                    .size(width = 14.dp, height = 14.dp)
+                    .size(width = Spacing.md, height = Spacing.md)
                     .clip(RoundedCornerShape(3.dp))
                     .background(TealSoft)
             )
-            Spacer(Modifier.width(6.dp))
+            Spacer(Modifier.width(Spacing.sm))
             Text(
                 "MCID 13점 — 임상적으로 유의미한 변화",
                 color = Muted,
@@ -588,7 +680,7 @@ private fun TfiHistoryRow(a: TFIAssessment) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .padding(horizontal = Spacing.md, vertical = Spacing.md),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -609,7 +701,7 @@ private fun TfiHistoryRow(a: TFIAssessment) {
             modifier = Modifier
                 .clip(RoundedCornerShape(999.dp))
                 .background(TealSoft)
-                .padding(horizontal = 10.dp, vertical = 4.dp)
+                .padding(horizontal = Spacing.sm, vertical = Spacing.xs)
         ) {
             Text(
                 TfiScoring.severityKorean(a.totalScore),
@@ -630,7 +722,7 @@ private fun StartTfiCta(onStartTfi: () -> Unit) {
             .shadow(3.dp, RoundedCornerShape(12.dp), spotColor = Teal.copy(alpha = 0.45f))
             .clip(RoundedCornerShape(12.dp))
             .background(Teal)
-            .padding(vertical = 14.dp),
+            .padding(vertical = Spacing.md),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -662,7 +754,7 @@ private fun CalendarCard(
         CalendarHeader(state, onPrev, onNext)
         Spacer(Modifier.height(12.dp))
         WeekdayRow()
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(Spacing.sm))
         DayGrid(state.cells, state.maxDayMs, onDayTap)
         Spacer(Modifier.height(12.dp))
         LegendRow(state.monthTotalMs)
@@ -690,14 +782,14 @@ private fun CalendarHeader(
         Box(
             modifier = Modifier
                 .pressableClickable(onClick = onPrev)
-                .size(28.dp),
+                .size(Spacing.section),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Filled.ChevronLeft,
                 contentDescription = "이전 달",
                 tint = Ink2,
-                modifier = Modifier.size(22.dp)
+                modifier = Modifier.size(Spacing.xl)
             )
         }
         Text(
@@ -710,14 +802,14 @@ private fun CalendarHeader(
         Box(
             modifier = Modifier
                 .pressableClickable(onClick = onNext)
-                .size(28.dp),
+                .size(Spacing.section),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = "다음 달",
                 tint = Ink2,
-                modifier = Modifier.size(22.dp)
+                modifier = Modifier.size(Spacing.xl)
             )
         }
     }
@@ -812,7 +904,7 @@ private fun LegendRow(monthTotalMs: Long) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text("적음", color = Muted, fontSize = 11.sp)
-        Spacer(Modifier.width(6.dp))
+        Spacer(Modifier.width(Spacing.sm))
         listOf(Heat1, Heat2, Heat3, Heat4).forEach { c ->
             Box(
                 modifier = Modifier
