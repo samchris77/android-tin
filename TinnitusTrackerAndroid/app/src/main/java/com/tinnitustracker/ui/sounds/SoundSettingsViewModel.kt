@@ -51,6 +51,21 @@ class SoundSettingsViewModel(
             }
         }
     }
+
+    fun saveAsNewPreset(name: String) {
+        viewModelScope.launch {
+            activePreset.value?.let { preset ->
+                val newPresetId = presetRepo.savePreset(
+                    preset.copy(id = 0, name = name)
+                )
+                settingsRepo.setActivePresetId(newPresetId)
+            }
+        }
+    }
+
+    fun togglePreview() {
+        audioRepo.togglePlay()
+    }
 }
 
 class SoundSettingsViewModelFactory(

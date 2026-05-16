@@ -211,6 +211,18 @@ class RecordsViewModel(
         }
     }
 
+    fun deleteSession(id: Long) {
+        viewModelScope.launch {
+            sessionRepo.deleteById(id)
+        }
+    }
+
+    fun deleteDiary(id: Long) {
+        viewModelScope.launch {
+            diaryRepo.deleteById(id)
+        }
+    }
+
     fun previousMonth() {
         visibleMonth.value = visibleMonth.value.minusMonths(1)
     }

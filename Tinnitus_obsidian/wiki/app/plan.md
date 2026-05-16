@@ -6,7 +6,7 @@ tags: [app/planning]
 evidence: n/a
 status: draft
 sources: []
-last_reviewed: 2026-05-14
+last_reviewed: 2026-05-16
 ---
 
 # Implementation Plan
@@ -17,21 +17,7 @@ last_reviewed: 2026-05-14
 
 ## Now
 
-_Empty — promote Item 2 (홈 polish pass) from `## Next` when ready._
-
----
-
-## Next (queued, in order)
-
-> Items 1–6 (items 1, 5, 6 shipped; 4 remaining) were broken out from a previous fat "App-wide redesign pass against [[ux-principles]]" bullet on 2026-05-14, after the user supplied [[wiki/sources/kole-jain-beginner-mistakes]] (`raw/ui_ux_beginner_mistakes_detailed.md`) + [[wiki/sources/kole-jain-genius-ux]] (`raw/genius_ui_ux_design_strategy_detailed.md`) as canonical inputs alongside [[ux-principles]]. Decisions locked in for the whole sequence: **card radius = 16 dp** (compromise between wireframe `20 px` and previous `12 dp` rule; [[ux-principles]] §5 updated in item 1), **full design-system extraction** under `ui/theme/components/`, **one item promoted at a time**. The wireframe HTML at `TinnitusTrackerAndroid/docs/design/app-wireframes.html` and the chosen directions (Onboarding A, Home A, Sound A, Records B, Settings A) are preserved — only micro-level execution changes.
-
-1. [ ] **홈 polish pass.** `HomeScreen.kt` through the new components: `AppCard.DarkHero(radius = 16)` for hero (currently 22 dp, drifted); `ChevronRow` for `SleepTimerRow` (drops text `›` glyph, ships proper `Icons.Filled.ChevronRight`); `TfiPromptCard` "시작 →" replaced with `PolishedPlayButton(variant = Teal, size = small)` (currently re-implements gradient + shadow). Week-strip cells unified to 8 dp (kills the 10/12 dp mix). Rip-it-out: remove redundant 1 dp `Line` border on `SleepTimerRow` (shadow already separates). 25 % zoom-out test must pass — greeting + hero play button dominate.
-
-2. [ ] **소리 polish pass.** `SoundSettingsScreen.kt` through the new components: processing-mode → `SegmentedControl`; color-noise selectors → `Pill(Teal/Outline)` row; "다시 측정 ›" → `Pill(TealSoft)` with chevron icon; all cards → `AppCard(16 dp, 16 dp padding)`. **Edge case** (per [[wiki/sources/kole-jain-genius-ux]] §3, §4): long preset names (Korean can run 30+ chars) — add `maxLines = 1` + `overflow = Ellipsis` on `PresetSwitcherCard` label. Note: `maxLines`/`overflow` already added to the preset name `Text` in item 5; this item handles the full card swap.
-
-3. [ ] **기록 polish pass.** `RecordsScreen.kt`, `QuickLogBottomSheet.kt`, `DayDetailBottomSheet.kt`: every surface → `AppCard`; heatmap cells → 8 dp radius (chip scale); today indicator stays 2 dp Teal border; recent-entries rows → `ChevronRow` + `IconBadge` (folds the session / diary leading-badge pattern that's currently rebuilt in 3 places down to one component); `TagChip` replaces the inline `QuickLogBottomSheet` chips; `EmptyStateCard` for all four empty surfaces (heatmap-zero, no-TFI, no-diary, no-sessions-on-day) per [[ux-principles]] §4.
-
-4. [ ] **설정 polish pass + remainder.** `SettingsScreen.kt`: every action row → `ChevronRow` with `pressableClickable` (currently plain `.clickable` — biggest "no dead UI" gap per [[wiki/sources/kole-jain-beginner-mistakes]] §7); `TfiCadenceRow` value display → `Pill(TealSoft)`; rip out any section header where rows below are self-labeling. Same pass opportunistically applies new components to `MiniPlayer`, `OnboardingScreen`, `TfiQuestionnaireScreen`, `TfiResultsScreen`, `FrequencyMatchingScreen` where the diff is small.
+[ ] **설정 polish pass + remainder.** `SettingsScreen.kt`: every action row → `ChevronRow` with `pressableClickable` (currently plain `.clickable` — biggest "no dead UI" gap per [[wiki/sources/kole-jain-beginner-mistakes]] §7); `TfiCadenceRow` value display → `Pill(TealSoft)`; rip out any section header where rows below are self-labeling. Same pass opportunistically applies new components to `MiniPlayer`, `OnboardingScreen`, `TfiQuestionnaireScreen`, `TfiResultsScreen`, `FrequencyMatchingScreen` where the diff is small.
 
 ---
 
@@ -63,6 +49,47 @@ _Empty — promote Item 2 (홈 polish pass) from `## Next` when ready._
 ---
 
 ## Done
+
+### ✓ MVP Bug Fix + Emulator Verification — 2026-05-16
+
+Static analysis + Gradle build surfaced 3 compile errors introduced during MVP implementation. All fixed; full emulator walkthrough passed.
+
+**Fixes.**
+- `SurfaceColor` → `Surface` (7 callsites in `HomeScreen.kt` — token didn't exist; correct name is `Surface` from `Color.kt`).
+- Smart-cast failure on `sleepTimerRemaining` (nullable StateFlow delegate) → captured as local `val remaining` before the `if`-check.
+- `audioRepo.play()` called in `HomeViewModel.togglePlay()` and `SoundSettingsViewModel.togglePreview()` — method doesn't exist on `AudioRepository`; replaced with `audioRepo.togglePlay()` which internally handles start vs. resume.
+
+**Streak counter removal (user direction).** Removed `consecutiveDays: Int` field from `HomeUiState`, the comment block and `consecutiveDays = 0` assignment in the `combine` lambda, and the `🔥 N일 연속` `Surface` badge from `HomeScreen.kt`. Treatment-week label (`치료 N주차`) kept.
+
+**Emulator verification on emulator API 36.1** — BUILD SUCCESSFUL (warnings only: unused param, deprecated `capitalize`, opt-in annotation). APK installed. Screens verified:
+- Home: adherence ring, treatment-week label, no streak badge.
+- Sleep Timer bottom sheet: 15 / 30 / 60 / 90분 options + 타이머 끄기.
+- Quick Log bottom sheet: tinnitus + stress sliders, 6 tag chips, 저장 CTA.
+- Records: calendar, weekly summaries (5.10–16 card shows real data), 최근 기록 list with "..." options button → EntryOptionsBottomSheet ("기록 옵션" + "삭제" in red).
+
+**Files.** Modified: `ui/home/HomeViewModel.kt` (removed `consecutiveDays`, simplified `togglePlay`), `ui/home/HomeScreen.kt` (Surface token fix ×7, smart-cast fix, streak badge removed), `ui/sounds/SoundSettingsViewModel.kt` (simplified `togglePreview`).
+
+---
+
+### ✓ MVP Completion (홈, 소리, 기록 Polish) — 2026-05-16
+
+Executed the final wiring and UI integration to complete the MVP, fully applying the "Player-First" Light Theme redesign.
+
+**Home Screen Wiring:**
+- Implemented `HomeViewModel` to aggregate `todayListenMs`, `dailyGoalMin`, and `treatmentWeek`.
+- Fully replaced `HomeScreen.kt` with the high-fidelity Compose layout based on `home_prototype.html`.
+- Features circular progress play button, live adherence card, Sleep Timer bottom sheet (15/30/60/90 mins), and Quick Log integration.
+
+**Audio Engine & Sound Settings:**
+- Loaded `brook.mp3` and `fireplace.mp3` into `AudioEngine` and exposed them as sliders in the Ambient Mix card.
+- Implemented `saveAsNewPreset` functionality via a "새 프리셋 저장" dialog on the "+ 저장" button.
+- Wired the "미리듣기" (Preview) button to toggle `AudioEngine` playback without committing to the database.
+
+**Records Polish:**
+- Added `deleteSession` and `deleteDiary` methods to `RecordsViewModel`.
+- Implemented `EntryOptionsBottomSheet` allowing users to delete individual log entries from the Recent Entries list.
+
+---
 
 ### ✓ 주간 요약 (Weekly summary) cards on 기록 — 2026-05-16
 

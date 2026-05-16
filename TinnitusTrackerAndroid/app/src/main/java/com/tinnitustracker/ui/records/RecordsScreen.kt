@@ -32,6 +32,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -85,6 +87,7 @@ fun RecordsScreen(vm: RecordsViewModel, onStartTfi: () -> Unit) {
     val pagerState = rememberPagerState(pageCount = { 2 })
     val scope = rememberCoroutineScope()
     var showQuickLog by remember { mutableStateOf(false) }
+    var selectedEntryForOptions by remember { mutableStateOf<RecentEntry?>(null) }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -116,7 +119,8 @@ fun RecordsScreen(vm: RecordsViewModel, onStartTfi: () -> Unit) {
                         entries = recentEntries,
                         onPrev = vm::previousMonth,
                         onNext = vm::nextMonth,
-                        onDayTap = vm::selectDay
+                        onDayTap = vm::selectDay,
+                        onEntryOptions = { selectedEntryForOptions = it }
                     )
                     1 -> TfiScoresTab(
                         assessments = tfiAssessments,
@@ -139,6 +143,20 @@ fun RecordsScreen(vm: RecordsViewModel, onStartTfi: () -> Unit) {
                 onSave = { severity, stress, tags ->
                     vm.addDiaryEntry(severity, stress, tags)
                     showQuickLog = false
+                }
+            )
+        }
+
+        if (selectedEntryForOptions != null) {
+            EntryOptionsBottomSheet(
+                entry = selectedEntryForOptions!!,
+                onDismiss = { selectedEntryForOptions = null },
+                onDelete = {
+                    when (it) {
+                        is RecentEntry.Session -> vm.deleteSession(it.id)
+                        is RecentEntry.Diary -> vm.deleteDiary(it.id)
+                    }
+                    selectedEntryForOptions = null
                 }
             )
         }
@@ -218,7 +236,8 @@ private fun OverviewHistoryTab(
     entries: List<RecentEntry>,
     onPrev: () -> Unit,
     onNext: () -> Unit,
-    onDayTap: (java.time.LocalDate) -> Unit
+    onDayTap: (java.time.LocalDate) -> Unit,
+    onEntryOptions: (RecentEntry) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -239,7 +258,7 @@ private fun OverviewHistoryTab(
         if (entries.isEmpty()) {
             item { EmptyCard("아직 기록된 활동이 없습니다") }
         } else {
-            item { RecentEntriesCard(entries) }
+            item { RecentEntriesCard(entries, onEntryOptions) }
         }
     }
 }
@@ -357,7 +376,7 @@ private fun formatListenValue(ms: Long): String {
 }
 
 @Composable
-private fun RecentEntriesCard(entries: List<RecentEntry>) {
+private fun RecentEntriesCard(entries: List<RecentEntry>, onEntryOptions: (RecentEntry) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -374,13 +393,13 @@ private fun RecentEntriesCard(entries: List<RecentEntry>) {
                         .background(Line)
                 )
             }
-            RecentEntryRow(entry)
+            RecentEntryRow(entry, onClickOptions = { onEntryOptions(entry) })
         }
     }
 }
 
 @Composable
-private fun RecentEntryRow(entry: RecentEntry) {
+private fun RecentEntryRow(entry: RecentEntry, onClickOptions: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -426,7 +445,9 @@ private fun RecentEntryRow(entry: RecentEntry) {
             color = Muted,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(start = 8.dp, end = 4.dp)
+            modifier = Modifier
+                .pressableClickable(onClick = onClickOptions)
+                .padding(start = 8.dp, end = 4.dp, top = 8.dp, bottom = 8.dp)
         )
     }
 }
@@ -1001,4 +1022,41 @@ private fun formatEntryDateLine(epochMs: Long, zone: ZoneId = ZoneId.systemDefau
     }
     val mm = dt.minute.toString().padStart(2, '0')
     return "${dt.monthValue}월 ${dt.dayOfMonth}일 ($dow) · $ampm $h12:$mm"
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EntryOptionsBottomSheet(
+    entry: RecentEntry,
+    onDismiss: () -> Unit,
+    onDelete: (RecentEntry) -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = SurfaceColor,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp, top = 8.dp)
+        ) {
+            Text(
+                text = "기록 옵션",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Ink,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .pressableClickable { onDelete(entry) }
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("삭제", color = Color(0xFFC44536), fontSize = 16.sp, fontWeight = FontWeight.Medium)
+            }
+        }
+    }
 }

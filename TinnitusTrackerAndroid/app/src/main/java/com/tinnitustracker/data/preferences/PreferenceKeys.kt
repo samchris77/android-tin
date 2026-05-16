@@ -14,4 +14,6 @@ object PreferenceKeys {
     val TFI_CADENCE_WEEKS    = intPreferencesKey("tfi_cadence_weeks")  // 1 | 2 (default 2)
     val LAST_TFI_DATE        = longPreferencesKey("last_tfi_date")     // epoch ms (0 = never)
     val ACTIVE_PRESET_ID     = longPreferencesKey("active_preset_id")
+    val TREATMENT_START_DATE = longPreferencesKey("treatment_start_date")
+    val DAILY_LISTENING_GOAL_MIN = intPreferencesKey("daily_listening_goal_min")
 }

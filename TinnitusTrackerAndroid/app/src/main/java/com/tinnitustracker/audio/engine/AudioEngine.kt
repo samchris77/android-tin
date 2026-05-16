@@ -108,6 +108,16 @@ class AudioEngine(private val context: Context) {
                 isLooping = true
                 setVolume(0f, 0f)
             }
+            ambientPlayers["brook"] = MediaPlayer.create(context, R.raw.brook).apply {
+                setAudioAttributes(attributes)
+                isLooping = true
+                setVolume(0f, 0f)
+            }
+            ambientPlayers["fireplace"] = MediaPlayer.create(context, R.raw.fireplace).apply {
+                setAudioAttributes(attributes)
+                isLooping = true
+                setVolume(0f, 0f)
+            }
         } catch (e: Exception) {
             Log.e(tag, "Failed to load ambient sounds", e)
         }

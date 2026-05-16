@@ -1,5 +1,20 @@
 # Wiki Log
 
+## [2026-05-16] fix | MVP Bug Fix + Emulator Verification ✓
+- **Compile errors fixed (3):** `SurfaceColor` → `Surface` (7 sites, `HomeScreen.kt`); smart-cast on `sleepTimerRemaining` → local `val`; `audioRepo.play()` → `audioRepo.togglePlay()` (`HomeViewModel` + `SoundSettingsViewModel` — `play()` doesn't exist on `AudioRepository`).
+- **Streak counter removed** (user direction): `consecutiveDays` field dropped from `HomeUiState`; `🔥 N일 연속` badge removed from `HomeScreen`; treatment-week label kept.
+- **Emulator walkthrough passed**: sleep timer sheet, quick log sheet, records calendar + weekly summaries, EntryOptionsBottomSheet — all confirmed working on emulator API 36.1.
+- Modified: `ui/home/HomeViewModel.kt`, `ui/home/HomeScreen.kt`, `ui/sounds/SoundSettingsViewModel.kt`
+- Updated [[wiki/app/plan]] (added Done entry, cleaned up Now/Next duplicate)
+
+## [2026-05-16] feature | MVP Completion (홈, 소리, 기록 Polish) ✓
+- Executed the final wiring and UI integration to complete the MVP, fully applying the "Player-First" Light Theme redesign.
+- **Home Screen Wiring**: Implemented `HomeViewModel` to aggregate `todayListenMs`, `dailyGoalMin`, and `treatmentWeek`. Fully replaced `HomeScreen.kt` with the high-fidelity Compose layout based on `home_prototype.html`. Features circular progress play button, live adherence card, Sleep Timer bottom sheet (15/30/60/90 mins), and Quick Log integration.
+- **Audio Engine & Sound Settings**: Loaded `brook.mp3` and `fireplace.mp3` into `AudioEngine` and exposed them as sliders in the Ambient Mix card. Implemented `saveAsNewPreset` functionality via a "새 프리셋 저장" dialog on the "+ 저장" button. Wired the "미리듣기" (Preview) button to toggle `AudioEngine` playback without committing to the database.
+- **Records Polish**: Added `deleteSession` and `deleteDiary` methods to `RecordsViewModel`. Implemented `EntryOptionsBottomSheet` allowing users to delete individual log entries from the Recent Entries list.
+- Updated `PreferenceKeys.kt` and `UserSettingsRepository.kt` with `TREATMENT_START_DATE` and `DAILY_LISTENING_GOAL_MIN`.
+- Updated [[wiki/app/plan]] (Now/Next cleared, added MVP Completion to Done)
+
 ## [2026-05-16] lint | weekly
 - Moved `wiki/app/ect/` files to `wiki/app/` (schema fix — ect/ subfolder violated flat-app rule): [[wiki/app/android-snapshot]], [[wiki/app/cbt-program]], [[wiki/app/red-flags]], [[wiki/app/sound-library]]
 - Fixed all bare wikilinks across: [[wiki/index]], [[wiki/clinical/trt]], [[wiki/clinical/cbt]], [[wiki/app/architecture]], [[wiki/app/prd]], [[wiki/app/plan]], [[wiki/sources/neca-2022-trt]], [[wiki/sources/walter-2025]], [[wiki/sources/app-strategy-summary]]

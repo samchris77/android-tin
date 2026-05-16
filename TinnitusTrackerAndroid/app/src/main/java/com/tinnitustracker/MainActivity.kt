@@ -56,6 +56,7 @@ import com.tinnitustracker.ui.onboarding.OnboardingViewModelFactory
 import com.tinnitustracker.ui.records.RecordsScreen
 import com.tinnitustracker.ui.records.RecordsViewModel
 import com.tinnitustracker.ui.records.RecordsViewModelFactory
+import com.tinnitustracker.ui.records.QuickLogBottomSheet
 import com.tinnitustracker.ui.settings.SettingsScreen
 import com.tinnitustracker.ui.sounds.SoundSettingsScreen
 import com.tinnitustracker.ui.theme.Line
@@ -66,6 +67,8 @@ import com.tinnitustracker.ui.theme.TinnitusTrackerTheme
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
+import com.tinnitustracker.ui.home.HomeViewModel
+import com.tinnitustracker.ui.home.HomeViewModelFactory
 
 class MainActivity : ComponentActivity() {
 
@@ -178,6 +181,8 @@ private fun RootScaffold(
         viewModel(factory = TfiQuestionnaireViewModelFactory(tfi))
     val recordsVm: RecordsViewModel =
         viewModel(factory = RecordsViewModelFactory(sessions, diary, tfi))
+    val homeVm: HomeViewModel =
+        viewModel(factory = HomeViewModelFactory(audio, preset, sessions, repo))
 
     val tfiCadenceWeeks by repo.tfiCadenceWeeks.collectAsState(initial = 2)
     val lastTfiDate by repo.lastTfiDate.collectAsState(initial = 0L)
@@ -189,6 +194,8 @@ private fun RootScaffold(
     val showTfiPrompt = System.currentTimeMillis() >=
         lastTfiDate + tfiCadenceWeeks * 7L * 24L * 60L * 60L * 1000L
     val scope = rememberCoroutineScope()
+    
+    var showQuickLog by rememberSaveable { mutableStateOf(false) }
 
     // System back inside a 소리 subscreen returns to the 소리 root.
     BackHandler(enabled = current == Tab.Sound && soundSub != null) {
@@ -262,6 +269,7 @@ private fun RootScaffold(
         Box(Modifier.padding(padding)) {
             when (current) {
                 Tab.Home -> HomeScreen(
+                    vm = homeVm,
                     onStartTherapy = { current = Tab.Sound },
                     onOpenSettings = { current = Tab.Settings },
                     onStartTfi = {
@@ -269,7 +277,8 @@ private fun RootScaffold(
                         current = Tab.Settings
                         settingsSub = SettingsSub.Tfi
                     },
-                    showTfiPrompt = showTfiPrompt
+                    showTfiPrompt = showTfiPrompt,
+                    onOpenQuickLog = { showQuickLog = true }
                 )
                 Tab.Sound -> when (soundSub) {
                     null -> SoundSettingsScreen(
@@ -312,6 +321,16 @@ private fun RootScaffold(
                         onDone = { settingsSub = null }
                     )
                 }
+            }
+            
+            if (showQuickLog) {
+                QuickLogBottomSheet(
+                    onDismiss = { showQuickLog = false },
+                    onSave = { severity, stress, tags ->
+                        recordsVm.addDiaryEntry(severity, stress, tags)
+                        showQuickLog = false
+                    }
+                )
             }
         }
     }

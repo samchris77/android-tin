@@ -35,6 +35,12 @@ class UserSettingsRepository(private val context: Context) {
     val activePresetId: Flow<Long> = context.dataStore.data
         .map { it[PreferenceKeys.ACTIVE_PRESET_ID] ?: 1L }
 
+    val treatmentStartDate: Flow<Long> = context.dataStore.data
+        .map { it[PreferenceKeys.TREATMENT_START_DATE] ?: System.currentTimeMillis() }
+
+    val dailyListeningGoalMin: Flow<Int> = context.dataStore.data
+        .map { it[PreferenceKeys.DAILY_LISTENING_GOAL_MIN] ?: 120 }
+
     suspend fun setOnboardingComplete(value: Boolean) {
         context.dataStore.edit { it[PreferenceKeys.ONBOARDING_COMPLETE] = value }
     }
@@ -61,5 +67,13 @@ class UserSettingsRepository(private val context: Context) {
 
     suspend fun setActivePresetId(presetId: Long) {
         context.dataStore.edit { it[PreferenceKeys.ACTIVE_PRESET_ID] = presetId }
+    }
+
+    suspend fun setTreatmentStartDate(epochMs: Long) {
+        context.dataStore.edit { it[PreferenceKeys.TREATMENT_START_DATE] = epochMs }
+    }
+
+    suspend fun setDailyListeningGoalMin(minutes: Int) {
+        context.dataStore.edit { it[PreferenceKeys.DAILY_LISTENING_GOAL_MIN] = minutes }
     }
 }
