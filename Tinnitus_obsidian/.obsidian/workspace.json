@@ -1,0 +1,223 @@
+{
+  "main": {
+    "id": "eff0591cdeb3e6a4",
+    "type": "split",
+    "children": [
+      {
+        "id": "8928bcc15bc8a745",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "1e8d70051c4def61",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "wiki/app/plan.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "plan"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "84cf19fa62bfdc61",
+    "type": "split",
+    "children": [
+      {
+        "id": "7dba31688e8e34e9",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "0a808ef28ff75307",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "b3428d72051b735c",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "efb37f73582710bb",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "52f641d8136792b4",
+    "type": "split",
+    "children": [
+      {
+        "id": "9878c6f716a58a28",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "3d83dc5822ad9ba5",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "wiki/app/android-app.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for android-app"
+            }
+          },
+          {
+            "id": "cf3adecc49a8d49f",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "c115ca8ba737ce99",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "8bdfaa70b56e5a6a",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "0a660eaaebabd277",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "1e8d70051c4def61",
+  "lastOpenFiles": [
+    "wiki/app/sound-library.md",
+    "wiki/app/red-flags.md",
+    "wiki/app/cbt-program.md",
+    "wiki/app/android-snapshot.md",
+    "wiki/app/plan.md",
+    "raw/gemini_chat/gemini-code-1778723974953.md",
+    "wiki/sources/gemini-records-architecture-2026-05.md",
+    "raw/gemini_chat/gemini-code-1778723980883.kt",
+    "raw/gemini_chat/gemini-code-1778723986116.kt",
+    "raw/gemini_chat",
+    "raw/Top_Tier_Web_Design_Guide.md",
+    "wiki/sources/sajid-top-tier-web-design.md",
+    "wiki/app/ux-principles.md",
+    "wiki/clinical/thi.md",
+    "wiki/clinical/tmi.md",
+    "wiki/clinical/tfi.md",
+    "wiki/sources/hwang-bahng-2018-ktmi.md",
+    "wiki/sources/neca-2022-trt.md",
+    "wiki/sources/ohsu-tfi-2012.md",
+    "raw/a-korean-adaptation-of-the-tinnitus-magnitude-index-validity-12jyfduy7w.pdf",
+    "raw/NR21-001-12.pdf",
+    "wiki/sources/kole-jain-beginner-mistakes.md",
+    "wiki/sources/kole-jain-genius-ux.md",
+    "raw/TFI.pdf",
+    "raw/ui_ux_beginner_mistakes_detailed.md",
+    "raw/genius_ui_ux_design_strategy_detailed.md",
+    "wiki/app/navigation.md",
+    "raw/Plan(수기).md",
+    "wiki/app/prd.md",
+    "wiki/app/architecture.md",
+    "wiki/app/ect/android-snapshot.md",
+    "wiki/app/ect/cbt-program.md",
+    "wiki/app/ect",
+    "wiki/clinical",
+    "raw/jmir-2025-1-e59575.pdf",
+    "raw/assets/mockup-prototype(extended).html"
+  ]
+}

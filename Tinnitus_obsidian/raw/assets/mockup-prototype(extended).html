@@ -1,0 +1,1808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TinnitusTracker — Mockup Prototype</title>
+<style>
+  :root {
+    --bg: #F5F1EA;
+    --surface: #FFFFFF;
+    --ink: #1A2E2C;
+    --ink-2: #4A5C5A;
+    --muted: #8B9694;
+    --line: #E5DED2;
+    --teal: #2D5F5D;
+    --teal-2: #3E7A77;
+    --teal-soft: #E8F0EE;
+    --coral: #D67C5C;
+    --coral-soft: #F8E4D9;
+    --warn: #C44536;
+    --warn-soft: #F7DDD8;
+    --ok: #5A8A6B;
+    --ok-soft: #DEEBE0;
+    --shadow: 0 8px 32px rgba(26, 46, 44, 0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    padding: 48px 24px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page-header {
+    max-width: 1400px;
+    margin: 0 auto 48px;
+    text-align: center;
+  }
+  .page-header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+  .page-header p {
+    color: var(--ink-2);
+    font-size: 15px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  .legend {
+    display: inline-flex;
+    gap: 16px;
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  .section-title {
+    max-width: 1400px;
+    margin: 56px auto 24px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 8px;
+  }
+
+  .frames {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 32px;
+    justify-items: center;
+  }
+
+  .phone {
+    width: 320px;
+    height: 660px;
+    background: var(--surface);
+    border-radius: 36px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .phone-label {
+    position: absolute;
+    bottom: -28px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .phone-label .feat {
+    color: var(--teal);
+    font-weight: 600;
+  }
+
+  .phone-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    padding-bottom: 36px;
+  }
+
+  .status-bar {
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .status-dots { display: flex; gap: 4px; }
+  .status-dots span {
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--ink);
+  }
+
+  .nav {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .nav .back {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink-2);
+    font-size: 16px;
+  }
+  .nav h3 {
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .nav .right {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .body {
+    flex: 1;
+    overflow: hidden;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .tab-bar {
+    height: 64px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    background: var(--surface);
+    padding: 8px 0 12px;
+  }
+  .tab {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 4px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 500;
+  }
+  .tab.active { color: var(--teal); }
+  .tab .ic {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: currentColor;
+    opacity: 0.85;
+  }
+
+  /* Reusable cards/components */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .card-tinted {
+    background: var(--teal-soft);
+    border: none;
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .card h4 {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    background: var(--teal);
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    border: none;
+  }
+  .btn-secondary {
+    background: var(--bg);
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+  .btn-warn {
+    background: var(--warn);
+    color: white;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--bg);
+    color: var(--ink-2);
+  }
+  .pill-teal { background: var(--teal-soft); color: var(--teal); }
+  .pill-coral { background: var(--coral-soft); color: var(--coral); }
+  .pill-warn { background: var(--warn-soft); color: var(--warn); }
+  .pill-ok { background: var(--ok-soft); color: var(--ok); }
+
+  /* ---------- Onboarding hero ---------- */
+  .onboard-hero {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .onboard-hero .visual {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--teal-soft), #F5F1EA);
+    border-radius: 20px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .wave-rings {
+    position: relative;
+    width: 140px; height: 140px;
+  }
+  .wave-rings span {
+    position: absolute;
+    inset: 0;
+    border: 1.5px solid var(--teal);
+    border-radius: 50%;
+    opacity: 0.3;
+  }
+  .wave-rings span:nth-child(1) { transform: scale(0.4); opacity: 0.9; }
+  .wave-rings span:nth-child(2) { transform: scale(0.65); opacity: 0.5; }
+  .wave-rings span:nth-child(3) { transform: scale(0.85); opacity: 0.3; }
+  .wave-rings span:nth-child(4) { transform: scale(1); opacity: 0.15; }
+  .onboard-hero h2 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+    margin-bottom: 8px;
+  }
+  .onboard-hero p {
+    font-size: 13px;
+    color: var(--ink-2);
+    margin-bottom: 16px;
+  }
+  .timeline-strip {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+  }
+  .timeline-strip .seg {
+    flex: 1; height: 4px; border-radius: 2px;
+    background: var(--line);
+  }
+  .timeline-strip .seg.active { background: var(--teal); }
+
+  /* ---------- Red-flag screener ---------- */
+  .screener-q {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .screener-q .text {
+    font-size: 13px;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+  .toggle {
+    display: flex;
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 2px;
+    flex-shrink: 0;
+  }
+  .toggle span {
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    border-radius: 6px;
+  }
+  .toggle span.on { background: var(--teal); color: white; }
+
+  .screener-banner {
+    background: var(--warn-soft);
+    border-left: 3px solid var(--warn);
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--warn);
+    line-height: 1.4;
+  }
+
+  /* ---------- Mixing-point dial ---------- */
+  .dial-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .dial {
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: conic-gradient(var(--teal) 0deg 165deg, var(--line) 165deg 360deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .dial-inner {
+    width: 168px; height: 168px;
+    background: var(--surface);
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .dial-inner .v { font-size: 36px; font-weight: 700; letter-spacing: -1px; }
+  .dial-inner .u { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .dial-inner .lbl { font-size: 11px; color: var(--ink-2); margin-top: 6px; }
+
+  .helper-tip {
+    font-size: 12px;
+    color: var(--ink-2);
+    text-align: center;
+    line-height: 1.5;
+    padding: 0 8px;
+  }
+  .helper-tip strong { color: var(--teal); }
+
+  /* ---------- Home dashboard ---------- */
+  .greeting { margin-bottom: 4px; }
+  .greeting .hi { font-size: 13px; color: var(--muted); }
+  .greeting h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+
+  .phase-chip {
+    background: linear-gradient(135deg, var(--teal), var(--teal-2));
+    border-radius: 14px;
+    padding: 14px 16px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .phase-chip .ic {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .phase-chip .info { flex: 1; }
+  .phase-chip .info .l1 { font-size: 11px; opacity: 0.85; text-transform: uppercase; letter-spacing: 1px; }
+  .phase-chip .info .l2 { font-size: 14px; font-weight: 600; margin-top: 2px;}
+  .phase-chip .info .l3 { font-size: 11px; opacity: 0.85; margin-top: 2px;}
+
+  .stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px;}
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px;
+  }
+  .stat .lbl { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+  .stat .val { font-size: 20px; font-weight: 700; margin-top: 4px; letter-spacing: -0.5px; }
+  .stat .delta { font-size: 11px; margin-top: 2px; }
+  .delta.down { color: var(--ok); }
+  .delta.up { color: var(--warn); }
+
+  .quick-action {
+    background: var(--coral-soft);
+    border-radius: 14px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .quick-action .ic {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--coral);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700;
+  }
+  .quick-action .txt { flex: 1; }
+  .quick-action .txt .t { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .quick-action .txt .s { font-size: 11px; color: var(--ink-2); margin-top: 2px; }
+  .quick-action .arrow { color: var(--muted); }
+
+  /* ---------- Sound therapy player ---------- */
+  .player-art {
+    flex: 1;
+    border-radius: 20px;
+    background: linear-gradient(160deg, #2D5F5D, #1A2E2C);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 18px;
+    color: white;
+    min-height: 180px;
+  }
+  .player-art::before {
+    content: '';
+    position: absolute;
+    inset: -50%;
+    background: radial-gradient(circle at 30% 40%, rgba(232,149,111,0.25), transparent 50%),
+                radial-gradient(circle at 70% 70%, rgba(255,255,255,0.06), transparent 50%);
+  }
+  .player-art .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    opacity: 0.7;
+    position: relative;
+    z-index: 1;
+  }
+  .player-art .title {
+    font-size: 22px;
+    font-weight: 700;
+    margin-top: 6px;
+    position: relative;
+    z-index: 1;
+  }
+  .player-art .meta {
+    font-size: 12px;
+    margin-top: 4px;
+    opacity: 0.8;
+    position: relative;
+    z-index: 1;
+  }
+
+  .vol-warning {
+    background: var(--warn-soft);
+    border: 1px solid #F0C5BE;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 11px;
+    color: var(--warn);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.4;
+  }
+  .vol-warning .ic { font-size: 14px; }
+
+  .player-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 4px 0;
+  }
+  .player-controls .ctrl {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink);
+    font-size: 14px;
+  }
+  .player-controls .ctrl.main {
+    width: 56px; height: 56px;
+    background: var(--teal);
+    color: white;
+    font-size: 20px;
+  }
+
+  .vol-track {
+    height: 6px;
+    background: var(--bg);
+    border-radius: 3px;
+    position: relative;
+    overflow: hidden;
+  }
+  .vol-track .fill { width: 42%; height: 100%; background: var(--teal); }
+  .vol-track .marker {
+    position: absolute;
+    top: -4px;
+    height: 14px;
+    width: 2px;
+    background: var(--coral);
+    left: 60%;
+  }
+  .vol-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* ---------- TFI assessment ---------- */
+  .tfi-progress {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .tfi-bar {
+    height: 4px;
+    background: var(--line);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .tfi-bar .fill { height: 100%; background: var(--teal); width: 32%; }
+  .tfi-question {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.4;
+    margin: 12px 0 4px;
+  }
+  .tfi-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .scale-row {
+    display: grid;
+    grid-template-columns: repeat(11, 1fr);
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .scale-row .s {
+    aspect-ratio: 1;
+    background: var(--bg);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600;
+    color: var(--ink-2);
+  }
+  .scale-row .s.sel { background: var(--teal); color: white; }
+  .scale-anchors {
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: var(--muted); margin-top: 6px;
+  }
+
+  /* ---------- Progress chart ---------- */
+  .chart-wrap {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .chart-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 12px;
+  }
+  .chart-head .t { font-size: 13px; font-weight: 600; }
+  .chart-head .v { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .chart-head .d { font-size: 11px; color: var(--ok); font-weight: 600; }
+  .chart { height: 100px; position: relative; }
+  .chart svg { width: 100%; height: 100%; overflow: visible; }
+  .chart-x {
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: var(--muted); margin-top: 6px;
+  }
+
+  .insight-card {
+    background: var(--ok-soft);
+    border-left: 3px solid var(--ok);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 12px;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  .insight-card strong { color: var(--ok); }
+
+  /* ---------- Spike mode ---------- */
+  .spike-screen {
+    flex: 1;
+    background: linear-gradient(180deg, var(--teal-soft), var(--surface));
+    margin: -20px;
+    padding: 32px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .breathe-orb {
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--teal-2), var(--teal));
+    margin: 32px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 0 60px rgba(45,95,93,0.2);
+    position: relative;
+  }
+  .breathe-orb::before {
+    content: '';
+    position: absolute;
+    inset: -16px;
+    border: 1px solid var(--teal);
+    border-radius: 50%;
+    opacity: 0.3;
+  }
+  .spike-screen h2 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .spike-screen p { font-size: 13px; color: var(--ink-2); margin-bottom: 16px; max-width: 240px; }
+  .spike-step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--ink-2);
+    border: 1px solid var(--line);
+    margin-top: 8px;
+  }
+  .spike-step .n {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--teal); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700;
+  }
+
+  /* ---------- Education curriculum ---------- */
+  .module-row {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .module-row .num {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .module-row.done .num { background: var(--ok-soft); color: var(--ok); }
+  .module-row.current .num { background: var(--teal); color: white; }
+  .module-row.locked .num { background: var(--bg); color: var(--muted); }
+  .module-row .info { flex: 1; min-width: 0;}
+  .module-row .info .t { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .module-row .info .s { font-size: 11px; color: var(--muted); margin-top: 2px;}
+  .module-row .arrow { color: var(--muted); font-size: 14px; }
+  .module-row.locked .info .t { color: var(--muted); }
+
+  /* ---------- Frequency matching ---------- */
+  .freq-display {
+    background: linear-gradient(160deg, var(--teal-soft), #F5F1EA);
+    border-radius: 18px;
+    padding: 20px;
+    text-align: center;
+  }
+  .freq-display .hz {
+    font-size: 38px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    color: var(--teal);
+    line-height: 1.1;
+  }
+  .freq-display .hz .unit {
+    font-size: 16px;
+    color: var(--muted);
+    font-weight: 500;
+    margin-left: 4px;
+  }
+  .freq-display .label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+  }
+  .freq-display .helper {
+    font-size: 12px;
+    color: var(--ink-2);
+    margin-top: 8px;
+  }
+
+  .freq-keys {
+    display: flex;
+    gap: 3px;
+    height: 80px;
+    align-items: flex-end;
+    padding-bottom: 14px;
+    position: relative;
+  }
+  .freq-keys .k {
+    flex: 1;
+    background: var(--bg);
+    border-radius: 4px 4px 8px 8px;
+    border: 1px solid var(--line);
+    position: relative;
+  }
+  .freq-keys .k.sel {
+    background: linear-gradient(180deg, var(--teal), var(--teal-2));
+    border-color: var(--teal);
+  }
+  .freq-keys .k.sel::after {
+    content: '▲';
+    position: absolute;
+    bottom: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--coral);
+    font-size: 10px;
+  }
+  .freq-keys .k:nth-child(1) { height: 30%; }
+  .freq-keys .k:nth-child(2) { height: 42%; }
+  .freq-keys .k:nth-child(3) { height: 54%; }
+  .freq-keys .k:nth-child(4) { height: 65%; }
+  .freq-keys .k:nth-child(5) { height: 75%; }
+  .freq-keys .k:nth-child(6) { height: 85%; }
+  .freq-keys .k:nth-child(7) { height: 92%; }
+  .freq-keys .k:nth-child(8) { height: 95%; }
+  .freq-keys .k:nth-child(9) { height: 88%; }
+  .freq-keys .k:nth-child(10) { height: 78%; }
+  .freq-keys .k:nth-child(11) { height: 65%; }
+  .freq-keys .k:nth-child(12) { height: 50%; }
+
+  .freq-axis {
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: var(--muted);
+    margin-top: 10px;
+  }
+
+  .ab-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .ab-toggle .ab {
+    padding: 14px;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1.5px solid var(--line);
+    text-align: center;
+    cursor: pointer;
+  }
+  .ab-toggle .ab.active {
+    border-color: var(--teal);
+    background: var(--teal-soft);
+  }
+  .ab-toggle .ab .a { font-size: 18px; font-weight: 700; color: var(--teal); }
+  .ab-toggle .ab .lbl { font-size: 11px; color: var(--ink-2); margin-top: 2px;}
+  .ab-toggle .ab .hz-small { font-size: 10px; color: var(--muted); margin-top: 2px;}
+
+  .vslider {
+    height: 140px;
+    width: 60px;
+    margin: 0 auto;
+    background: var(--bg);
+    border-radius: 30px;
+    position: relative;
+    border: 1px solid var(--line);
+    padding: 6px;
+    display: flex;
+    align-items: flex-end;
+  }
+  .vslider .fill {
+    width: 100%;
+    background: linear-gradient(180deg, var(--coral), var(--teal));
+    border-radius: 22px;
+    height: 55%;
+    position: relative;
+  }
+  .vslider .fill::after {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: -4px; right: -4px;
+    height: 16px;
+    background: var(--surface);
+    border: 2px solid var(--teal);
+    border-radius: 50%;
+  }
+  .vslider-row {
+    display: flex; align-items: center; gap: 16px; padding: 0 8px;
+  }
+  .vslider-meta {
+    flex: 1;
+    font-size: 12px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+  .vslider-meta strong { display: block; color: var(--ink); font-size: 14px; margin-bottom: 4px;}
+
+  .experimental-banner {
+    background: var(--coral-soft);
+    border: 1px solid #F0CDB8;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 11px;
+    color: var(--coral);
+    line-height: 1.5;
+  }
+  .experimental-banner strong { display: block; margin-bottom: 2px; font-weight: 700;}
+
+  /* ---------- Somatic assessment ---------- */
+  .body-figure {
+    flex: 1;
+    background: linear-gradient(180deg, var(--teal-soft), var(--surface));
+    border-radius: 20px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    min-height: 180px;
+  }
+
+  .somatic-step {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .somatic-step .n {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--teal-soft); color: var(--teal);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .somatic-step.active { border-color: var(--teal); background: var(--teal-soft);}
+  .somatic-step.active .n { background: var(--teal); color: white; }
+  .somatic-step .info .t { font-size: 12px; font-weight: 600; }
+  .somatic-step .info .s { font-size: 10px; color: var(--muted); }
+  .somatic-step.done .n { background: var(--ok-soft); color: var(--ok);}
+
+  .change-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .change-buttons button {
+    padding: 10px 6px;
+    border-radius: 10px;
+    border: 1.5px solid var(--line);
+    background: var(--surface);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ink-2);
+    cursor: pointer;
+    line-height: 1.3;
+  }
+  .change-buttons button.sel {
+    border-color: var(--teal);
+    background: var(--teal-soft);
+    color: var(--teal);
+  }
+  .change-buttons button .arrow { font-size: 16px; display: block; margin-bottom: 2px;}
+
+  /* ---------- Salience training ---------- */
+  .salience-bg {
+    flex: 1;
+    border-radius: 20px;
+    background: radial-gradient(circle at 50% 40%, #3E7A77, #1A2E2C);
+    color: white;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .salience-bg::before {
+    content: '';
+    position: absolute; inset: -20%;
+    background: radial-gradient(circle at 70% 30%, rgba(232,149,111,0.18), transparent 40%),
+                radial-gradient(circle at 20% 80%, rgba(255,255,255,0.05), transparent 40%);
+  }
+  .focus-target {
+    width: 110px; height: 110px;
+    margin: 16px 0;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+  }
+  .focus-target::before, .focus-target::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  .focus-target::before { inset: -16px; }
+  .focus-target::after { inset: -32px; border-color: rgba(255,255,255,0.07);}
+  .focus-target .dot {
+    width: 16px; height: 16px;
+    background: var(--coral);
+    border-radius: 50%;
+    box-shadow: 0 0 24px var(--coral);
+  }
+  .salience-bg .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    opacity: 0.7;
+    z-index: 1;
+    position: relative;
+  }
+  .salience-bg h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-top: 6px;
+    z-index: 1;
+    position: relative;
+  }
+  .salience-bg .prompt {
+    font-size: 12px;
+    opacity: 0.85;
+    margin-top: 8px;
+    max-width: 240px;
+    line-height: 1.5;
+    z-index: 1;
+    position: relative;
+  }
+  .anchor-row {
+    display: flex; gap: 6px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+    z-index: 1;
+    position: relative;
+  }
+  .anchor-row .a {
+    padding: 5px 10px;
+    border-radius: 14px;
+    font-size: 10px;
+    background: rgba(255,255,255,0.1);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  .anchor-row .a.cur {
+    background: var(--coral);
+    border-color: var(--coral);
+  }
+  .salience-progress {
+    height: 3px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    margin-top: 14px;
+    overflow: hidden;
+    z-index: 1;
+    position: relative;
+    width: 100%;
+  }
+  .salience-progress .fill {
+    width: 38%; height: 100%; background: var(--coral);
+  }
+
+  /* ---------- Neuromodulation decision aid ---------- */
+  .evidence-row {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px 14px;
+  }
+  .evidence-row .head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 4px;
+  }
+  .evidence-row .head .name { font-size: 13px; font-weight: 600;}
+  .evidence-row .body-txt { font-size: 11px; color: var(--ink-2); line-height: 1.5;}
+  .evidence-bar { display: flex; gap: 3px; margin-top: 10px;}
+  .evidence-bar .b {
+    flex: 1; height: 5px;
+    background: var(--line);
+    border-radius: 3px;
+  }
+  .evidence-bar .b.f { background: var(--teal); }
+  .evidence-bar .b.f-low { background: var(--coral); }
+  .evidence-bar .b.f-warn { background: var(--warn); }
+  .evidence-meta {
+    display: flex; justify-content: space-between;
+    font-size: 9px; color: var(--muted);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+
+  /* ---------- Night mode ---------- */
+  .night-bg {
+    flex: 1;
+    border-radius: 20px;
+    background: linear-gradient(180deg, #0F1F1E, #1A2E2C);
+    color: white;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+    min-height: 320px;
+  }
+  .night-bg::before {
+    content: '';
+    position: absolute;
+    top: 20%; right: -10%;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(232,149,111,0.12), transparent 60%);
+    border-radius: 50%;
+  }
+  .night-bg .moon {
+    position: absolute;
+    top: 24px; right: 24px;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #F5F1EA, #C4BAA7);
+    box-shadow: 0 0 32px rgba(245,241,234,0.2);
+  }
+  .night-bg .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    opacity: 0.6;
+    position: relative;
+    z-index: 1;
+  }
+  .night-bg h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-top: 4px;
+    position: relative;
+    z-index: 1;
+  }
+  .night-bg .schedule {
+    background: rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+    position: relative;
+    z-index: 1;
+  }
+  .night-bg .schedule .row {
+    display: flex; justify-content: space-between;
+    font-size: 12px;
+    padding: 6px 0;
+  }
+  .night-bg .schedule .row + .row { border-top: 1px solid rgba(255,255,255,0.08); }
+  .night-bg .schedule .row .l { opacity: 0.7;}
+  .night-bg .schedule .row .v { font-weight: 600;}
+
+  .device-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(90,138,107,0.18);
+    color: #A8D5B6;
+    padding: 5px 10px;
+    border-radius: 14px;
+    font-size: 10px;
+    font-weight: 600;
+    border: 1px solid rgba(168,213,182,0.2);
+  }
+
+  /* ---------- Tab icons ---------- */
+  .tab.home .ic { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M3 12 12 4l9 8v8a1 1 0 0 1-1 1h-4v-6h-8v6H4a1 1 0 0 1-1-1z' fill='black'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M3 12 12 4l9 8v8a1 1 0 0 1-1 1h-4v-6h-8v6H4a1 1 0 0 1-1-1z' fill='black'/></svg>"); -webkit-mask-size: contain; mask-size: contain; }
+  .tab.sound .ic { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M3 10v4h4l5 4V6L7 10H3zm12 2c0-1.5-.8-2.8-2-3.4v6.8c1.2-.6 2-1.9 2-3.4z' fill='black'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M3 10v4h4l5 4V6L7 10H3zm12 2c0-1.5-.8-2.8-2-3.4v6.8c1.2-.6 2-1.9 2-3.4z' fill='black'/></svg>"); -webkit-mask-size: contain; mask-size: contain; }
+  .tab.progress .ic { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M4 20h3v-9H4v9zm6 0h3V4h-3v16zm6 0h3v-6h-3v6z' fill='black'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M4 20h3v-9H4v9zm6 0h3V4h-3v16zm6 0h3v-6h-3v6z' fill='black'/></svg>"); -webkit-mask-size: contain; mask-size: contain; }
+  .tab.learn .ic { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M5 4h14v16H7a2 2 0 0 1-2-2V4zm2 0v12h12V4H7z' fill='black'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M5 4h14v16H7a2 2 0 0 1-2-2V4zm2 0v12h12V4H7z' fill='black'/></svg>"); -webkit-mask-size: contain; mask-size: contain; }
+  .tab.profile .ic { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='8' r='4' fill='black'/><path d='M4 21c0-4 4-7 8-7s8 3 8 7H4z' fill='black'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='8' r='4' fill='black'/><path d='M4 21c0-4 4-7 8-7s8 3 8 7H4z' fill='black'/></svg>"); -webkit-mask-size: contain; mask-size: contain; }
+
+  .floating-spike {
+    position: absolute;
+    right: 16px; bottom: 80px;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--coral);
+    color: white;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-size: 8px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 6px 20px rgba(214,124,92,0.4);
+    z-index: 5;
+  }
+  .floating-spike .lightning { font-size: 18px; }
+
+  .footer {
+    max-width: 1400px;
+    margin: 64px auto 0;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+  }
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <h1>TinnitusTracker — Mockup Prototype</h1>
+  <p>Mobile screens for the Tier 1–3 feature set defined in <code>wiki/app/app_guideline.md</code>. Calibrated honesty over engagement; habituation over masking; 12–24 month arc.</p>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:var(--teal)"></span>Clinical core</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--coral)"></span>Active intervention</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--warn)"></span>Safety / red-flag</div>
+  </div>
+</header>
+
+<!-- ============================================================ -->
+<div class="section-title">Onboarding flow — Phase, safety, calibration</div>
+<div class="frames">
+
+  <!-- Phase intro -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span class="status-dots"><span></span><span></span><span></span></span></div>
+      <div class="body">
+        <div class="timeline-strip">
+          <div class="seg active"></div><div class="seg active"></div><div class="seg"></div><div class="seg"></div>
+        </div>
+        <div class="onboard-hero">
+          <div class="visual">
+            <div class="wave-rings"><span></span><span></span><span></span><span></span></div>
+          </div>
+          <div>
+            <span class="pill pill-teal">12–24 month program</span>
+            <h2 style="margin-top:10px;">Habituation, not silence.</h2>
+            <p>The goal is to retrain how your brain reacts to tinnitus — not to mask it. This takes time. Most people see meaningful change between months 3 and 12.</p>
+            <button class="btn">I understand — let's begin</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label"><span class="feat">F3</span> · TRT-Phase Onboarding</div>
+  </div>
+
+  <!-- Red-flag screener -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span class="status-dots"><span></span><span></span><span></span></span></div>
+      <div class="nav"><div class="back">←</div><h3>Safety check</h3><div class="right">3 of 5</div></div>
+      <div class="body">
+        <p style="font-size:13px;color:var(--ink-2)">Some symptoms need a clinician, not an app. A few quick questions:</p>
+        <div class="screener-q">
+          <div class="text">Does your tinnitus pulse in time with your heartbeat?</div>
+          <div class="toggle"><span>No</span><span class="on">Yes</span></div>
+        </div>
+        <div class="screener-q">
+          <div class="text">Sudden hearing loss in one ear in the last 72 hours?</div>
+          <div class="toggle"><span class="on">No</span><span>Yes</span></div>
+        </div>
+        <div class="screener-q">
+          <div class="text">Episodes of vertigo or spinning?</div>
+          <div class="toggle"><span class="on">No</span><span>Yes</span></div>
+        </div>
+        <div class="screener-banner">
+          <strong>Pulsatile tinnitus needs medical evaluation.</strong> We'll show you ENT referral options before you continue.
+        </div>
+        <button class="btn btn-warn">Find an ENT near me</button>
+      </div>
+    </div>
+    <div class="phone-label"><span class="feat">F8</span> · Red-Flag Screener</div>
+  </div>
+
+  <!-- Mixing point -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span class="status-dots"><span></span><span></span><span></span></span></div>
+      <div class="nav"><div class="back">←</div><h3>Mixing-point calibration</h3><div class="right">L · R</div></div>
+      <div class="body">
+        <p class="helper-tip">
+          Slowly raise the volume until the noise is <strong>just barely covering</strong> your tinnitus —
+          you should still faintly hear both at once. Don't bury it.
+        </p>
+        <div class="dial-wrap">
+          <div class="dial">
+            <div class="dial-inner">
+              <div class="v">−42</div>
+              <div class="u">dBFS</div>
+              <div class="lbl">Mixing point · Left ear</div>
+            </div>
+          </div>
+          <span class="pill pill-teal">Therapy will lock 4 dB below this</span>
+        </div>
+        <button class="btn">Confirm left ear</button>
+        <button class="btn btn-secondary">Recalibrate</button>
+      </div>
+    </div>
+    <div class="phone-label"><span class="feat">F1</span> · Mixing-Point Calibration</div>
+  </div>
+
+</div>
+
+<!-- ============================================================ -->
+<div class="section-title">Tinnitus profiling — Pitch, volume, somatic component</div>
+<div class="frames">
+
+  <!-- NEW: Frequency matching -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span class="status-dots"><span></span><span></span><span></span></span></div>
+      <div class="nav"><div class="back">←</div><h3>Match your tinnitus pitch</h3><div class="right">Step 1 / 2</div></div>
+      <div class="body">
+        <div class="freq-display">
+          <div class="label">Currently playing</div>
+          <div class="hz">6,200<span class="unit">Hz</span></div>
+          <div class="helper">High-pitched · in the range typical for noise-induced tinnitus</div>
+        </div>
+
+        <div>
+          <p style="font-size:12px;color:var(--ink-2);margin-bottom:10px;">Tap a tone and adjust until it matches the pitch in your ear. We'll use this to design your therapy sound, not to mask it.</p>
+          <div class="freq-keys">
+            <div class="k"></div><div class="k"></div><div class="k"></div><div class="k"></div>
+            <div class="k"></div><div class="k sel"></div><div class="k"></div><div class="k"></div>
+            <div class="k"></div><div class="k"></div><div class="k"></div><div class="k"></div>
+          </div>
+          <div class="freq-axis">
+            <span>250 Hz</span><span>1 kHz</span><span>4 kHz</span><span>8 kHz</span><span>16 kHz</span>
+          </div>
+        </div>
+
+        <div class="ab-toggle">
+          <div class="ab"><div class="a">A</div><div class="lbl">Reference</div><div class="hz-small">5,800 Hz</div></div>
+          <div class="ab active"><div class="a">B</div><div class="lbl">Closer match</div><div class="hz-small">6,200 Hz</div></div>
+        </div>
+
+        <button class="btn">Lock pitch &amp; continue</button>
+      </div>
+    </div>
+    <div class="phone-label"><span class="feat">F11</span> · Pitch Matching (A/B refinement)</div>
+  </div>
+
+  <!-- NEW: Volume matching -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span class="status-dots"><span></span><span></span><span></span></span></div>
+      <div class="nav"><div class="back">←</div><h3>Match the loudness</h3><div class="right">Step 2 / 2</div></div>
+      <div class="body">
+        <p style="font-size:12px;color:var(--ink-2);">
+          Adjust until the tone feels equally loud as your tinnitus. Most people land between
+          <strong style="color:var(--teal)">5–15 dB SL</strong> — the perception is real, but quieter than people expect.
+        </p>
+
+        <div style="background:linear-gradient(160deg, var(--teal-soft), #F5F1EA); border-radius:18px; padding:24px;">
+          <div class="vslider-row">
+            <div class="vslider"><div class="fill"></div></div>
+            <div class="vslider-meta">
+              <strong>+8 dB SL</strong>
+              Above your hearing threshold at 6.2 kHz.
+              <div style="margin-top:8px;">
+                <span class="pill pill-teal">Match</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="background:var(--bg);">
+          <h4>Why we measure this</h4>
+          <p style="font-size:12px;color:var(--ink-2);line-height:1.5;">
+            Loudness matching is for <strong>understanding</strong>, not for tracking progress. Distress (TFI) is what improves with habituation — most people's measured loudness barely changes even when they feel much better.
+          </p>
+        </div>
+
+        <div class="experimental-banner">
+          <strong>Experimental: notched sound therapy</strong>
+          We can generate a broadband noise with a notch at 6.2 kHz. Evidence for notched therapy is <strong>low</strong> — frame this as something to try, not a primary treatment.
+        </div>
+
+        <button class="btn">Save profile</button>
+      </div>
+    </div>
+    <div class="phone-label"><span class="feat">F11</span> · Loudness Matching + Notched Sound</div>
+  </div>
+
+  <!-- NEW: Somatic assessment -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span class="status-dots"><span></span><span></span><span></span></span></div>
+      <div class="nav"><div class="back">←</div><h3>Somatic check</h3><div class="right">3 / 5</div></div>
+      <div class="body">
+        <div class="body-figure">
+          <svg viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg">
+            <!-- head -->
+            <ellipse cx="100" cy="60" rx="36" ry="42" fill="none" stroke="#2D5F5D" stroke-width="1.5"/>
+            <!-- jaw highlight -->
+            <path d="M 70 80 Q 100 110 130 80" fill="none" stroke="#D67C5C" stroke-width="3" stroke-linecap="round"/>
+            <!-- neck -->
+            <path d="M 88 100 L 88 130 L 112 130 L 112 100" fill="none" stroke="#2D5F5D" stroke-width="1.5"/>
+            <!-- shoulders/torso -->
+            <path d="M 60 130 Q 100 125 140 130 L 145 200 L 55 200 Z" fill="none" stroke="#2D5F5D" stroke-width="1.5"/>
+            <!-- pulse ring near jaw -->
+            <circle cx="100" cy="92" r="20" fill="none" stroke="#D67C5C" stroke-width="1" opacity="0.5"/>
+            <circle cx="100" cy="92" r="28" fill="none" stroke="#D67C5C" stroke-width="1" opacity="0.25"/>
+          </svg>
+        </div>
+
+        <div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Now try this</p>
+          <h3 style="font-size:16px;font-weight:700;margin-bottom:4px;">Clench your jaw firmly for 5 seconds.</h3>
+          <p style="font-size:12px;color:var(--ink-2);">Release. Did your tinnitus change at all?</p>
+        </div>
+
+        <div class="change-buttons">
+          <button><span class="arrow">↓</span>Quieter</button>
+          <button class="sel"><span class="arrow">≠</span>Different<br/>pitch</button>
+          <button><span class="arrow">↑</span>Louder</button>
+          <button style="grid-column:span 3;">No change</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div class="somatic-step done"><div class="n">✓</div><div class="info"><div class="t">Press temples</div><div class="s">Made it louder</div></div></div>
+          <div class="somatic-step done"><div class="n">✓</div><div class="info"><div class="t">Turn head left</div><div class="s">No change</div></div></div>
+          <div class="somatic-step active"><div class="n">3</div><div class="info"><div class="t">Clench jaw</div><div class="s">In progress</div></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label"><span class="feat">F6</span> · Somatic Modulation Test</div>
+  </div>
+
+</div>
+
+<!-- ============================================================ -->
+<div class="section-title">Daily app — Home, sound therapy, spike mode</div>
+<div class="frames">
+
+  <!-- Home -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span class="status-dots"><span></span><span></span><span></span></span></div>
+      <div class="body">
+        <div class="greeting">
+          <div class="hi">Tuesday, 28 April</div>
+          <h2>Good morning, Sam.</h2>
+        </div>
+        <div class="phase-chip">
+          <div class="ic">◐</div>
+          <div class="info">
+            <div class="l1">Active habituation</div>
+            <div class="l2">Month 4 of 12</div>
+            <div class="l3">Next milestone in 9 days</div>
+          </div>
+        </div>
+        <div class="stat-row">
+          <div class="stat">
+            <div class="lbl">TFI distress</div>
+            <div class="val">38</div>
+            <div class="delta down">↓ 8 since last cycle</div>
+          </div>
+          <div class="stat">
+            <div class="lbl">Sound therapy</div>
+            <div class="val">6.4 h</div>
+            <div class="delta down">▎▎▎▎▎▎▎▎ 80% of goal</div>
+          </div>
+        </div>
+        <div class="card">
+          <h4>Today's plan</h4>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+            <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+              <span style="width:18px;height:18px;border-radius:50%;background:var(--ok-soft);color:var(--ok);display:inline-flex;align-items:center;justify-content:center;font-size:11px;">✓</span>
+              Salience training (3 min)
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+              <span style="width:18px;height:18px;border-radius:50%;border:1.5px solid var(--line);"></span>
+              Sound therapy — 8 hr target
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+              <span style="width:18px;height:18px;border-radius:50%;border:1.5px solid var(--line);"></span>
+              Module 6 · How habituation works
+            </div>
+          </div>
+        </div>
+        <div class="quick-action">
+          <div class="ic">⚡</div>
+          <div class="txt">
+            <div class="t">Tinnitus spiking?</div>
+            <div class="s">90-second protocol — breathe, reframe, dampen</div>
+          </div>
+          <div class="arrow">›</div>
+        </div>
+      </div>
+      <div class="floating-spike">
+        <span class="lightning">⚡</span>
+        <span>Spike</span>
+      </div>
+      <div class="tab-bar">
+        <div class="tab home active"><div class="ic"></div>Home</div>
+        <div class="tab sound"><div class="ic"></div>Sound</div>
+        <div class="tab progress"><div class="ic"></div>Progress</div>
+        <div class="tab learn"><div class="ic"></div>Learn</div>
+        <div class="tab profile"><div class="ic"></div>You</div>
+      </div>
+    </div>
+    <div class="phone-label"><span class="feat">F3 · F2 · F4</span> · Phase-aware Home</div>
+  </div>
+
+  <!-- Sound therapy player -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span class="status-dots"><span></span><span></span><span></span></span></div>
+      <div class="nav"><div class="back">←</div><h3>Now playing</h3><div class="right">⋯</div></div>
+      <div class="body">
+        <div class="player-art">
+          <div class="label">Broadband · Notched at 6.2 kHz</div>
+          <div class="title">Calibrated wash</div>
+          <div class="meta">Background mode · 3:14 / continuous</div>
+        </div>
+        <div class="vol-warning">
+          <span class="ic">⚠</span>
+          <div>
+            <strong>Earbuds detected.</strong> Occluding earphones can make tinnitus worse. Switch to over-ear, free-field speakers, or open earbuds.
+          </div>
+        </div>
+        <div>
+          <div class="vol-track">
+            <div class="fill"></div>
+            <div class="marker"></div>
+          </div>
+          <div class="vol-labels">
+            <span>Quieter</span>
+            <span style="color:var(--coral);font-weight:600;">▲ Mixing point</span>
+            <span>Louder</span>
+          </div>
+        </div>
+        <div class="player-controls">
+          <div class="ctrl">⤺</div>
+          <div class="ctrl">⏮</div>
+          <div class="ctrl main">▶</div>
+          <div class="ctrl">⏭</div>
+          <div class="ctrl">∞</div>
+        </div>
+        <div class="stat" style="background:var(--bg);">
+          <div class="lbl">Today's adherence</div>
+          <div class="val" style="font-size:16px;">3 h 14 m of 8 h goal</div>
+          <div style="height:6px;background:var(--line);border-radius:3px;margin-top:8px;overflow:hidden;">
+            <div style="width:40%;height:100%;background:var(--teal);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label"><span class="feat">F10 · F1</span> · Adherence Engine</div>
+  </div>
+
+  <!-- Spike mode -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span class="status-dots"><span></span><span></span><span></span></span></div>
+      <div class="nav"><div class="back">×</div><h3>Spike protocol</h3><div class="right">0:18</div></div>
+      <div class="body">
+        <div class="spike-screen">
+          <span class="pill pill-coral">Step 1 of 4 · Breathe</span>
+          <div class="breathe-orb">Breathe in · 4</div>
+          <h2>This is a perception, not a threat.</h2>
+          <p>Slow your nervous system first. The volume of the tinnitus hasn't changed — your reaction is what's loud right now.</p>
+          <div class="spike-step"><span class="n">2</span>Cognitive reframe</div>
+          <div class="spike-step"><span class="n">3</span>Sound therapy bump</div>
+          <div class="spike-step"><span class="n">4</span>Grounding (optional)</div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label"><span class="feat">F4</span> · Vicious-Cycle Interrupter</div>
+  </div>
+
+</div>
+
+<!-- ============================================================ -->
+<div class="section-title">Practice &amp; rest — Salience, night mode</div>
+<div class="frames">
+
+  <!-- NEW: Salience training -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span class="status-dots"><span></span><span></span><span></span></span></div>
+      <div class="nav"><div class="back">×</div><h3>Salience practice</h3><div class="right">1:54 / 3:00</div></div>
+      <div class="body">
+        <div class="salience-bg">
+          <span class="label">Anchor · environmental sound</span>
+          <h2>Find the air conditioner.</h2>
+          <p class="prompt">Let your attention settle on it. Tinnitus is still there — that's fine. Don't push it away. Just rest your attention here.</p>
+
+          <div class="focus-target"><div class="dot"></div></div>
+
+          <div class="anchor-row">
+            <span class="a">Breath</span>
+            <span class="a cur">A/C hum</span>
+            <span class="a">Birds</span>
+            <span class="a">Distant traffic</span>
+            <span class="a">Body</span>
+          </div>
+
+          <div class="salience-progress"><div class="fill"></div></div>
+        </div>
+
+        <div class="card-tinted" style="padding:12px 14px;">
+          <p style="font-size:11px;color:var(--ink-2);line-height:1.5;">
+            <strong style="color:var(--teal);">Not mindfulness of tinnitus.</strong> Focusing <em>on</em> the sound can make it more salient. We're training network-switching — moving attention <em>through</em> the soundscape, not away from anything.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label"><span class="feat">F5</span> · Salience Retraining</div>
+  </div>
+
+  <!-- NEW: Night mode -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span class="status-dots"><span></span><span></span><span></span></span></div>
+      <div class="nav"><div class="back">←</div><h3>Night mode</h3><div class="right">⋯</div></div>
+      <div class="body">
+        <div class="night-bg">
+          <div class="moon"></div>
+          <div>
+            <div class="label">Bedside · 11:14 PM</div>
+            <h2>Free-field tonight</h2>
+            <span class="device-pill">● Bedroom Sonos</span>
+          </div>
+
+          <div style="position:relative;z-index:1;text-align:center;">
+            <div style="font-size:48px;font-weight:700;letter-spacing:-1px;">−48<span style="font-size:18px;color:rgba(255,255,255,0.5);font-weight:500;"> dBFS</span></div>
+            <div style="font-size:11px;opacity:0.6;text-transform:uppercase;letter-spacing:1.5px;margin-top:4px;">Sleep volume · 6 dB below mixing point</div>
+          </div>
+
+          <div class="schedule">
+            <div class="row"><span class="l">Start</span><span class="v">11:00 PM</span></div>
+            <div class="row"><span class="l">Fade out</span><span class="v">5:30 AM</span></div>
+            <div class="row"><span class="l">Sound</span><span class="v">Pink noise · notched</span></div>
+            <div class="row"><span class="l">If you wake</span><span class="v">Auto-resume</span></div>
+          </div>
+        </div>
+
+        <div class="card" style="background:var(--bg);">
+          <h4>Why no headphones tonight</h4>
+          <p style="font-size:12px;color:var(--ink-2);line-height:1.5;">
+            Sleeping in earbuds occludes the ear canal — that quiet, sealed environment makes tinnitus more salient on waking. Free-field (room speaker) is the recommended bedtime delivery.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label"><span class="feat">F10</span> · Night-mode Free-field</div>
+  </div>
+
+  <!-- NEW: Neuromodulation decision aid -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span class="status-dots"><span></span><span></span><span></span></span></div>
+      <div class="nav"><div class="back">←</div><h3>Should I try rTMS?</h3><div class="right">?</div></div>
+      <div class="body" style="overflow-y:auto;">
+        <span class="pill pill-coral">Honest answer · not optimised for engagement</span>
+
+        <div>
+          <h2 style="font-size:18px;font-weight:700;margin-top:4px;">It's not a cure, and on its own it doesn't work.</h2>
+          <p style="font-size:13px;color:var(--ink-2);margin-top:6px;line-height:1.5;">
+            rTMS, tDCS, and VNS show short-term benefit in some studies, but <strong style="color:var(--ink);">long-term outcomes are not statistically significant</strong> versus sham. They're worth considering only as adjuncts to TRT or CBT, never standalone.
+          </p>
+        </div>
+
+        <div class="evidence-row">
+          <div class="head">
+            <span class="name">rTMS</span>
+            <span class="pill pill-coral" style="font-size:10px;">Low–moderate</span>
+          </div>
+          <p class="body-txt">Small short-term effect on distress. Long-term: not significant. Combine with TRT/CBT.</p>
+          <div class="evidence-bar"><div class="b f"></div><div class="b f"></div><div class="b f-low"></div><div class="b"></div><div class="b"></div></div>
+          <div class="evidence-meta"><span>Evidence strength</span><span>2 / 5</span></div>
+        </div>
+
+        <div class="evidence-row">
+          <div class="head">
+            <span class="name">Commercial 알파-스팀 device</span>
+            <span class="pill pill-warn" style="font-size:10px;">Watchlist</span>
+          </div>
+          <p class="body-txt">Marketed for tinnitus without published RCT evidence. Korean manufacturer cites general anxiety studies, not tinnitus outcomes.</p>
+          <div class="evidence-bar"><div class="b f-warn"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div></div>
+          <div class="evidence-meta"><span>Evidence strength</span><span>0 / 5 for tinnitus</span></div>
+        </div>
+
+        <div class="card-tinted">
+          <h4 style="color:var(--teal);">Take to your clinician</h4>
+          <ul style="font-size:12px;color:var(--ink-2);margin-top:8px;padding-left:18px;line-height:1.6;">
+            <li>Has this device been studied <em>for tinnitus</em>, or only for other conditions?</li>
+            <li>What's the long-term (≥ 6 month) data?</li>
+            <li>Is a sham-controlled trial available?</li>
+          </ul>
+        </div>
+
+        <button class="btn btn-secondary">Save questions to my report</button>
+      </div>
+    </div>
+    <div class="phone-label"><span class="feat">F13</span> · Honest Neuromodulation Decision Aid</div>
+  </div>
+
+</div>
+
+<!-- ============================================================ -->
+<div class="section-title">Tracking &amp; learning — TFI, progress, modules</div>
+<div class="frames">
+
+  <!-- TFI -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span class="status-dots"><span></span><span></span><span></span></span></div>
+      <div class="nav"><div class="back">←</div><h3>TFI · Bi-weekly</h3><div class="right">Save &amp; close</div></div>
+      <div class="body">
+        <div>
+          <div class="tfi-progress"><span>Question 8 of 25</span><span>~3 min left</span></div>
+          <div class="tfi-bar"><div class="fill"></div></div>
+        </div>
+        <div>
+          <span class="pill pill-teal">Sense of control</span>
+          <h3 class="tfi-question">Over the past week, how much control did you feel you had over your tinnitus?</h3>
+          <p class="tfi-sub">0 = very much in control · 10 = no control at all</p>
+          <div class="scale-row">
+            <div class="s">0</div><div class="s">1</div><div class="s">2</div><div class="s">3</div>
+            <div class="s sel">4</div><div class="s">5</div><div class="s">6</div><div class="s">7</div>
+            <div class="s">8</div><div class="s">9</div><div class="s">10</div>
+          </div>
+          <div class="scale-anchors"><span>In control</span><span>No control</span></div>
+        </div>
+        <div class="card-tinted" style="margin-top:auto;">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--teal);font-weight:600;">Why this matters</div>
+          <p style="font-size:12px;margin-top:6px;color:var(--ink-2);line-height:1.5;">
+            The TFI tracks <strong>distress</strong>, not loudness. Habituation often shows here weeks before any volume change.
+          </p>
+        </div>
+        <button class="btn">Next question</button>
+      </div>
+    </div>
+    <div class="phone-label"><span class="feat">F2</span> · TFI Distress Tracking</div>
+  </div>
+
+  <!-- Progress -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span class="status-dots"><span></span><span></span><span></span></span></div>
+      <div class="nav"><div class="back">←</div><h3>Your progress</h3><div class="right">Share</div></div>
+      <div class="body">
+        <div class="chart-wrap">
+          <div class="chart-head">
+            <div>
+              <div class="t">TFI distress</div>
+              <div class="v">38 <span style="font-size:13px;color:var(--muted);font-weight:500;">/ 100</span></div>
+            </div>
+            <div class="d">↓ 18 in 4 months</div>
+          </div>
+          <div class="chart">
+            <svg viewBox="0 0 280 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="grad" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="#2D5F5D" stop-opacity="0.3"/>
+                  <stop offset="100%" stop-color="#2D5F5D" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0 22 L40 28 L80 35 L120 48 L160 56 L200 60 L240 70 L280 76 L280 100 L0 100 Z" fill="url(#grad)"/>
+              <path d="M0 22 L40 28 L80 35 L120 48 L160 56 L200 60 L240 70 L280 76" stroke="#2D5F5D" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="280" cy="76" r="4" fill="#2D5F5D"/>
+              <circle cx="280" cy="76" r="8" fill="#2D5F5D" fill-opacity="0.2"/>
+            </svg>
+          </div>
+          <div class="chart-x">
+            <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span>
+          </div>
+        </div>
+        <div class="stat-row">
+          <div class="stat">
+            <div class="lbl">Adherence (avg)</div>
+            <div class="val">6.8 h<span style="font-size:13px;color:var(--muted);">/day</span></div>
+          </div>
+          <div class="stat">
+            <div class="lbl">Spikes logged</div>
+            <div class="val">14</div>
+            <div class="delta down">↓ 6 vs last month</div>
+          </div>
+        </div>
+        <div class="insight-card">
+          <strong>Pattern detected.</strong> Your spikes cluster around late afternoons on workdays. Try a scheduled sound-therapy block 14:00–17:00 this week.
+        </div>
+        <button class="btn btn-secondary">Generate clinician report (PDF)</button>
+      </div>
+    </div>
+    <div class="phone-label"><span class="feat">F2 · F12</span> · Progress + Clinician Report</div>
+  </div>
+
+  <!-- Education -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="status-bar"><span>9:41</span><span class="status-dots"><span></span><span></span><span></span></span></div>
+      <div class="nav"><div class="back">←</div><h3>Directive counseling</h3><div class="right">EN · KO</div></div>
+      <div class="body">
+        <div class="card-tinted">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--teal);font-weight:600;">Orientation curriculum</div>
+          <p style="font-size:13px;margin-top:6px;color:var(--ink);line-height:1.5;">
+            Nine weekly modules, mapped 1:1 to TRT directive counseling. Each ends with a short comprehension check.
+          </p>
+        </div>
+        <div class="module-row done">
+          <div class="num">1</div>
+          <div class="info"><div class="t">Audiogram interpretation</div><div class="s">Completed · 100% on quiz</div></div>
+          <div class="arrow">›</div>
+        </div>
+        <div class="module-row done">
+          <div class="num">2</div>
+          <div class="info"><div class="t">Auditory anatomy</div><div class="s">Completed</div></div>
+          <div class="arrow">›</div>
+        </div>
+        <div class="module-row done">
+          <div class="num">3</div>
+          <div class="info"><div class="t">Perception &amp; contrast</div><div class="s">Completed</div></div>
+          <div class="arrow">›</div>
+        </div>
+        <div class="module-row current">
+          <div class="num">4</div>
+          <div class="info"><div class="t">Brain function &amp; integration</div><div class="s">In progress · 8 min remaining</div></div>
+          <div class="arrow">›</div>
+        </div>
+        <div class="module-row locked">
+          <div class="num">5</div>
+          <div class="info"><div class="t">Jastreboff neurophysiological model</div><div class="s">Unlocks next week</div></div>
+          <div class="arrow">›</div>
+        </div>
+        <div class="module-row locked">
+          <div class="num">6</div>
+          <div class="info"><div class="t">How habituation works</div><div class="s">Locked</div></div>
+          <div class="arrow">›</div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label"><span class="feat">F9</span> · Educational Curriculum</div>
+  </div>
+
+</div>
+
+<footer class="footer">
+  Mockup · derived from <code>wiki/app/app_guideline.md</code> · Tier 1–3 features · 2026-04-28
+</footer>
+
+</body>
+</html>

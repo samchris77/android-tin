@@ -9,8 +9,5 @@
 # macOS
 .DS_Store
 
-# Wiki — private knowledge base, not part of the Android repo
-Tinnitus_obsidian/
-
 # Gradle / Android build artefacts are already covered by
 # TinnitusTrackerAndroid/.gitignore
