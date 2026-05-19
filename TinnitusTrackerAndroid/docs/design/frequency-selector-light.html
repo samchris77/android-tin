@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TinnitusTracker — 주파수 매칭 (light)</title>
+<style>
+  :root {
+    /* Mirrors component-gallery.html / ui/theme/Color.kt — light palette */
+    --bg: #F5F1EA;
+    --surface: #FFFFFF;
+    --ink: #1A2E2C;
+    --ink-2: #4A5C5A;
+    --muted: #8B9694;
+    --line: #E5DED2;
+
+    --teal: #2D5F5D;
+    --teal-2: #3E7A77;
+    --teal-soft: #E8F0EE;
+
+    --coral: #D67C5C;
+    --coral-soft: #F8E4D9;
+
+    --warn: #C44536;
+    --warn-soft: #F7DDD8;
+
+    --r-card: 16px;
+    --r-chip: 8px;
+    --r-button: 12px;
+    --r-pill: 100px;
+
+    --shadow-card: 0 2px 6px rgba(26, 46, 44, 0.04), 0 8px 24px rgba(26, 46, 44, 0.06);
+    --shadow-raised: 0 4px 12px rgba(26, 46, 44, 0.08);
+    --shadow-hero: 0 8px 24px rgba(45, 95, 93, 0.20);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+
+  body {
+    min-height: 100vh;
+    padding: 24px 0 48px;
+  }
+
+  .wrap {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 0 16px;
+    position: relative;
+  }
+
+  /* ───────────── App header ───────────── */
+  .header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 4px 14px;
+  }
+  .brand-mark { width: 34px; height: 34px; flex: none; }
+  .brand-name { font-size: 20px; font-weight: 600; letter-spacing: -0.3px; color: var(--ink); }
+  .gear-btn {
+    margin-left: auto;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .gear-btn svg { width: 18px; height: 18px; }
+
+  /* ───────────── Instruction banner ───────────── */
+  .banner {
+    display: flex; align-items: flex-start; gap: 6px;
+    padding: 4px 4px 16px;
+    color: var(--ink-2);
+    font-size: 12px; line-height: 1.45;
+  }
+  .banner svg { width: 14px; height: 14px; color: var(--teal); flex: none; margin-top: 2px; }
+
+  /* ───────────── Cards ───────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-card);
+    padding: 20px 16px;
+    box-shadow: var(--shadow-card);
+    margin-bottom: 12px;
+  }
+
+  /* ───────────── Frequency selector card ───────────── */
+  .freq-card { padding: 24px 16px 20px; }
+  .eyebrow {
+    text-align: center;
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--muted);
+  }
+
+  .dial-wrap {
+    position: relative;
+    width: 300px; height: 300px;
+    margin: 14px auto 4px;
+    touch-action: none;
+    user-select: none;
+  }
+  .dial-svg { width: 100%; height: 100%; display: block; }
+  .dial-center {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+  .hz-row { display: flex; align-items: flex-end; gap: 4px; }
+  .hz-num {
+    font-size: 56px; font-weight: 300;
+    letter-spacing: -2px;
+    color: var(--ink);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .hz-unit {
+    font-size: 13px; font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 1px;
+    padding-bottom: 8px;
+  }
+  .pitch-band {
+    margin-top: 8px;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--teal);
+  }
+
+  /* ───────────── Steppers ───────────── */
+  .steppers {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 20px;
+  }
+  .step-btn {
+    height: 44px;
+    border-radius: var(--r-button);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: -0.2px;
+    cursor: pointer;
+    transition: transform 0.06s, background 0.12s;
+  }
+  .step-btn:hover { background: var(--surface); }
+  .step-btn:active { transform: scale(0.97); background: var(--line); }
+
+  /* ───────────── Pitch toggle row ───────────── */
+  .toggle-row {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .toggle-row .label { font-size: 14px; color: var(--ink); }
+  .switch { position: relative; width: 48px; height: 28px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .track {
+    position: absolute; inset: 0;
+    background: var(--line);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.18s;
+  }
+  .switch .track::after {
+    content: '';
+    position: absolute; top: 2px; left: 2px;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+    transition: transform 0.18s;
+  }
+  .switch input:checked + .track { background: var(--teal); }
+  .switch input:checked + .track::after { transform: translateX(20px); }
+
+  /* ───────────── Volume card ───────────── */
+  .vol-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .vol-label { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+  .vol-read { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  input[type="range"].vol-slider {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 6px;
+    background: var(--line);
+    border-radius: 3px;
+    outline: none;
+  }
+  input[type="range"].vol-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #fff;
+    border: 2px solid var(--teal);
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(45, 95, 93, 0.25);
+  }
+  input[type="range"].vol-slider::-moz-range-thumb {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #fff;
+    border: 2px solid var(--teal);
+    cursor: pointer;
+  }
+
+  .play-wrap { display: flex; justify-content: center; margin-top: 18px; }
+  .play-btn {
+    width: 60px; height: 60px; border-radius: 50%;
+    background: var(--teal);
+    border: none;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: var(--shadow-hero);
+    transition: transform 0.08s, background 0.12s;
+  }
+  .play-btn:hover { background: var(--teal-2); }
+  .play-btn:active { transform: scale(0.96); }
+  .play-btn svg { width: 24px; height: 24px; }
+
+  /* ───────────── Section title ───────────── */
+  .sec-title {
+    font-size: 15px; font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .sec-sub {
+    font-size: 12px; line-height: 1.45;
+    color: var(--ink-2);
+    margin-bottom: 16px;
+  }
+
+  /* ───────────── Segmented buttons (octave / mode) ───────────── */
+  .seg-row {
+    display: grid; gap: 8px;
+  }
+  .seg-row.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .seg-row.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .seg-btn {
+    height: 44px;
+    border-radius: var(--r-chip);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--ink-2);
+    font-size: 13px; font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .seg-btn:hover { background: var(--bg); }
+  .seg-btn.active {
+    background: var(--teal-soft);
+    border-color: var(--teal);
+    color: var(--teal);
+    font-weight: 600;
+  }
+
+  /* ───────────── Primary CTA ───────────── */
+  .cta {
+    margin-top: 16px;
+    width: 100%;
+    height: 50px;
+    border-radius: var(--r-button);
+    background: var(--teal);
+    color: #fff;
+    border: none;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    box-shadow: var(--shadow-raised);
+    transition: background 0.12s, transform 0.06s;
+  }
+  .cta:hover { background: var(--teal-2); }
+  .cta:active { transform: scale(0.99); }
+
+  /* ───────────── Skip affordance ───────────── */
+  .skip-row { text-align: center; padding: 20px 0 8px; }
+  .skip-link {
+    background: none; border: none;
+    color: var(--muted);
+    font-size: 12px;
+    text-decoration: underline;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  /* ───────────── Page meta footer ───────────── */
+  .page-meta {
+    text-align: center;
+    font-size: 11px; color: var(--muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    padding-top: 16px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ───────────── Header ───────────── -->
+  <div class="header">
+    <svg class="brand-mark" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+      <g stroke="#2D5F5D" stroke-width="2.2" stroke-linecap="round" fill="none">
+        <path d="M2 13 C 10.5 7.5, 17 17, 25.5 11 C 30 8.5, 32 12.5, 34 13"/>
+        <path d="M2 20 C 10.5 14.5, 17 24, 25.5 18 C 30 15.5, 32 19.5, 34 20"/>
+        <path d="M2 27 C 10.5 21.5, 17 31, 25.5 25 C 30 22.5, 32 26.5, 34 27"/>
+      </g>
+    </svg>
+    <span class="brand-name">주파수 매칭</span>
+    <button class="gear-btn" aria-label="설정">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- ───────────── Instruction banner ───────────── -->
+  <div class="banner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"/>
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+    </svg>
+    <span>낮은 볼륨에서 시작하고, 이명 소리와 일치할 때까지 다이얼을 돌리세요.</span>
+  </div>
+
+  <!-- ───────────── Frequency selector card ───────────── -->
+  <div class="card freq-card">
+    <div class="eyebrow">주파수 선택</div>
+
+    <div class="dial-wrap" id="dial">
+      <svg class="dial-svg" viewBox="0 0 300 300" id="dial-svg">
+        <!-- Inner face -->
+        <defs>
+          <radialGradient id="faceGrad" cx="50%" cy="40%" r="70%">
+            <stop offset="0%" stop-color="#FFFFFF"/>
+            <stop offset="100%" stop-color="#F5F1EA"/>
+          </radialGradient>
+          <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#2D5F5D"/>
+            <stop offset="100%" stop-color="#3E7A77"/>
+          </linearGradient>
+        </defs>
+        <circle cx="150" cy="150" r="93" fill="url(#faceGrad)" stroke="#E5DED2" stroke-width="1"/>
+
+        <!-- Tick ring -->
+        <g id="ticks"></g>
+
+        <!-- Background arc track (full ring) -->
+        <circle cx="150" cy="150" r="108" fill="none" stroke="#E5DED2" stroke-width="9"
+                stroke-linecap="round"/>
+
+        <!-- Progress arc -->
+        <circle id="progress-arc" cx="150" cy="150" r="108" fill="none" stroke="url(#arcGrad)"
+                stroke-width="9" stroke-linecap="round"
+                transform="rotate(-90 150 150)"
+                stroke-dasharray="0 678.6"/>
+
+        <!-- Log-scale labels -->
+        <g id="labels" font-family="-apple-system, system-ui, sans-serif"
+           font-size="10" font-weight="600" fill="#8B9694" text-anchor="middle"></g>
+
+        <!-- Indicator pill -->
+        <g id="indicator">
+          <circle r="14" fill="#2D5F5D" opacity="0.18"/>
+          <circle r="9"  fill="#FFFFFF" stroke="#E5DED2" stroke-width="1"/>
+          <circle r="6"  fill="#2D5F5D"/>
+        </g>
+      </svg>
+
+      <div class="dial-center">
+        <div class="hz-row">
+          <span class="hz-num" id="hz-num">2,000</span>
+          <span class="hz-unit">Hz</span>
+        </div>
+        <div class="pitch-band" id="pitch-band">중음</div>
+      </div>
+    </div>
+
+    <!-- Steppers -->
+    <div class="steppers">
+      <button class="step-btn" data-step="-100">−100</button>
+      <button class="step-btn" data-step="-10">−10</button>
+      <button class="step-btn" data-step="10">+10</button>
+      <button class="step-btn" data-step="100">+100</button>
+    </div>
+
+    <!-- Pitch adjust toggle -->
+    <div class="toggle-row">
+      <span class="label">음조 조정 비활성화</span>
+      <label class="switch">
+        <input type="checkbox" id="pitch-toggle">
+        <span class="track"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- ───────────── Volume card ───────────── -->
+  <div class="card">
+    <div class="vol-head">
+      <span class="vol-label">볼륨</span>
+      <span class="vol-read"><span id="vol-pct">25</span>%  (최대 70%)</span>
+    </div>
+    <input type="range" class="vol-slider" id="vol-slider"
+           min="0" max="70" value="25">
+    <div class="play-wrap">
+      <button class="play-btn" id="play-btn" aria-label="재생">
+        <svg id="play-icon" viewBox="0 0 24 24" fill="currentColor">
+          <polygon points="6 4 20 12 6 20 6 4"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ───────────── Octave confusion card ───────────── -->
+  <div class="card">
+    <div class="sec-title">이 중 어느 음이 더 가깝나요?</div>
+    <div class="sec-sub">이명 소리는 흔히 실제보다 한 옥타브 높거나 낮게 들릴 수 있습니다.</div>
+    <div class="seg-row cols-3" id="octave-row">
+      <button class="seg-btn" data-oct="-1">낮은 음</button>
+      <button class="seg-btn active" data-oct="0">현재 음</button>
+      <button class="seg-btn" data-oct="1">높은 음</button>
+    </div>
+    <button class="cta">이 주파수로 저장하기</button>
+  </div>
+
+  <!-- ───────────── Processing mode card ───────────── -->
+  <div class="card">
+    <div class="sec-title">이명 치료 모드</div>
+    <div class="sec-sub" id="mode-desc">
+      광대역 노이즈에서 이명 주파수를 차단해 측방 억제를 유도합니다 (TRT 권장).
+    </div>
+    <div class="seg-row cols-2" id="mode-row">
+      <button class="seg-btn active" data-mode="NOTCH">노치</button>
+      <button class="seg-btn" data-mode="MASK">증폭</button>
+    </div>
+  </div>
+
+  <!-- ───────────── Skip affordance ───────────── -->
+  <div class="skip-row">
+    <button class="skip-link">뚜렷한 음을 찾기 어렵나요?</button>
+  </div>
+
+  <div class="page-meta">
+    light palette · cards 16dp · chips 8dp · buttons 12dp · pills 100dp · teal accent
+  </div>
+</div>
+
+<script>
+  // ─── Hz ↔ Angle (mirrors FrequencyMatchingScreen.kt lines 95-104) ─────
+  const DIAL_MIN_HZ = 100;
+  const DIAL_MAX_HZ = 16000;
+  const DIAL_LOG_RANGE = Math.log10(DIAL_MAX_HZ / DIAL_MIN_HZ);
+
+  const hzToAngle = (hz) => {
+    const clamped = Math.min(Math.max(hz, DIAL_MIN_HZ), DIAL_MAX_HZ);
+    return Math.log10(clamped / DIAL_MIN_HZ) / DIAL_LOG_RANGE * 360;
+  };
+  const angleToHz = (deg) => {
+    const d = Math.min(Math.max(deg, 0), 360);
+    const hz = DIAL_MIN_HZ * Math.pow(10, d / 360 * DIAL_LOG_RANGE);
+    return Math.min(Math.max(hz, DIAL_MIN_HZ), DIAL_MAX_HZ);
+  };
+  const normDeg = (d) => ((d % 360) + 360) % 360;
+  const pitchBand = (hz) => {
+    if (hz < 250)  return '저음';
+    if (hz < 1000) return '중저음';
+    if (hz < 2500) return '중음';
+    if (hz < 6000) return '고음';
+    return '초고음';
+  };
+
+  // ─── DOM refs ─────────────────────────────────────────────────────────
+  const dial = document.getElementById('dial');
+  const svg = document.getElementById('dial-svg');
+  const ticksG = document.getElementById('ticks');
+  const labelsG = document.getElementById('labels');
+  const progressArc = document.getElementById('progress-arc');
+  const indicator = document.getElementById('indicator');
+  const hzNum = document.getElementById('hz-num');
+  const pitchEl = document.getElementById('pitch-band');
+
+  const CX = 150, CY = 150;
+  const ARC_R = 108;
+  const TICK_R = 145.5;
+  const LABEL_R = 126;
+  const ARC_CIRC = 2 * Math.PI * ARC_R;  // 678.58
+
+  // Build tick marks (60, major every 5)
+  for (let i = 0; i < 60; i++) {
+    const isMajor = i % 5 === 0;
+    const rad = (i * 6 - 90) * Math.PI / 180;
+    const cosA = Math.cos(rad), sinA = Math.sin(rad);
+    const tickLen = isMajor ? 9 : 4;
+    const x1 = CX + cosA * (TICK_R - tickLen);
+    const y1 = CY + sinA * (TICK_R - tickLen);
+    const x2 = CX + cosA * TICK_R;
+    const y2 = CY + sinA * TICK_R;
+    const ln = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    ln.setAttribute('x1', x1); ln.setAttribute('y1', y1);
+    ln.setAttribute('x2', x2); ln.setAttribute('y2', y2);
+    ln.setAttribute('stroke', '#8B9694');
+    ln.setAttribute('stroke-opacity', isMajor ? '0.55' : '0.22');
+    ln.setAttribute('stroke-width', isMajor ? '1.4' : '1');
+    ln.setAttribute('stroke-linecap', 'round');
+    ticksG.appendChild(ln);
+  }
+
+  // Log-scale labels
+  [[100,'100'],[500,'500'],[2000,'2k'],[8000,'8k']].forEach(([f, lbl]) => {
+    const rad = (hzToAngle(f) - 90) * Math.PI / 180;
+    const x = CX + Math.cos(rad) * LABEL_R;
+    const y = CY + Math.sin(rad) * LABEL_R + 3.5;
+    const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    t.setAttribute('x', x); t.setAttribute('y', y);
+    t.textContent = lbl;
+    labelsG.appendChild(t);
+  });
+
+  // ─── State + render ───────────────────────────────────────────────────
+  let currentHz = 2000;
+
+  const render = () => {
+    const angle = hzToAngle(currentHz);
+
+    // Readout
+    hzNum.textContent = Math.round(currentHz).toLocaleString('en-US');
+    pitchEl.textContent = pitchBand(currentHz);
+
+    // Progress arc — dasharray as portion of circumference
+    const filled = (angle / 360) * ARC_CIRC;
+    progressArc.setAttribute('stroke-dasharray', `${filled} ${ARC_CIRC - filled}`);
+
+    // Indicator position on arc
+    const rad = (angle - 90) * Math.PI / 180;
+    const ix = CX + Math.cos(rad) * ARC_R;
+    const iy = CY + Math.sin(rad) * ARC_R;
+    indicator.setAttribute('transform', `translate(${ix}, ${iy})`);
+  };
+  render();
+
+  // ─── Knob drag ────────────────────────────────────────────────────────
+  let dragging = false;
+  let lastAngle = 0;
+
+  const getAngleFromEvent = (e) => {
+    const rect = dial.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return normDeg(Math.atan2(clientY - cy, clientX - cx) * 180 / Math.PI + 90);
+  };
+
+  const onDown = (e) => {
+    dragging = true;
+    lastAngle = getAngleFromEvent(e);
+    e.preventDefault();
+  };
+  const onMove = (e) => {
+    if (!dragging) return;
+    const newA = getAngleFromEvent(e);
+    let delta = newA - lastAngle;
+    if (delta > 180) delta -= 360;
+    if (delta < -180) delta += 360;
+    const newAngle = Math.min(Math.max(hzToAngle(currentHz) + delta, 0), 360);
+    currentHz = angleToHz(newAngle);
+    lastAngle = newA;
+    render();
+    e.preventDefault();
+  };
+  const onUp = () => { dragging = false; };
+
+  dial.addEventListener('mousedown', onDown);
+  dial.addEventListener('touchstart', onDown, { passive: false });
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('touchmove', onMove, { passive: false });
+  window.addEventListener('mouseup', onUp);
+  window.addEventListener('touchend', onUp);
+
+  // ─── Steppers ─────────────────────────────────────────────────────────
+  document.querySelectorAll('.step-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const d = parseInt(btn.dataset.step, 10);
+      currentHz = Math.min(Math.max(currentHz + d, DIAL_MIN_HZ), DIAL_MAX_HZ);
+      render();
+    });
+  });
+
+  // ─── Volume slider ────────────────────────────────────────────────────
+  const volSlider = document.getElementById('vol-slider');
+  const volPct = document.getElementById('vol-pct');
+  volSlider.addEventListener('input', () => { volPct.textContent = volSlider.value; });
+
+  // ─── Play toggle ──────────────────────────────────────────────────────
+  const playBtn = document.getElementById('play-btn');
+  const playIcon = document.getElementById('play-icon');
+  let playing = false;
+  playBtn.addEventListener('click', () => {
+    playing = !playing;
+    playBtn.setAttribute('aria-label', playing ? '정지' : '재생');
+    playIcon.innerHTML = playing
+      ? '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>'
+      : '<polygon points="6 4 20 12 6 20 6 4"/>';
+  });
+
+  // ─── Octave segmented ─────────────────────────────────────────────────
+  document.querySelectorAll('#octave-row .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#octave-row .seg-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // ─── Mode segmented ───────────────────────────────────────────────────
+  const modeDesc = document.getElementById('mode-desc');
+  const MODE_COPY = {
+    NOTCH: '광대역 노이즈에서 이명 주파수를 차단해 측방 억제를 유도합니다 (TRT 권장).',
+    MASK:  '이명 주파수 대역을 강조해 들려줍니다 (특정 임상 프로파일용).',
+  };
+  document.querySelectorAll('#mode-row .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#mode-row .seg-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      modeDesc.textContent = MODE_COPY[btn.dataset.mode];
+    });
+  });
+</script>
+</body>
+</html>

@@ -9,6 +9,7 @@ import com.tinnitustracker.data.database.entities.TFIAssessment
 import com.tinnitustracker.data.repository.DiaryRepository
 import com.tinnitustracker.data.repository.ListeningSessionRepository
 import com.tinnitustracker.data.repository.TfiRepository
+import com.tinnitustracker.data.repository.UserSettingsRepository
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -89,11 +90,16 @@ class RecordsViewModel(
     private val sessionRepo: ListeningSessionRepository,
     private val diaryRepo: DiaryRepository,
     private val tfiRepo: TfiRepository,
+    private val settingsRepo: UserSettingsRepository,
     private val zone: ZoneId = ZoneId.systemDefault(),
     private val today: () -> LocalDate = { LocalDate.now() }
 ) : ViewModel() {
 
     private val visibleMonth = MutableStateFlow(YearMonth.from(today()))
+
+    /** Daily listening goal in minutes; drives goal-relative heatmap bucketing. */
+    val dailyGoalMin: StateFlow<Int> = settingsRepo.dailyListeningGoalMin
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 120)
 
     val state: StateFlow<RecordsUiState> = visibleMonth
         .flatMapLatest { ym ->
@@ -323,11 +329,12 @@ class RecordsViewModel(
 class RecordsViewModelFactory(
     private val sessionRepo: ListeningSessionRepository,
     private val diaryRepo: DiaryRepository,
-    private val tfiRepo: TfiRepository
+    private val tfiRepo: TfiRepository,
+    private val settingsRepo: UserSettingsRepository
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         require(modelClass.isAssignableFrom(RecordsViewModel::class.java))
-        return RecordsViewModel(sessionRepo, diaryRepo, tfiRepo) as T
+        return RecordsViewModel(sessionRepo, diaryRepo, tfiRepo, settingsRepo) as T
     }
 }

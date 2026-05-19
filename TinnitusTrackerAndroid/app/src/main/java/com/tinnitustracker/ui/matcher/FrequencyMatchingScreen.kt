@@ -725,6 +725,7 @@ private fun ProcessingModeCard(
             when (mode) {
                 AudioEngine.Mode.NOTCH -> "광대역 노이즈에서 이명 주파수를 차단해 측방 억제를 유도합니다 (TRT 권장)."
                 AudioEngine.Mode.MASK  -> "이명 주파수 대역을 강조해 들려줍니다 (특정 임상 프로파일용)."
+                AudioEngine.Mode.OFF   -> "주파수 처리를 사용하지 않습니다."
             },
             color = TextSecondary,
             fontSize = 12.sp,

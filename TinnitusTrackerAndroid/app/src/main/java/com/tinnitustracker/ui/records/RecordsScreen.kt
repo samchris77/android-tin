@@ -83,6 +83,8 @@ fun RecordsScreen(vm: RecordsViewModel, onStartTfi: () -> Unit) {
     val recentEntries by vm.recentEntries.collectAsStateWithLifecycle()
     val tfiAssessments by vm.tfiAssessments.collectAsStateWithLifecycle()
     val dayDetail by vm.dayDetail.collectAsStateWithLifecycle()
+    val dailyGoalMin by vm.dailyGoalMin.collectAsStateWithLifecycle()
+    val dailyGoalMs = dailyGoalMin * 60_000L
 
     val pagerState = rememberPagerState(pageCount = { 2 })
     val scope = rememberCoroutineScope()
@@ -117,6 +119,7 @@ fun RecordsScreen(vm: RecordsViewModel, onStartTfi: () -> Unit) {
                     0 -> OverviewHistoryTab(
                         state = state,
                         entries = recentEntries,
+                        dailyGoalMs = dailyGoalMs,
                         onPrev = vm::previousMonth,
                         onNext = vm::nextMonth,
                         onDayTap = vm::selectDay,
@@ -234,6 +237,7 @@ private fun TabBar(selectedIndex: Int, onSelect: (Int) -> Unit) {
 private fun OverviewHistoryTab(
     state: RecordsUiState,
     entries: List<RecentEntry>,
+    dailyGoalMs: Long,
     onPrev: () -> Unit,
     onNext: () -> Unit,
     onDayTap: (java.time.LocalDate) -> Unit,
@@ -246,11 +250,12 @@ private fun OverviewHistoryTab(
         contentPadding = PaddingValues(top = 16.dp, bottom = 96.dp)
     ) {
         item {
-            CalendarCard(state = state, onPrev = onPrev, onNext = onNext, onDayTap = onDayTap)
+            CalendarCard(state = state, dailyGoalMs = dailyGoalMs, onPrev = onPrev, onNext = onNext, onDayTap = onDayTap)
         }
         item { Spacer(Modifier.height(16.dp)) }
-        item { WeeklySummarySection(state.weeklySummaries) }
-        item { Spacer(Modifier.height(20.dp)) }
+        // 주간 요약 hidden 2026-05-19 — re-enable when design is reworked.
+        // item { WeeklySummarySection(state.weeklySummaries) }
+        // item { Spacer(Modifier.height(20.dp)) }
         item {
             SectionHeader("최근 기록")
         }
@@ -760,6 +765,7 @@ private fun StartTfiCta(onStartTfi: () -> Unit) {
 @Composable
 private fun CalendarCard(
     state: RecordsUiState,
+    dailyGoalMs: Long,
     onPrev: () -> Unit,
     onNext: () -> Unit,
     onDayTap: (java.time.LocalDate) -> Unit
@@ -776,7 +782,7 @@ private fun CalendarCard(
         Spacer(Modifier.height(12.dp))
         WeekdayRow()
         Spacer(Modifier.height(Spacing.sm))
-        DayGrid(state.cells, state.maxDayMs, onDayTap)
+        DayGrid(state.cells, dailyGoalMs, onDayTap)
         Spacer(Modifier.height(12.dp))
         LegendRow(state.monthTotalMs)
     }
@@ -809,7 +815,7 @@ private fun CalendarHeader(
             Icon(
                 imageVector = Icons.Filled.ChevronLeft,
                 contentDescription = "이전 달",
-                tint = Ink2,
+                tint = Teal,
                 modifier = Modifier.size(Spacing.xl)
             )
         }
@@ -829,7 +835,7 @@ private fun CalendarHeader(
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = "다음 달",
-                tint = Ink2,
+                tint = Teal,
                 modifier = Modifier.size(Spacing.xl)
             )
         }
@@ -857,7 +863,7 @@ private fun WeekdayRow() {
 }
 
 @Composable
-private fun DayGrid(cells: List<DayCell>, maxDayMs: Long, onDayTap: (java.time.LocalDate) -> Unit) {
+private fun DayGrid(cells: List<DayCell>, dailyGoalMs: Long, onDayTap: (java.time.LocalDate) -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -871,7 +877,7 @@ private fun DayGrid(cells: List<DayCell>, maxDayMs: Long, onDayTap: (java.time.L
                     val cell = cells[row * 7 + col]
                     DayCellView(
                         cell = cell,
-                        maxDayMs = maxDayMs,
+                        dailyGoalMs = dailyGoalMs,
                         modifier = Modifier.weight(1f),
                         onClick = { onDayTap(cell.date) }
                     )
@@ -882,14 +888,14 @@ private fun DayGrid(cells: List<DayCell>, maxDayMs: Long, onDayTap: (java.time.L
 }
 
 @Composable
-private fun DayCellView(cell: DayCell, maxDayMs: Long, modifier: Modifier, onClick: () -> Unit) {
+private fun DayCellView(cell: DayCell, dailyGoalMs: Long, modifier: Modifier, onClick: () -> Unit) {
     val bg = when {
-        !cell.inCurrentMonth -> Heat0
-        else -> heatColor(cell.totalMs, maxDayMs)
+        !cell.inCurrentMonth -> Color.Transparent
+        else -> heatColor(cell.totalMs, dailyGoalMs)
     }
     val textColor = if (cell.inCurrentMonth) {
         // High-intensity cells need light text for legibility.
-        if (cell.totalMs > 0 && maxDayMs > 0 && cell.totalMs > maxDayMs * 0.5) Color.White
+        if (cell.totalMs > 0 && dailyGoalMs > 0 && cell.totalMs > dailyGoalMs * 0.5) Color.White
         else Ink
     } else {
         Muted
@@ -976,9 +982,9 @@ private fun EmptyCard(text: String) {
     }
 }
 
-private fun heatColor(ms: Long, maxMs: Long): Color {
-    if (ms <= 0L || maxMs <= 0L) return Heat0
-    val ratio = ms.toDouble() / maxMs.toDouble()
+private fun heatColor(ms: Long, dailyGoalMs: Long): Color {
+    if (ms <= 0L || dailyGoalMs <= 0L) return Heat0
+    val ratio = (ms.toDouble() / dailyGoalMs.toDouble()).coerceAtMost(1.0)
     return when {
         ratio <= 0.25 -> Heat1
         ratio <= 0.50 -> Heat2

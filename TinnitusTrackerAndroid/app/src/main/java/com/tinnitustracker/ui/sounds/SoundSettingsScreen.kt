@@ -31,14 +31,19 @@ import com.tinnitustracker.ui.theme.Ink
 import com.tinnitustracker.ui.theme.Ink2
 import com.tinnitustracker.ui.theme.Line
 import com.tinnitustracker.ui.theme.Muted
+import com.tinnitustracker.ui.theme.Radius
 import com.tinnitustracker.ui.theme.Spacing
 import com.tinnitustracker.ui.theme.Teal
 import com.tinnitustracker.ui.theme.TealSoft
 import com.tinnitustracker.ui.theme.pressableClickable
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.style.TextOverflow
 
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -109,18 +114,16 @@ fun SoundSettingsScreen(
         )
         Spacer(Modifier.height(12.dp))
 
-        // 2. Frequency card
-        FrequencyCard(frequency = frequency, onOpenMatcher = onOpenMatcher)
-        Spacer(Modifier.height(12.dp))
-
-        // 3. Processing mode card
-        ProcessingModeCard(
+        // 2. Frequency + processing — merged into one block
+        FrequencyAndProcessingCard(
+            frequency = frequency,
             mode = activePreset?.processingMode ?: "notch",
+            onOpenMatcher = onOpenMatcher,
             onModeChanged = { vm.updateProcessingMode(it) }
         )
         Spacer(Modifier.height(12.dp))
 
-        // 4. Color noise card
+        // 3. Color noise card
         ColorNoiseCard(
             currentColor = activePreset?.colorNoise ?: "off",
             onColorChanged = { vm.updateColorNoise(it) }
@@ -228,146 +231,180 @@ private fun PresetSwitcherCard(presetName: String, onSaveClick: () -> Unit) {
     }
 }
 
-// ── Frequency Card ──────────────────────────────────────────────────────────
+// ── Frequency + Processing (merged) ─────────────────────────────────────────
 
 @Composable
-private fun FrequencyCard(frequency: Float, onOpenMatcher: () -> Unit) {
+private fun FrequencyAndProcessingCard(
+    frequency: Float,
+    mode: String,
+    onOpenMatcher: () -> Unit,
+    onModeChanged: (String) -> Unit
+) {
+    val processingEnabled = mode != "off"
+
     Surface(
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(Radius.card),
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(2.dp, RoundedCornerShape(20.dp))
-            .border(1.dp, Line, RoundedCornerShape(20.dp))
+            .shadow(2.dp, RoundedCornerShape(Radius.card))
+            .border(1.dp, Line, RoundedCornerShape(Radius.card))
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = Spacing.md),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Eyebrow("이명 주파수")
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        String.format("%,d", frequency.toInt()),
-                        color = Ink,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.W300,
-                        letterSpacing = (-0.5).sp
-                    )
-                    Text(
-                        " Hz · 고음",
-                        color = Muted,
-                        fontSize = 11.sp,
-                        modifier = Modifier.padding(start = 4.dp)
-                    )
-                }
-            }
-            Surface(
-                color = TealSoft,
-                shape = RoundedCornerShape(999.dp),
-                modifier = Modifier
-                    .pressableClickable(onClick = onOpenMatcher)
-                    .shadow(2.dp, RoundedCornerShape(999.dp), spotColor = Teal.copy(alpha = 0.35f))
-            ) {
-                Text(
-                    "다시 측정 ›",
-                    color = Teal,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = Spacing.sm)
-                )
-            }
-        }
-    }
-}
-
-// ── Processing Mode Card ────────────────────────────────────────────────────
-
-@Composable
-private fun ProcessingModeCard(mode: String, onModeChanged: (String) -> Unit) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(20.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(2.dp, RoundedCornerShape(20.dp))
-            .border(1.dp, Line, RoundedCornerShape(20.dp))
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = Spacing.md)
-        ) {
-            Eyebrow("처리 방식")
-            Spacer(Modifier.height(Spacing.md))
-
-            // Segmented control — active segment is the raised tile; inactive
-            // segments are flat within the track.
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // Frequency row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Bg, RoundedCornerShape(12.dp))
-                    .border(1.dp, Line, RoundedCornerShape(12.dp))
-                    .padding(4.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    .padding(horizontal = 16.dp, vertical = Spacing.md),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Active segment: 노치
-                val isNotch = mode == "notch"
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(40.dp)
-                        .pressableClickable { onModeChanged("notch") }
-                        .let { 
-                            if (isNotch) {
-                                it.shadow(2.dp, RoundedCornerShape(8.dp))
-                                  .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
-                            } else it
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "노치",
-                        color = if (isNotch) Ink else Ink2,
-                        fontSize = 12.sp,
-                        fontWeight = if (isNotch) FontWeight.Bold else FontWeight.Normal
-                    )
+                Column(modifier = Modifier.weight(1f)) {
+                    Eyebrow("이명 주파수")
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            String.format("%,d", frequency.toInt()),
+                            color = Ink,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.W300,
+                            letterSpacing = (-0.5).sp
+                        )
+                        Text(
+                            " Hz · 고음",
+                            color = Muted,
+                            fontSize = 11.sp,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
+                    }
                 }
-
-                // Inactive segment: 증폭
-                val isAmplify = mode == "amplify"
-                Box(
+                Surface(
+                    color = TealSoft,
+                    shape = RoundedCornerShape(Radius.pill),
                     modifier = Modifier
-                        .weight(1f)
-                        .height(40.dp)
-                        .pressableClickable { onModeChanged("amplify") }
-                        .let { 
-                            if (isAmplify) {
-                                it.shadow(2.dp, RoundedCornerShape(8.dp))
-                                  .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
-                            } else it
-                        },
-                    contentAlignment = Alignment.Center
+                        .pressableClickable(onClick = onOpenMatcher)
+                        .shadow(2.dp, RoundedCornerShape(Radius.pill), spotColor = Teal.copy(alpha = 0.35f))
                 ) {
                     Text(
-                        "증폭",
-                        color = if (isAmplify) Ink else Ink2,
-                        fontSize = 12.sp,
-                        fontWeight = if (isAmplify) FontWeight.Bold else FontWeight.Normal
+                        "다시 측정 ›",
+                        color = Teal,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = Spacing.sm)
                     )
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "광대역 노이즈에서 이명 주파수를 차단해 측방 억제를 유도합니다 (TRT 권장).",
-                color = Muted,
-                fontSize = 10.sp,
-                lineHeight = 15.sp
-            )
+            // Divider
+            Box(modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(Line))
+
+            // Master toggle row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = Spacing.md),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Eyebrow("처리 방식")
+                    Spacer(Modifier.height(Spacing.xs))
+                    Text(
+                        "주파수 처리 사용",
+                        color = Ink,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                Switch(
+                    checked = processingEnabled,
+                    onCheckedChange = { on ->
+                        onModeChanged(if (on) "notch" else "off")
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = Teal,
+                        uncheckedThumbColor = Color.White,
+                        uncheckedTrackColor = Muted
+                    )
+                )
+            }
+
+            // Segments (notch / amplify) — dimmed and non-interactive when off
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = Spacing.md)
+                    .alpha(if (processingEnabled) 1f else 0.4f)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Bg, RoundedCornerShape(Radius.button))
+                        .border(1.dp, Line, RoundedCornerShape(Radius.button))
+                        .padding(Spacing.xs),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.xs)
+                ) {
+                    val isNotch = mode == "notch"
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(40.dp)
+                            .let {
+                                if (processingEnabled) it.pressableClickable { onModeChanged("notch") } else it
+                            }
+                            .let {
+                                if (isNotch) {
+                                    it.shadow(2.dp, RoundedCornerShape(Radius.chip))
+                                      .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(Radius.chip))
+                                } else it
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "노치",
+                            color = if (isNotch) Ink else Ink2,
+                            fontSize = 12.sp,
+                            fontWeight = if (isNotch) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+
+                    val isAmplify = mode == "amplify"
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(40.dp)
+                            .let {
+                                if (processingEnabled) it.pressableClickable { onModeChanged("amplify") } else it
+                            }
+                            .let {
+                                if (isAmplify) {
+                                    it.shadow(2.dp, RoundedCornerShape(Radius.chip))
+                                      .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(Radius.chip))
+                                } else it
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "증폭",
+                            color = if (isAmplify) Ink else Ink2,
+                            fontSize = 12.sp,
+                            fontWeight = if (isAmplify) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(Spacing.sm))
+                Text(
+                    "광대역 노이즈에서 이명 주파수를 차단해 측방 억제를 유도합니다 (TRT 권장).",
+                    color = Muted,
+                    fontSize = 10.sp,
+                    lineHeight = 15.sp
+                )
+            }
         }
     }
 }
@@ -378,43 +415,31 @@ private fun ProcessingModeCard(mode: String, onModeChanged: (String) -> Unit) {
 private fun ColorNoiseCard(currentColor: String, onColorChanged: (String) -> Unit) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(Radius.card),
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(2.dp, RoundedCornerShape(20.dp))
-            .border(1.dp, Line, RoundedCornerShape(20.dp))
+            .shadow(2.dp, RoundedCornerShape(Radius.card))
+            .border(1.dp, Line, RoundedCornerShape(Radius.card))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = Spacing.md)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Eyebrow("컬러 노이즈")
-                Text(
-                    "▶ 듣기 테스트",
-                    color = Muted,
-                    fontSize = 10.sp,
-                    modifier = Modifier
-                        .pressableClickable { onColorChanged(currentColor) /* triggers save implicitly */ }
-                        .padding(horizontal = Spacing.sm, vertical = Spacing.xs)
-                )
-            }
+            Eyebrow("컬러 노이즈")
             Spacer(Modifier.height(Spacing.md))
 
-            // Pill selector row
+            // Pill selector row — tap selected pill to deselect.
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
             ) {
-                ColorPill(label = "핑크", selected = currentColor == "pink") { onColorChanged("pink") }
-                ColorPill(label = "화이트", selected = currentColor == "white") { onColorChanged("white") }
-                ColorPill(label = "브라운", selected = currentColor == "brown") { onColorChanged("brown") }
-                ColorPill(label = "끄기", selected = currentColor == "off") { onColorChanged("off") }
+                listOf("pink" to "핑크", "white" to "화이트", "brown" to "브라운").forEach { (key, label) ->
+                    val selected = currentColor == key
+                    ColorPill(label = label, selected = selected) {
+                        onColorChanged(if (selected) "off" else key)
+                    }
+                }
             }
         }
     }

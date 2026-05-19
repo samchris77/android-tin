@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "wiki/app/plan.md",
+                "file": "raw/gemini_chat/gemini-code-1778723974953.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "plan"
+              "title": "gemini-code-1778723974953"
             }
           }
         ]
@@ -183,12 +183,14 @@
   },
   "active": "1e8d70051c4def61",
   "lastOpenFiles": [
+    "wiki/app/done.md",
+    "Untitled.md",
+    "raw/gemini_chat/gemini-code-1778723974953.md",
+    "wiki/app/plan.md",
     "wiki/app/sound-library.md",
     "wiki/app/red-flags.md",
     "wiki/app/cbt-program.md",
     "wiki/app/android-snapshot.md",
-    "wiki/app/plan.md",
-    "raw/gemini_chat/gemini-code-1778723974953.md",
     "wiki/sources/gemini-records-architecture-2026-05.md",
     "raw/gemini_chat/gemini-code-1778723980883.kt",
     "raw/gemini_chat/gemini-code-1778723986116.kt",
@@ -213,8 +215,6 @@
     "raw/Plan(수기).md",
     "wiki/app/prd.md",
     "wiki/app/architecture.md",
-    "wiki/app/ect/android-snapshot.md",
-    "wiki/app/ect/cbt-program.md",
     "wiki/app/ect",
     "wiki/clinical",
     "raw/jmir-2025-1-e59575.pdf",

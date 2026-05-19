@@ -42,16 +42,15 @@ import com.tinnitustracker.ui.theme.*
 fun HomeScreen(
     vm: HomeViewModel,
     onStartTherapy: () -> Unit,
-    onOpenSettings: () -> Unit,
     onStartTfi: () -> Unit,
     showTfiPrompt: Boolean,
-    onOpenQuickLog: () -> Unit // Pass this up or handle via a local viewmodel/dialog
+    onOpenQuickLog: () -> Unit,
+    onOpenPresetPicker: () -> Unit
 ) {
     val state by vm.state.collectAsState()
-    val isPlaying by vm.isPlaying.collectAsState() // We need isPlaying exposed in VM or AudioRepo
-    // For sleep timer
+    val isPlaying by vm.isPlaying.collectAsState()
     var showSleepTimer by remember { mutableStateOf(false) }
-    val sleepTimerRemaining by vm.sleepTimerRemainingSeconds.collectAsState()
+    val sleepTimer by vm.sleepTimer.collectAsState()
 
     Column(
         modifier = Modifier
@@ -63,31 +62,10 @@ fun HomeScreen(
         Spacer(Modifier.height(40.dp))
 
         // --- Header ---
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
-        ) {
-            Column {
-                Text("안녕하세요", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Ink, letterSpacing = (-0.5).sp)
-                Spacer(Modifier.height(4.dp))
-                Text("치료 ${state.treatmentWeek}주차", fontSize = 13.sp, color = Ink2)
-            }
-            Surface(
-                color = Surface,
-                shape = CircleShape,
-                modifier = Modifier
-                    .size(36.dp)
-                    .border(1.dp, Line, CircleShape)
-                    .pressableClickable(onClick = onOpenSettings)
-            ) {
-                Icon(
-                    painter = painterResource(android.R.drawable.ic_menu_preferences), // Replace with a settings icon if available
-                    contentDescription = "Settings",
-                    tint = Ink2,
-                    modifier = Modifier.padding(8.dp)
-                )
-            }
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text("안녕하세요", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Ink, letterSpacing = (-0.5).sp)
+            Spacer(Modifier.height(4.dp))
+            Text("치료 ${state.treatmentWeek}주차", fontSize = 13.sp, color = Ink2)
         }
 
         Spacer(Modifier.height(24.dp))
@@ -136,12 +114,29 @@ fun HomeScreen(
 
                 Text("현재 프리셋", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Teal, letterSpacing = 1.sp)
                 Spacer(Modifier.height(8.dp))
-                Text(state.activePreset?.name ?: "저녁 휴식", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Ink, letterSpacing = (-0.5).sp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .pressableClickable(onClick = onOpenPresetPicker)
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        state.activePreset?.name ?: "저녁 휴식",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Ink,
+                        letterSpacing = (-0.5).sp
+                    )
+                    Text(" ▾", fontSize = 18.sp, color = Ink2)
+                }
                 Spacer(Modifier.height(4.dp))
-                // Format preset info
                 val presetInfo = buildList {
-                    state.activePreset?.processingMode?.let { add(if (it == "notch") "노치" else "증폭") }
-                    state.activePreset?.colorNoise?.let { if (it != "off") add(it.capitalize()) }
+                    when (state.activePreset?.processingMode) {
+                        "notch" -> add("노치")
+                        "amplify" -> add("증폭")
+                        "off" -> add("주파수 끔")
+                    }
+                    state.activePreset?.colorNoise?.let { if (it != "off") add(it.replaceFirstChar { c -> c.uppercase() }) }
                     if (state.activePreset?.ambientMix?.isNotEmpty() == true) add("자연음")
                 }.joinToString(" · ")
                 Text(if (presetInfo.isBlank()) "기본 모드" else presetInfo, fontSize = 13.sp, color = Ink2)
@@ -221,11 +216,15 @@ fun HomeScreen(
                     }
                     Spacer(Modifier.height(12.dp))
                     Text("수면 타이머", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Ink)
-                    val remaining = sleepTimerRemaining
+                    val timer = sleepTimer
                     Text(
-                        if (remaining != null) "${remaining / 60}분 남음" else "꺼짐",
+                        if (timer != null) {
+                            val remainingMin = (timer.remainingSec + 59) / 60
+                            "${timer.setMinutes}분 설정 · ${remainingMin}분 남음"
+                        } else "꺼짐",
                         fontSize = 12.sp,
-                        color = Muted
+                        color = if (timer != null) Teal else Muted,
+                        fontWeight = if (timer != null) FontWeight.Medium else FontWeight.Normal
                     )
                 }
             }

@@ -29,7 +29,8 @@
 - [[wiki/app/ux-principles]] — App-specific UX design rules (progressive disclosure, state coverage, component consistency)
 - [[wiki/app/prd]] — Product Requirements Document (what the app is and isn't)
 - [[wiki/app/architecture]] — Android codebase + data-model architecture
-- [[wiki/app/plan]] — Implementation plan (one active task at a time)
+- [[wiki/app/plan]] — Implementation plan (one active block at a time)
+- [[wiki/app/done]] — Archive of completed implementation tasks (full write-ups)
 - [[wiki/app/navigation]] — Bottom-nav structure + per-screen layouts (홈 / 소리 / 기록 / 설정)
 - [[wiki/app/android-snapshot]] — Android Tinnitus Tracker — current-state code snapshot
 - [[wiki/app/red-flags]] — Medical Red Flags & Safety

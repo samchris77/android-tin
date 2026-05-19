@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TinnitusTracker — Component Gallery</title>
+<style>
+  :root {
+    /* Mirrors ui/theme/Color.kt (light palette) */
+    --bg: #F5F1EA;
+    --surface: #FFFFFF;
+    --ink: #1A2E2C;
+    --ink-2: #4A5C5A;
+    --muted: #8B9694;
+    --line: #E5DED2;
+
+    --teal: #2D5F5D;
+    --teal-2: #3E7A77;
+    --teal-soft: #E8F0EE;
+
+    --coral: #D67C5C;
+    --coral-soft: #F8E4D9;
+
+    --warn: #C44536;
+    --warn-soft: #F7DDD8;
+
+    /* Heatmap ramp (Heat0..Heat4) */
+    --heat-0: #EFEAE0;
+    --heat-1: #DDE8E5;
+    --heat-2: #B8D2CD;
+    --heat-3: #6E9C97;
+    --heat-4: #2D5F5D;
+
+    /* Dark studio (FrequencyMatchingScreen) */
+    --d-bg: #0D0D0F;
+    --d-card: #1A1A1D;
+    --cream: #ECE5D8;
+    --cream-2: #DDD5C5;
+    --ink-cream: #3B3A36;
+    --orange: #FF7A1A;
+    --orange-2: #FF8C33;
+    --d-text: #FFFFFF;
+    --d-text-2: #A8A8A8;
+    --d-text-3: #6B6B6B;
+
+    /* Radii — Tokens.kt */
+    --r-card: 16px;
+    --r-chip: 8px;
+    --r-button: 12px;
+    --r-pill: 100px;
+
+    --shadow: 0 8px 32px rgba(26, 46, 44, 0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    padding: 48px 32px 96px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1200px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 48px; }
+  header h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+  header p { color: var(--ink-2); font-size: 14px; max-width: 640px; margin: 0 auto; }
+  header .meta {
+    margin-top: 12px; font-size: 12px; color: var(--muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  h2.section {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 8px;
+    margin: 48px 0 20px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+
+  /* Swatches */
+  .swatch {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-card);
+    overflow: hidden;
+  }
+  .swatch .chip {
+    height: 96px;
+    display: flex; align-items: flex-end; justify-content: flex-end;
+    padding: 8px 12px;
+    color: rgba(255,255,255,0.85);
+    font-size: 11px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .swatch .meta { padding: 12px 14px; }
+  .swatch .name { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .swatch .kotlin { font-size: 11px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin-top: 2px; }
+  .swatch .hex { font-size: 11px; color: var(--ink-2); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin-top: 2px; }
+
+  .light-text .chip { color: var(--ink); }
+
+  /* Buttons */
+  .btn-row { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 14px 20px;
+    border-radius: var(--r-button);
+    background: var(--teal);
+    color: white;
+    font-size: 14px; font-weight: 600;
+    border: none;
+    min-width: 160px;
+    cursor: pointer;
+  }
+  .btn-secondary { background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
+  .btn-warn { background: var(--warn); color: white; }
+  .btn-coral { background: var(--coral); color: white; }
+  .btn-disabled { background: var(--line); color: var(--muted); cursor: not-allowed; }
+  .btn-pressed { background: var(--teal-2); transform: scale(0.98); box-shadow: inset 0 2px 8px rgba(0,0,0,0.12); }
+  .btn-ghost { background: transparent; color: var(--teal); border: 1px solid var(--teal); }
+
+  .label-row {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+    margin-top: 8px;
+    font-size: 11px; color: var(--muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  /* Pills (Pill.kt) */
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    border-radius: var(--r-pill);
+    font-size: 12px; font-weight: 600;
+    background: var(--bg); color: var(--ink-2);
+    border: 1px solid var(--line);
+  }
+  .pill-teal { background: var(--teal-soft); color: var(--teal); border-color: transparent; }
+  .pill-coral { background: var(--coral-soft); color: var(--coral); border-color: transparent; }
+  .pill-warn { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+  .pill-solid { background: var(--teal); color: white; border-color: transparent; }
+  .pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  /* Chips (TagChip.kt) */
+  .chip-pill {
+    display: inline-flex; align-items: center;
+    padding: 8px 12px;
+    border-radius: var(--r-chip);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    font-size: 13px;
+    color: var(--ink);
+  }
+  .chip-pill.active { background: var(--teal-soft); border-color: var(--teal); color: var(--teal); font-weight: 600; }
+
+  /* Cards (AppCard.kt) */
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-card);
+    padding: 16px;
+  }
+  .card.tinted { background: var(--teal-soft); border: none; }
+  .card.coral { background: var(--coral-soft); border: none; }
+  .card.warn { background: var(--warn-soft); border: none; }
+  .card h4 {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--muted); margin-bottom: 8px;
+  }
+  .card .big {
+    font-size: 28px; font-weight: 700; color: var(--ink); letter-spacing: -0.5px;
+  }
+  .card .sub { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
+
+  /* SectionHeader */
+  .section-header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 0 4px;
+    margin-bottom: 8px;
+  }
+  .section-header h3 { font-size: 17px; font-weight: 600; color: var(--ink); }
+  .section-header .link { font-size: 13px; color: var(--teal); font-weight: 500; }
+
+  /* ChevronRow */
+  .chevron-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px;
+    background: var(--surface);
+    border-radius: var(--r-card);
+    border: 1px solid var(--line);
+  }
+  .chevron-row + .chevron-row { margin-top: 8px; }
+  .chevron-row .left { display: flex; align-items: center; gap: 12px; }
+  .chevron-row .icon-badge {
+    width: 36px; height: 36px; border-radius: var(--r-chip);
+    background: var(--teal-soft); color: var(--teal);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+  }
+  .chevron-row .title { font-size: 14px; font-weight: 500; color: var(--ink); }
+  .chevron-row .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .chevron-row .chev { color: var(--muted); font-size: 18px; }
+
+  /* Segmented control */
+  .seg {
+    display: inline-flex;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+    padding: 4px;
+    gap: 4px;
+  }
+  .seg button {
+    border: none; background: transparent;
+    padding: 8px 16px;
+    font-size: 13px; font-weight: 500;
+    color: var(--ink-2);
+    border-radius: var(--r-pill);
+    cursor: pointer;
+  }
+  .seg button.active { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+
+  /* Heatmap demo */
+  .heatmap { display: flex; gap: 4px; align-items: center; }
+  .heat-cell {
+    width: 24px; height: 24px; border-radius: 4px;
+  }
+  .heatmap .label { font-size: 11px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+  /* Tokens table */
+  .tokens {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-card);
+    overflow: hidden;
+  }
+  .tokens table { width: 100%; border-collapse: collapse; }
+  .tokens th, .tokens td {
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--line);
+  }
+  .tokens th { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 600; }
+  .tokens tr:last-child td { border-bottom: none; }
+  .tokens .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink-2); }
+  .tokens .visual {
+    display: inline-block; vertical-align: middle;
+    background: var(--teal);
+  }
+
+  /* Type scale */
+  .type-row { display: flex; flex-direction: column; gap: 16px; }
+  .type-item {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--r-card); padding: 16px 20px;
+    display: flex; align-items: baseline; justify-content: space-between; gap: 24px;
+  }
+  .type-item .demo { color: var(--ink); }
+  .type-item .meta { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+  /* Dark studio panel */
+  .dark-panel {
+    background: var(--d-bg);
+    border-radius: var(--r-card);
+    padding: 24px;
+    color: var(--d-text);
+  }
+  .dark-panel h3 { color: var(--d-text); font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+  .dark-panel p { color: var(--d-text-2); font-size: 13px; margin-bottom: 20px; }
+  .dark-swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+  .dark-swatch {
+    background: var(--d-card);
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid #2a2a2d;
+  }
+  .dark-swatch .blob {
+    width: 100%; height: 60px; border-radius: 8px; margin-bottom: 10px;
+  }
+  .dark-swatch .name { font-size: 12px; color: var(--d-text); font-weight: 600; }
+  .dark-swatch .hex { font-size: 10px; color: var(--d-text-3); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin-top: 2px; }
+
+  .knob {
+    width: 120px; height: 120px; border-radius: 50%;
+    background:
+      radial-gradient(circle at 30% 30%, #555 0%, #2a2a2d 45%, #1a1a1d 80%),
+      linear-gradient(135deg, #3a3a3d, #1a1a1d);
+    box-shadow:
+      inset 0 4px 8px rgba(255,255,255,0.05),
+      inset 0 -4px 12px rgba(0,0,0,0.5),
+      0 8px 24px rgba(0,0,0,0.6);
+    position: relative;
+    margin: 8px auto;
+  }
+  .knob::after {
+    content: '';
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 3px; height: 28px; border-radius: 2px;
+    background: var(--orange);
+    box-shadow: 0 0 12px var(--orange);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>TinnitusTracker — Component Gallery</h1>
+    <p>Live reference for the actual colors, radii, buttons and components used in the Compose app. Mirrors <code>ui/theme/Color.kt</code> and <code>Tokens.kt</code>. Open in a browser to eyeball palette and component shapes.</p>
+    <div class="meta">light palette · cards 16dp · chips 8dp · buttons 12dp · pills 100dp · 4dp spacing grid</div>
+  </header>
+
+  <!-- ───────────── PALETTE ───────────── -->
+  <h2 class="section">Palette — light (default theme)</h2>
+  <div class="grid">
+
+    <div class="swatch light-text"><div class="chip" style="background: #F5F1EA;">#F5F1EA</div>
+      <div class="meta"><div class="name">Background</div><div class="kotlin">Bg</div><div class="hex">warm off-white</div></div></div>
+
+    <div class="swatch light-text"><div class="chip" style="background: #FFFFFF; border-bottom:1px solid var(--line);">#FFFFFF</div>
+      <div class="meta"><div class="name">Surface</div><div class="kotlin">Surface</div><div class="hex">cards, sheets</div></div></div>
+
+    <div class="swatch"><div class="chip" style="background: #1A2E2C;">#1A2E2C</div>
+      <div class="meta"><div class="name">Ink</div><div class="kotlin">Ink</div><div class="hex">primary text</div></div></div>
+
+    <div class="swatch"><div class="chip" style="background: #4A5C5A;">#4A5C5A</div>
+      <div class="meta"><div class="name">Ink 2</div><div class="kotlin">Ink2</div><div class="hex">secondary text</div></div></div>
+
+    <div class="swatch"><div class="chip" style="background: #8B9694;">#8B9694</div>
+      <div class="meta"><div class="name">Muted</div><div class="kotlin">Muted</div><div class="hex">captions, labels</div></div></div>
+
+    <div class="swatch light-text"><div class="chip" style="background: #E5DED2;">#E5DED2</div>
+      <div class="meta"><div class="name">Line</div><div class="kotlin">Line</div><div class="hex">dividers, borders</div></div></div>
+
+    <div class="swatch"><div class="chip" style="background: #2D5F5D;">#2D5F5D</div>
+      <div class="meta"><div class="name">Teal</div><div class="kotlin">Teal</div><div class="hex">primary accent</div></div></div>
+
+    <div class="swatch"><div class="chip" style="background: #3E7A77;">#3E7A77</div>
+      <div class="meta"><div class="name">Teal 2</div><div class="kotlin">Teal2</div><div class="hex">pressed state</div></div></div>
+
+    <div class="swatch light-text"><div class="chip" style="background: #E8F0EE;">#E8F0EE</div>
+      <div class="meta"><div class="name">Teal Soft</div><div class="kotlin">TealSoft</div><div class="hex">tinted card bg</div></div></div>
+
+    <div class="swatch"><div class="chip" style="background: #D67C5C;">#D67C5C</div>
+      <div class="meta"><div class="name">Coral</div><div class="kotlin">Coral</div><div class="hex">active intervention</div></div></div>
+
+    <div class="swatch light-text"><div class="chip" style="background: #F8E4D9;">#F8E4D9</div>
+      <div class="meta"><div class="name">Coral Soft</div><div class="kotlin">CoralSoft</div><div class="hex">tinted card bg</div></div></div>
+
+    <div class="swatch"><div class="chip" style="background: #C44536;">#C44536</div>
+      <div class="meta"><div class="name">Warn</div><div class="kotlin">Warn</div><div class="hex">destructive / red flag</div></div></div>
+
+    <div class="swatch light-text"><div class="chip" style="background: #F7DDD8;">#F7DDD8</div>
+      <div class="meta"><div class="name">Warn Soft</div><div class="kotlin">WarnSoft</div><div class="hex">tinted warn bg</div></div></div>
+  </div>
+
+  <!-- ───────────── HEATMAP ───────────── -->
+  <h2 class="section">Heatmap ramp — Records calendar</h2>
+  <div class="heatmap">
+    <div class="heat-cell" style="background: var(--heat-0);"></div>
+    <div class="heat-cell" style="background: var(--heat-1);"></div>
+    <div class="heat-cell" style="background: var(--heat-2);"></div>
+    <div class="heat-cell" style="background: var(--heat-3);"></div>
+    <div class="heat-cell" style="background: var(--heat-4);"></div>
+    <span class="label" style="margin-left: 12px;">Heat0 → Heat4 · empty · light · medium · strong · max (= Teal)</span>
+  </div>
+
+  <!-- ───────────── BUTTONS ───────────── -->
+  <h2 class="section">Buttons — PrimaryButton / SecondaryButton (12dp radius)</h2>
+  <div class="btn-row">
+    <button class="btn">Primary</button>
+    <button class="btn btn-pressed">Primary · pressed</button>
+    <button class="btn btn-disabled">Primary · disabled</button>
+  </div>
+  <div class="label-row">
+    <span>fill = Teal · text = white</span>
+    <span>fill = Teal2 · scale 0.98</span>
+    <span>fill = Line · text = Muted</span>
+  </div>
+
+  <div class="btn-row" style="margin-top: 24px;">
+    <button class="btn btn-secondary">Secondary</button>
+    <button class="btn btn-ghost">Ghost / outline</button>
+    <button class="btn btn-warn">Destructive</button>
+    <button class="btn btn-coral">Coral (intervention)</button>
+  </div>
+  <div class="label-row" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
+    <span>fill = Bg · border = Line</span>
+    <span>border + text = Teal</span>
+    <span>fill = Warn · text = white</span>
+    <span>fill = Coral · text = white</span>
+  </div>
+
+  <!-- ───────────── PILLS / TAGS ───────────── -->
+  <h2 class="section">Pills (100dp) &amp; TagChips (8dp)</h2>
+  <div class="pill-row">
+    <span class="pill"><span class="dot"></span>Default</span>
+    <span class="pill pill-teal"><span class="dot"></span>Teal soft</span>
+    <span class="pill pill-coral"><span class="dot"></span>Coral soft</span>
+    <span class="pill pill-warn"><span class="dot"></span>Warn soft</span>
+    <span class="pill pill-solid">Solid teal</span>
+  </div>
+  <div class="pill-row" style="margin-top: 16px;">
+    <span class="chip-pill">백색잡음</span>
+    <span class="chip-pill active">노치 필터</span>
+    <span class="chip-pill">자연 소리</span>
+    <span class="chip-pill">사용자 설정</span>
+  </div>
+
+  <!-- ───────────── SEGMENTED ───────────── -->
+  <h2 class="section">Segmented control</h2>
+  <div class="seg">
+    <button class="active">기록</button>
+    <button>듣기</button>
+    <button>설문</button>
+  </div>
+
+  <!-- ───────────── CARDS ───────────── -->
+  <h2 class="section">Cards — AppCard, tinted variants (16dp radius)</h2>
+  <div class="cards-grid">
+    <div class="card">
+      <h4>오늘의 평균</h4>
+      <div class="big">42</div>
+      <div class="sub">지난 7일 대비 ↓ 8</div>
+    </div>
+    <div class="card tinted">
+      <h4>듣기 세션</h4>
+      <div class="big">2시간 14분</div>
+      <div class="sub">목표 4시간의 56%</div>
+    </div>
+    <div class="card coral">
+      <h4>현재 사운드</h4>
+      <div class="big">노치 5.2 kHz</div>
+      <div class="sub">25분 경과</div>
+    </div>
+    <div class="card warn">
+      <h4>주의</h4>
+      <div class="big" style="font-size: 16px;">박동성 이명 의심</div>
+      <div class="sub">ENT 진료 권장 — 자세히 보기</div>
+    </div>
+  </div>
+
+  <!-- ───────────── SECTION HEADERS + ROWS ───────────── -->
+  <h2 class="section">SectionHeader + ChevronRow</h2>
+  <div style="max-width: 480px;">
+    <div class="section-header"><h3>설정</h3><span class="link">모두 보기</span></div>
+    <div class="chevron-row">
+      <div class="left">
+        <div class="icon-badge">소</div>
+        <div><div class="title">사운드 프리셋</div><div class="sub">4개 저장됨</div></div>
+      </div>
+      <span class="chev">›</span>
+    </div>
+    <div class="chevron-row">
+      <div class="left">
+        <div class="icon-badge">설</div>
+        <div><div class="title">TFI 설문</div><div class="sub">마지막: 2주 전</div></div>
+      </div>
+      <span class="chev">›</span>
+    </div>
+    <div class="chevron-row">
+      <div class="left">
+        <div class="icon-badge">튜</div>
+        <div><div class="title">튜토리얼 다시 보기</div><div class="sub">7개 페이지</div></div>
+      </div>
+      <span class="chev">›</span>
+    </div>
+  </div>
+
+  <!-- ───────────── TYPE ───────────── -->
+  <h2 class="section">Type scale — Type.kt</h2>
+  <div class="type-row">
+    <div class="type-item">
+      <div class="demo" style="font-size: 22px; font-weight: 500; letter-spacing: 0;">titleLarge · 이명 트래커</div>
+      <div class="meta">22sp / 28 line / Medium</div>
+    </div>
+    <div class="type-item">
+      <div class="demo" style="font-size: 16px; font-weight: 400; letter-spacing: 0.5px;">bodyLarge · 본문 단락에 사용됩니다.</div>
+      <div class="meta">16sp / 24 line / Normal</div>
+    </div>
+    <div class="type-item">
+      <div class="demo" style="font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; color: var(--muted);">labelSmall · 라벨</div>
+      <div class="meta">11sp / 16 line / Medium · uppercase</div>
+    </div>
+  </div>
+
+  <!-- ───────────── TOKENS ───────────── -->
+  <h2 class="section">Tokens — Radius, Spacing, Elevation</h2>
+  <div class="tokens">
+    <table>
+      <thead><tr><th>Token</th><th>Value</th><th>Visual</th></tr></thead>
+      <tbody>
+        <tr><td>Radius.card</td><td class="mono">16.dp</td><td><span class="visual" style="width:64px;height:32px;border-radius:16px;"></span></td></tr>
+        <tr><td>Radius.button</td><td class="mono">12.dp</td><td><span class="visual" style="width:64px;height:32px;border-radius:12px;"></span></td></tr>
+        <tr><td>Radius.chip</td><td class="mono">8.dp</td><td><span class="visual" style="width:64px;height:32px;border-radius:8px;"></span></td></tr>
+        <tr><td>Radius.pill</td><td class="mono">100.dp</td><td><span class="visual" style="width:80px;height:28px;border-radius:100px;"></span></td></tr>
+        <tr><td>Spacing.xs / sm / md / lg / xl / xxl / section</td><td class="mono">4 / 8 / 12 / 16 / 20 / 24 / 32 dp</td><td>
+          <span class="visual" style="width:4px;height:16px;"></span>
+          <span class="visual" style="width:8px;height:16px;margin-left:4px;"></span>
+          <span class="visual" style="width:12px;height:16px;margin-left:4px;"></span>
+          <span class="visual" style="width:16px;height:16px;margin-left:4px;"></span>
+          <span class="visual" style="width:20px;height:16px;margin-left:4px;"></span>
+          <span class="visual" style="width:24px;height:16px;margin-left:4px;"></span>
+          <span class="visual" style="width:32px;height:16px;margin-left:4px;"></span>
+        </td></tr>
+        <tr><td>Elevation.card / raised / hero</td><td class="mono">2 / 4 / 8 dp</td><td class="mono" style="color: var(--muted);">used by AppCard, MiniPlayer, hero CTAs</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ───────────── DARK STUDIO ───────────── -->
+  <h2 class="section">Dark studio palette — FrequencyMatchingScreen</h2>
+  <div class="dark-panel">
+    <h3>주파수 찾기 — skeuomorphic studio look</h3>
+    <p>Distinct palette used by the Matcher screen only. Cream knob panels on near-black background; orange is the “live signal” accent.</p>
+
+    <div class="knob"></div>
+
+    <div class="dark-swatch-grid" style="margin-top: 24px;">
+      <div class="dark-swatch"><div class="blob" style="background: #0D0D0F;"></div><div class="name">DarkBg</div><div class="hex">#0D0D0F</div></div>
+      <div class="dark-swatch"><div class="blob" style="background: #1A1A1D;"></div><div class="name">DarkCard</div><div class="hex">#1A1A1D</div></div>
+      <div class="dark-swatch"><div class="blob" style="background: #ECE5D8;"></div><div class="name">CreamPanel</div><div class="hex">#ECE5D8</div></div>
+      <div class="dark-swatch"><div class="blob" style="background: #DDD5C5;"></div><div class="name">CreamPanel2</div><div class="hex">#DDD5C5</div></div>
+      <div class="dark-swatch"><div class="blob" style="background: #3B3A36;"></div><div class="name">InkCream</div><div class="hex">#3B3A36</div></div>
+      <div class="dark-swatch"><div class="blob" style="background: #FF7A1A;"></div><div class="name">OrangeAccent</div><div class="hex">#FF7A1A</div></div>
+      <div class="dark-swatch"><div class="blob" style="background: #FF8C33;"></div><div class="name">OrangeAccent2</div><div class="hex">#FF8C33</div></div>
+      <div class="dark-swatch"><div class="blob" style="background: #A8A8A8;"></div><div class="name">TextSecondary</div><div class="hex">#A8A8A8</div></div>
+      <div class="dark-swatch"><div class="blob" style="background: #6B6B6B;"></div><div class="name">TextTertiary</div><div class="hex">#6B6B6B</div></div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

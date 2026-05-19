@@ -1,5 +1,36 @@
 # Wiki Log
 
+## [2026-05-19] feature | App fixes round 2 — 17 polish items shipped ✓
+- Foundation: `AudioEngine.Mode.OFF` (filter bypass + zero gain in `generate()`), `AudioRepository` "off" mapping, sleep-timer lift (`SleepTimerState` + `sleepTimer: StateFlow` + `setSleepTimer/cancelSleepTimer`).
+- Home: dropped 설정 gear; new `PresetPickerBottomSheet` triggered by hero card preset name tap; sleep-timer copy "${set}분 설정 · N분 남음"; `MiniPlayer.visible = current != Tab.Home`.
+- 소리: merged `FrequencyCard` + `ProcessingModeCard` → `FrequencyAndProcessingCard`; master `Switch("주파수 처리 사용")` toggles `PROCESSING_MODE = "off"` with dimmed segments; removed 끄기 pill + 듣기 테스트 button; re-tap selected color → deselect.
+- 기록: spillover cells → `Color.Transparent` (was `Heat0`); chevrons `Ink2` → `Teal`; `WeeklySummarySection` call commented out (code retained); `heatColor` now normalizes by `dailyGoalMs` capped 1.0 (was in-month `maxDayMs`).
+- 설정: new `ChevronRow` 치료 시작일 with `DatePickerDialog`; disabled `ValueRow` → inline `SegmentedControl` 2/4/6시간; `ActionRow` → `ChevronRow`; `TfiCadenceRow` value wrapped in `Pill(TealSoft)`.
+- MiniPlayer: signature added `liveSession`, `sleepTimerRemainingSec`, `onLogSession`; 1 Hz elapsed `MM:SS` ticker; `수면 MM:SS` when sleep active; circular 세션 기록 button (`Icons.Filled.EditNote`) → MainActivity-hosted `QuickLogBottomSheet` pre-filled with active preset.
+- MainActivity wired all new Flows + callbacks; `quickLogPrefillPreset` state added.
+- Build: `:app:compileDebugKotlin BUILD SUCCESSFUL in 663ms`. Emulator walk-through pending.
+- Updated [[wiki/app/plan]] (Now → empty), [[wiki/app/done]] (full write-up appended).
+
+## [2026-05-19] restructure | plan.md split — created done.md archive, promoted Next → Now
+- Created [[wiki/app/done]] (404 lines) — moved all 27 ✓ Done entries from plan.md verbatim. Frontmatter `type: app`, `tags: [app/planning, app/archive]`, `status: stable`.
+- Rewrote [[wiki/app/plan]] (553 → 105 lines): replaced verbose `## Now` (단일 "설정 polish" task) with promoted App fixes round 2 items, broken into 5 screen-grouped subsections (Home / 소리 / 기록 / 설정 / Player) each rendered as proper Now-level h3 with checkbox tasks. Old 설정 polish task folded into 설정 subsection as item #3. `## Done` now an 8-item headline list pointing to [[wiki/app/done]].
+- Updated [[wiki/index]] — added [[wiki/app/done]] under App Strategy & Features.
+
+## [2026-05-19] update | plan.md — App fixes round 2 from user walkthrough
+- Added new `## Next` section, item #1 "App fixes round 2 — 2026-05-19 user review" with 16 sub-items grouped by screen (Home / 소리 / 기록 / 설정 / Player).
+- Source: two annotated screenshots from 2026-05-19 user review (`/Users/midnight/Screenshots/Screenshot 2026-05-19 at 7.28.{15,25} PM.png`).
+- Key directional decisions captured: remove duplicate playback controls from Home (delegate to MiniPlayer + 소리); collapse top three Sound-screen cards into one block; add `PROCESSING_MODE = "off"` enum value; toggle-to-deselect color-noise pattern (remove 끄기 + 듣기 테스트); hide (not delete) 주간 요약; discrete 2h/4h/6h listening-goal selector that propagates to Home gradient + Records heatmap bucketing.
+- Updated [[wiki/app/plan]]
+
+## [2026-05-19] update | architecture.md — refresh to reflect shipped state
+- `last_reviewed` 2026-05-11 → 2026-05-19; status: draft → stable.
+- Folder layout: marked all shipped UI packages ✓ (home, sounds, records, assessment, onboarding, components, theme/components, theme/Tokens, theme/PressEffect). Removed "(stub)" notes from home/sounds/records.
+- Room entities: TFIAssessment, ListeningSession, ListeningSessionSegment, SoundPreset all moved from "planned" to shipped (v5).
+- DataStore: 5 keys promoted from planned to implemented (`active_preset_id`, `daily_listening_goal_min`, `treatment_start_date`, `tfi_cadence_weeks`, `last_tfi_date`).
+- Audio FGS section: added pause/resume actions and the new pause behavior.
+- New Design system section documenting Tokens.kt (Spacing/Radius/Elevation), component library, PressEffect.
+- Removed stale `project_android.md` auto-memory pointer from MEMORY.md and deleted the file (user direction).
+
 ## [2026-05-16] fix | MVP Bug Fix + Emulator Verification ✓
 - **Compile errors fixed (3):** `SurfaceColor` → `Surface` (7 sites, `HomeScreen.kt`); smart-cast on `sleepTimerRemaining` → local `val`; `audioRepo.play()` → `audioRepo.togglePlay()` (`HomeViewModel` + `SoundSettingsViewModel` — `play()` doesn't exist on `AudioRepository`).
 - **Streak counter removed** (user direction): `consecutiveDays` field dropped from `HomeUiState`; `🔥 N일 연속` badge removed from `HomeScreen`; treatment-week label kept.

@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.asStateFlow
  */
 class AudioEngine(private val context: Context) {
 
-    enum class Mode { MASK, NOTCH }
+    enum class Mode { MASK, NOTCH, OFF }
 
     private val tag = "AudioEngine"
     private val sampleRate = 44_100
@@ -208,12 +208,13 @@ class AudioEngine(private val context: Context) {
             when (_mode.value) {
                 Mode.MASK  -> filter.setBandPass(currentFrequency, q = 10f)
                 Mode.NOTCH -> filter.setNotch(currentFrequency, q = 0.4f)
+                Mode.OFF   -> { /* no filter; raw color noise + ambient only */ }
             }
 
             for (i in buffer.indices) {
                 val noise = Random.nextFloat() * 2f - 1f
-                var s = filter.process(noise)
-                
+                var s = if (_mode.value == Mode.OFF) 0f else filter.process(noise)
+
                 // Color noise processing
                 var cNoise = 0f
                 if (_colorNoise.value != "off") {
@@ -233,7 +234,11 @@ class AudioEngine(private val context: Context) {
                     }
                 }
 
-                s *= currentVolume * if (_mode.value == Mode.MASK) maskGain else notchGain
+                s *= currentVolume * when (_mode.value) {
+                    Mode.MASK -> maskGain
+                    Mode.NOTCH -> notchGain
+                    Mode.OFF -> 0f
+                }
                 s += cNoise * _colorNoiseVolume.value
                 
                 buffer[i] = tanh(s.toDouble()).toFloat()

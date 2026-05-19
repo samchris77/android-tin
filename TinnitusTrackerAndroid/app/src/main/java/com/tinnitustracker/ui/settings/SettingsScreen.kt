@@ -3,6 +3,7 @@ package com.tinnitustracker.ui.settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,15 +14,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,21 +41,35 @@ import com.tinnitustracker.ui.theme.Muted
 import com.tinnitustracker.ui.theme.Radius
 import com.tinnitustracker.ui.theme.Spacing
 import com.tinnitustracker.ui.theme.Teal
-import com.tinnitustracker.ui.theme.pressableClickable
+import com.tinnitustracker.ui.theme.components.ChevronRow
+import com.tinnitustracker.ui.theme.components.Pill
+import com.tinnitustracker.ui.theme.components.PillSize
+import com.tinnitustracker.ui.theme.components.PillVariant
+import com.tinnitustracker.ui.theme.components.SegmentedControl
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
-/**
- * 설정 — Settings root. Re-skinned to the wireframes' design system: section
- * eyebrows, light card surfaces, teal "열기" affordances. Only the tutorial
- * replay row is wired today; the rest are placeholders for the planned
- * preferences (TFI cadence, daily goal, theme, etc.).
- */
+private val GOAL_OPTIONS_MIN = listOf(120, 240, 360)
+private val GOAL_LABELS = listOf("2시간", "4시간", "6시간")
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onReplayOnboarding: () -> Unit,
     onOpenTfi: () -> Unit,
     tfiCadenceWeeks: Int,
-    onToggleTfiCadence: () -> Unit
+    onToggleTfiCadence: () -> Unit,
+    treatmentStartDate: Long,
+    onSetTreatmentStartDate: (Long) -> Unit,
+    dailyGoalMin: Int,
+    onSetDailyGoal: (Int) -> Unit
 ) {
+    var showDatePicker by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -62,39 +84,108 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(Spacing.xxl))
         SectionLabel("학습 자료")
-        Spacer(Modifier.height(8.dp))
-        ActionRow(label = "튜토리얼 다시 보기", cta = "열기", onClick = onReplayOnboarding)
-        Spacer(Modifier.height(8.dp))
-        ActionRow(label = "이명 메커니즘 다시 읽기", cta = "준비 중", onClick = null)
+        Spacer(Modifier.height(Spacing.sm))
+        Card { ChevronRow(title = "튜토리얼 다시 보기", onClick = onReplayOnboarding) }
+        Spacer(Modifier.height(Spacing.sm))
+        Card { ChevronRow(title = "이명 메커니즘 다시 읽기", subtitle = "준비 중", onClick = {}, enabled = false) }
 
-        Spacer(Modifier.height(24.dp))
-        SectionLabel("청취 목표")
-        Spacer(Modifier.height(8.dp))
-        ValueRow(label = "일일 청취 목표", value = "120 분", enabled = false)
-        Spacer(Modifier.height(8.dp))
-        TfiCadenceRow(weeks = tfiCadenceWeeks, onToggle = onToggleTfiCadence)
-        Spacer(Modifier.height(8.dp))
-        ActionRow(label = "TFI 다시 작성", cta = "작성하기", onClick = onOpenTfi)
+        Spacer(Modifier.height(Spacing.xxl))
+        // 청취 목표 section header ripped 2026-05-19 — rows below are self-labeling.
+        Card {
+            DailyGoalRow(currentMin = dailyGoalMin, onSetGoal = onSetDailyGoal)
+        }
+        Spacer(Modifier.height(Spacing.sm))
+        Card {
+            ChevronRow(
+                title = "치료 시작일",
+                subtitle = formatStartDate(treatmentStartDate),
+                onClick = { showDatePicker = true }
+            )
+        }
+        Spacer(Modifier.height(Spacing.sm))
+        Card {
+            ChevronRow(
+                title = "TFI 주기",
+                onClick = onToggleTfiCadence,
+                showChevron = false,
+                trailing = {
+                    Pill(text = "${tfiCadenceWeeks}주마다", variant = PillVariant.TealSoft, size = PillSize.Small)
+                }
+            )
+        }
+        Spacer(Modifier.height(Spacing.sm))
+        Card { ChevronRow(title = "TFI 다시 작성", onClick = onOpenTfi) }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(Spacing.xxl))
         SectionLabel("주파수")
-        Spacer(Modifier.height(8.dp))
-        ActionRow(label = "주파수 다시 측정", cta = "준비 중", onClick = null)
-        Spacer(Modifier.height(8.dp))
-        ValueRow(label = "현재 모드", value = "노치 · 4,250 Hz", enabled = false)
+        Spacer(Modifier.height(Spacing.sm))
+        Card { ChevronRow(title = "주파수 다시 측정", subtitle = "준비 중", onClick = {}, enabled = false) }
+        Spacer(Modifier.height(Spacing.sm))
+        Card { ChevronRow(title = "현재 모드", subtitle = "노치 · 4,250 Hz", onClick = {}, showChevron = false, enabled = false) }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(Spacing.xxl))
         SectionLabel("정보")
-        Spacer(Modifier.height(8.dp))
-        ValueRow(label = "앱 버전", value = "1.0.0", enabled = false)
-        Spacer(Modifier.height(8.dp))
-        ValueRow(label = "샘플레이트", value = "44.1 kHz", enabled = false)
-        Spacer(Modifier.height(8.dp))
-        ValueRow(label = "출력", value = "Mono", enabled = false)
-        Spacer(Modifier.height(8.dp))
-        ActionRow(label = "임상 면책 조항", cta = "준비 중", onClick = null)
+        Spacer(Modifier.height(Spacing.sm))
+        Card { ChevronRow(title = "앱 버전", subtitle = "1.0.0", onClick = {}, showChevron = false, enabled = false) }
+        Spacer(Modifier.height(Spacing.sm))
+        Card { ChevronRow(title = "샘플레이트", subtitle = "44.1 kHz", onClick = {}, showChevron = false, enabled = false) }
+        Spacer(Modifier.height(Spacing.sm))
+        Card { ChevronRow(title = "출력", subtitle = "Mono", onClick = {}, showChevron = false, enabled = false) }
+        Spacer(Modifier.height(Spacing.sm))
+        Card { ChevronRow(title = "임상 면책 조항", subtitle = "준비 중", onClick = {}, enabled = false) }
 
         Spacer(Modifier.height(120.dp))
+    }
+
+    if (showDatePicker) {
+        val initialMs = if (treatmentStartDate > 0L) treatmentStartDate
+                        else System.currentTimeMillis()
+        val state = rememberDatePickerState(initialSelectedDateMillis = initialMs)
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    state.selectedDateMillis?.let { onSetTreatmentStartDate(it) }
+                    showDatePicker = false
+                }) { Text("확인", color = Teal) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("취소", color = Muted) }
+            }
+        ) {
+            DatePicker(state = state)
+        }
+    }
+}
+
+@Composable
+private fun Card(content: @Composable () -> Unit) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(Radius.card),
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(1.5.dp, RoundedCornerShape(Radius.card))
+            .border(1.dp, Line, RoundedCornerShape(Radius.card))
+    ) { content() }
+}
+
+@Composable
+private fun DailyGoalRow(currentMin: Int, onSetGoal: (Int) -> Unit) {
+    val selectedIndex = GOAL_OPTIONS_MIN.indexOf(currentMin).let { if (it < 0) 0 else it }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Spacing.lg, vertical = Spacing.md)
+    ) {
+        Text("일일 청취 목표", color = Ink, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+        Spacer(Modifier.height(Spacing.sm))
+        SegmentedControl(
+            options = GOAL_LABELS,
+            selectedIndex = selectedIndex,
+            onSelect = { idx -> onSetGoal(GOAL_OPTIONS_MIN[idx]) },
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
@@ -106,83 +197,12 @@ private fun SectionLabel(text: String) {
         fontSize = 10.sp,
         letterSpacing = 1.5.sp,
         fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(start = 4.dp)
+        modifier = Modifier.padding(start = Spacing.xs)
     )
 }
 
-@Composable
-private fun ActionRow(label: String, cta: String, onClick: (() -> Unit)?) {
-    val clickable = onClick != null
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(Radius.card),
-        modifier = Modifier
-            .let { if (clickable) it.pressableClickable { onClick!!() } else it }
-            .fillMaxWidth()
-            .shadow(if (clickable) 1.5.dp else 0.dp, RoundedCornerShape(Radius.card))
-            .border(1.dp, Line, RoundedCornerShape(Radius.card))
-            .semantics { contentDescription = label }
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = Spacing.md),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                label,
-                color = if (clickable) Ink else Ink2,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                cta,
-                color = if (clickable) Teal else Muted,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium
-            )
-        }
-    }
-}
-
-@Composable
-private fun TfiCadenceRow(weeks: Int, onToggle: () -> Unit) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(Radius.card),
-        modifier = Modifier
-            .pressableClickable(onClick = onToggle)
-            .fillMaxWidth()
-            .shadow(1.5.dp, RoundedCornerShape(Radius.card))
-            .border(1.dp, Line, RoundedCornerShape(Radius.card))
-            .semantics { contentDescription = "TFI 주기 ${weeks}주마다" }
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = Spacing.md),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("TFI 주기", color = Ink, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Text("${weeks}주마다", color = Teal, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-        }
-    }
-}
-
-@Composable
-private fun ValueRow(label: String, value: String, enabled: Boolean) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(Radius.card),
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, Line, RoundedCornerShape(Radius.card))
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = Spacing.md),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(label, color = if (enabled) Ink else Ink2, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Text(value, color = Muted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-        }
-    }
+private fun formatStartDate(epochMs: Long): String {
+    if (epochMs <= 0L) return "미설정"
+    val date = Instant.ofEpochMilli(epochMs).atZone(ZoneId.systemDefault()).toLocalDate()
+    return date.format(DateTimeFormatter.ofPattern("yyyy년 M월 d일", Locale.KOREAN))
 }

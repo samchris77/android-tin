@@ -4,157 +4,190 @@ type: app
 aliases: ["Architecture", "Android Architecture"]
 tags: [app/architecture]
 evidence: n/a
-status: draft
+status: stable
 sources: []
-last_reviewed: 2026-05-11
+last_reviewed: 2026-05-19
 ---
 
 # App Architecture (Android)
 
-Android-only. iOS is out of scope at this time. See [[wiki/app/prd]] for product scope.
+Android-only. iOS is out of scope. See [[wiki/app/prd]] for product scope.
 
 ## Tech stack
 - **Language / UI:** Kotlin + Jetpack Compose
 - **Pattern:** MVVM + Repository
-- **Persistence:** Room (relational), DataStore Preferences (key-value)
-- **Audio:** Native `AudioTrack` + custom DSP (`BiquadFilter`) for **MASK** (narrow bandpass) and **NOTCH** (broadband notch) modes at the matched frequency. Future: notch _or_ amplify toggle, color noise, ambient layer mixer.
-- **Background audio:** Foreground Service with media-style notification _(planned — currently AudioEngine is Activity-bound)_
+- **Persistence:** Room v5 (relational), DataStore Preferences (key-value)
+- **Audio:** Native `AudioTrack` + custom DSP (`BiquadFilter`) for **NOTCH** (broadband notch) and **AMPLIFY** (narrow bandpass) modes at the matched frequency. Procedural color noise (pink/white/brown via 1-pole lowpass). Synchronized `MediaPlayer` ambient layers (rain, beach).
+- **Background audio:** Foreground Service (`TherapyAudioService`, `foregroundServiceType="mediaPlayback"`) ✓
 
 ## Folder / package layout
 
 ```
-com.tinnitustracker/            ← actual package (not com.example.tinnitus)
-├── TinnitusTrackerApp.kt   ← Application subclass; owns AudioEngine singleton ✓
+com.tinnitustracker/
+├── TinnitusTrackerApp.kt       ← Application subclass; owns AudioEngine singleton ✓
 │
 ├── audio/
-│   ├── engine/             ← AudioEngine.kt (MASK + NOTCH DSP) ✓, BiquadFilter.kt ✓
-│   ├── service/            ← TherapyAudioService ✓ + AudioNotification ✓
-│   └── routing/            ← AudioFocusController ✓ (BecomingNoisy planned)
+│   ├── engine/                 ← AudioEngine.kt (NOTCH + AMPLIFY DSP, color noise, ambient) ✓
+│   │                             BiquadFilter.kt ✓
+│   ├── service/                ← TherapyAudioService ✓, AudioNotification ✓
+│   └── routing/                ← AudioFocusController ✓ (BecomingNoisy planned)
 │
 ├── data/
-│   ├── database/           ← AppDatabase ✓, entities/DiaryEntry ✓, dao/DiaryDao ✓
-│   │                         (TFIAssessment, ListeningSession, SoundPreset entities planned)
-│   ├── preferences/        ← PreferenceKeys.kt ✓
-│   └── repository/         ← UserSettingsRepository ✓, DiaryRepository ✓, AudioRepository ✓
-│                              AssessmentRepository (planned)
+│   ├── database/               ← AppDatabase v5 ✓
+│   │   ├── entities/           ← DiaryEntry ✓, TFIAssessment ✓, ListeningSession ✓,
+│   │   │                         ListeningSessionSegment ✓, SoundPreset ✓
+│   │   └── dao/                ← DiaryDao ✓, TfiAssessmentDao ✓, ListeningSessionDao ✓,
+│   │                             ListeningSessionSegmentDao ✓, SoundPresetDao ✓
+│   ├── preferences/            ← PreferenceKeys.kt ✓
+│   └── repository/             ← AudioRepository ✓, UserSettingsRepository ✓,
+│                                 DiaryRepository ✓, TfiRepository ✓,
+│                                 ListeningSessionRepository ✓, SoundPresetRepository ✓
 │
-├── domain/                 ← pure-Kotlin business logic (planned — not yet created)
+├── domain/                     ← pure-Kotlin business logic (planned — not yet created)
 │
 ├── ui/
-│   ├── home/               ← HomeScreen ✓ (stub; full design in Next #2)
-│   ├── matcher/            ← FrequencyMatchingScreen + FrequencyMatchingViewModel ✓ (subscreen of 소리)
-│   ├── sounds/             ← SoundSettingsScreen ✓ (stub; opens matcher subscreen — full expansion in Next #3)
-│   ├── therapy/            ← TherapyScreen (planned)
-│   ├── assessment/         ← TFIQuestionnaireScreen (planned)
-│   ├── records/            ← RecordsScreen ✓ (stub; full design in Next #5)
-│   ├── diary/              ← DiaryScreen (planned)
-│   ├── onboarding/         ← OnboardingScreen ✓ (7-page tutorial; tinnitus → therapy → app guide)
-│   ├── settings/           ← SettingsScreen.kt ✓ (placeholder + 튜토리얼 다시 보기)
-│   └── theme/              ← Color.kt, Theme.kt, Type.kt ✓
+│   ├── home/                   ← HomeScreen ✓, HomeViewModel ✓
+│   │                             (adherence ring, sleep timer sheet, TFI prompt card,
+│   │                              quick log integration, treatment-week label)
+│   ├── sounds/                 ← SoundSettingsScreen ✓, SoundSettingsViewModel ✓
+│   │                             (preset switcher, color-noise pills, ambient sliders,
+│   │                              processing-mode segmented control, preview button)
+│   ├── matcher/                ← FrequencyMatchingScreen ✓, FrequencyMatchingViewModel ✓
+│   │                             (subscreen of 소리; logarithmic dial, notch/amplify selector,
+│   │                              seamless therapy handoff)
+│   ├── records/                ← RecordsScreen ✓, RecordsViewModel ✓
+│   │                             DayDetailBottomSheet ✓, QuickLogBottomSheet ✓
+│   │                             (2-tab: 개요 및 기록 | TFI 점수; heatmap calendar,
+│   │                              weekly summary cards, recent entries list, TFI sparkline,
+│   │                              FAB quick-log, day-tap drilldown, delete entries)
+│   ├── assessment/             ← TfiQuestionnaireScreen ✓, TfiResultsScreen ✓,
+│   │                             TfiQuestionnaireViewModel ✓, TfiScoring ✓, TfiContent ✓
+│   │                             (25-item TFI; 8-page subscale pagination; MCID = 13)
+│   ├── onboarding/             ← OnboardingScreen ✓, OnboardingViewModel ✓
+│   │                             (7-page HorizontalPager; gated on first launch;
+│   │                              re-playable from Settings)
+│   ├── settings/               ← SettingsScreen ✓
+│   ├── components/             ← MiniPlayer ✓ (persistent bar above bottom nav)
+│   ├── therapy/                ← TherapyScreen (planned)
+│   └── theme/
+│       ├── Color.kt ✓          ← full palette incl. Heat0–Heat4 heatmap ramp
+│       ├── Theme.kt ✓          ← light/cream app-wide theme; Matcher stays dark
+│       ├── Type.kt ✓
+│       ├── Tokens.kt ✓         ← Spacing (4 dp grid), Radius, Elevation token objects
+│       ├── PressEffect.kt ✓    ← pressableClickable, PolishedPlayButton, PlayButtonVariant
+│       └── components/         ← shared component library ✓
+│           AppCard, PrimaryButton, SecondaryButton, Pill, TagChip,
+│           SegmentedControl, IconBadge, ChevronRow, EmptyStateCard, SectionHeader
 │
-└── MainActivity.kt         ← 4-tab scaffold (홈 / 소리 / 기록 / 설정) ✓; 소리 owns a Matcher subscreen
+└── MainActivity.kt             ← 4-tab scaffold (홈 / 소리 / 기록 / 설정) ✓
+                                  소리 owns Matcher subscreen; 설정 owns TFI + TFI Results subscreens
 ```
 
-Folders are created lazily — only when a file actually lives there.
+## State management
 
-## State management — Single Source of Truth
-
-UI state flows **Repository → ViewModel → Compose**. Repositories are the only layer that reads from or writes to Room or DataStore. The AudioEngine does not own user state; it observes Repository state and reflects it.
-
-When the user updates the matched frequency, the change goes Repository → AudioEngine **and** Repository → UI simultaneously. No duplicated state.
+UI state flows **Repository → ViewModel → Compose**. Repositories are the only layer that reads from or writes to Room or DataStore. `AudioEngine` does not own user state; it observes Repository state and reflects it.
 
 ## Data model — Room entities
 
-Grouped by tier — see [[wiki/app/plan]].
-
-**MVP / basic functions** (per handwritten plan in `raw/Plan(수기).md`)
+**Shipped (Room v5)**
 
 | Entity | Purpose | Notable fields |
 |---|---|---|
-| `SoundPreset` | Saved sound mix configuration | id, name, processingMode (`notch`/`amplify`/`off`), colorNoise (`pink`/`white`/`brown`/`none`), colorNoiseGain, ambientLayers (list of `{source, gain}`), createdAt, lastUsedAt |
-| `ListeningSession` | Auto-recorded playback session | id, startedAtEpochMs, endedAtEpochMs, durationMs, presetLabel? (planned to be superseded by per-segment labels — see below), colorNoise?, ambient?, activity? (mock label dimensions, 2026-05-14) |
-| `ListeningSessionSegment` _(planned, [[plan]] Next #2)_ | Per-sound slice of a session — split on every `onSoundChanged` so mid-session sound switches preserve a per-sound time breakdown instead of collapsing to a single "dominant" label | id, sessionId (FK), soundId/presetLabel, startedAtEpochMs, durationMs |
-| `TFIAssessment` | Tinnitus Functional Index — default bi-weekly | id, date, items[], totalScore, subscaleScores |
-| `DiaryEntry` | Daily symptom + stress + free-text journal | id, date, severity, stressLevel, note |
+| `DiaryEntry` | Daily symptom + stress + tag journal | id, date (epoch ms), severity (0–10), stressLevel (0–10), note (tags packed comma-separated) |
+| `TFIAssessment` | Tinnitus Functional Index — bi-weekly by default | id, takenAtEpochMs, items (JSON), totalScore, subscaleScores (JSON); MCID = 13 |
+| `ListeningSession` | Auto-recorded playback session; min floor = **3 min (180 000 ms)** | id, startedAtEpochMs, endedAtEpochMs, durationMs, presetLabel? |
+| `ListeningSessionSegment` | Per-sound slice of a session — split on every sound change | id, sessionId (FK), soundId/presetLabel, startedAtEpochMs, durationMs |
+| `SoundPreset` | Saved sound mix configuration | id, name, processingMode (`notch`/`amplify`/`off`), colorNoise (`pink`/`white`/`brown`/`none`), colorNoiseVolume, ambientMix, createdAt, lastUsedAt |
+
+> **`ListeningSession` min-floor** — 3 min (180 000 ms), raised from 5 s on 2026-05-14. Compromise between noise filtering and not silently dropping legitimate short TRT exposures. See [[wiki/sources/gemini-records-architecture-2026-05]].
+
+> **Assessment instrument** — handwritten plan (`raw/Plan(수기).md`) references "THI 설문지". Codebase uses **TFI** (Tinnitus Functional Index) — newer, treatment-responsive, designed to detect change over time. User-facing copy uses "이명 설문지" to avoid confusion.
 
 **Advanced (Tier 1+)** — gated behind later tiers in [[wiki/app/plan]]
 
-| Entity | Purpose | Notable fields |
-|---|---|---|
-| `MixingPointCalibration` | Per-ear calibrated dB level for [[wiki/clinical/sound-therapy]] | id, date, leftDb, rightDb |
-| `SpikeEvent` | Logged tinnitus spikes | id, timestamp, trigger, durationSec, interventionUsed |
-| `UserProgress` | TRT phase tracking | id, currentPhase, phaseStartDate, milestones |
+| Entity | Purpose |
+|---|---|
+| `MixingPointCalibration` | Per-ear calibrated dB level for [[wiki/clinical/sound-therapy]] |
+| `SpikeEvent` | Logged tinnitus spikes |
+| `UserProgress` | TRT phase tracking |
 
 Schema versioning via Room migrations. No destructive migrations on production data.
 
-> **`ListeningSession` minimum-duration floor** — raised to **3 min (180 000 ms)** on 2026-05-14. Was 5 s in v1; 3 min is a deliberate compromise between the 5-s noise filter and Gemini's proposed 5-min policy filter (which would silently drop legitimate short TRT exposures — see [[wiki/sources/gemini-records-architecture-2026-05]]).
-
-> **Assessment instrument note** — the handwritten plan (`raw/Plan(수기).md`) mentions a "THI 설문지". This codebase uses **TFI** (Tinnitus Functional Index) instead — newer, treatment-responsive, designed to detect change over time. THI and TFI are not interchangeable; TFI is the chosen primary outcome. The user-facing copy still uses the generic "이명 설문지" wording so the instrument can be referenced without confusion.
-
 ## DataStore preferences
 
-**Implemented:**
+**Implemented (in `PreferenceKeys.kt`):**
 
 | Key | Type | Purpose |
 |---|---|---|
-| `matched_frequency_hz` | Float | User's confirmed tinnitus pitch (default 1000 Hz) |
-| `has_tonal_tinnitus` | Boolean? | `true` = pitch confirmed; `false` = skipped; `null` = undecided |
-| `processing_mode` | String | `"notch"` / `"amplify"` at matched frequency (default `"notch"`) |
-| `onboarding_complete` | Boolean | Gates the onboarding tutorial on first launch; written on Finish or Skip (default `false`) |
+| `matched_frequency_hz` | Float | Confirmed tinnitus pitch (default 1000 Hz) |
+| `has_tonal_tinnitus` | Boolean? | `true` = confirmed; `false` = skipped; `null` = undecided |
+| `processing_mode` | String | `"notch"` / `"amplify"` (default `"notch"`) |
+| `onboarding_complete` | Boolean | Gates onboarding on first launch (default `false`) |
+| `active_preset_id` | Long | Currently-selected `SoundPreset` |
+| `daily_listening_goal_min` | Int | Calendar day-complete threshold (default 120 min) |
+| `treatment_start_date` | Long | Epoch ms of first therapy session start |
+| `tfi_cadence_weeks` | Int | TFI re-assessment cadence: `1` or `2` (default `2`) |
+| `last_tfi_date` | Long | Epoch ms; drives TFI re-assessment prompt (default 0) |
 
-**Planned (not yet in PreferenceKeys.kt):**
+**Planned:**
 
 | Key | Purpose |
 |---|---|
-| `active_preset_id` | Currently-selected `SoundPreset` |
 | `sleep_timer_default_min` | Last-used sleep timer duration |
-| `daily_listening_goal_min` | Calendar day-complete threshold (default 120 min) |
-| `current_streak_days` | Consecutive days meeting the listening goal |
-| `tfi_cadence_weeks` | TFI re-assessment cadence (`1` or `2`, default `2`) |
-| `last_tfi_date` | Drives TFI re-assessment prompt |
 | `tinnitus_explainer_seen` | Tutorial-mode explainer dismissed |
 | `current_trt_phase` | _(Tier 1)_ Cached TRT phase |
 | `last_red_flag_screen_date` | _(Tier 1)_ 30-day red-flag screener cadence |
 
-DataStore holds **lightweight, frequently-read** values. Anything historical or relational (sessions, assessments, presets) lives in Room.
+DataStore holds **lightweight, frequently-read** values. Anything historical or relational lives in Room.
 
-## Audio Foreground Service _(✓ landed 2026-05-11; see [[wiki/app/plan]] Done)_
+## Audio Foreground Service ✓
 
-Pattern: **Application-singleton engine + started-only foreground service**, chosen over the canonical bound-service pattern because `AudioEngine` has no `Context`-dependent state and the ViewModel's StateFlow exposures need a stable non-null reference.
+Pattern: **Application-singleton engine + started-only FGS** (not bound). `AudioEngine` has no Context-dependent state; ViewModel StateFlow exposures need a stable non-null reference.
 
-- `TinnitusTrackerApp : Application` owns the `AudioEngine` as a `by lazy` singleton — engine lives as long as the process does.
-- `TherapyAudioService` is `started` only (no `onBind`). Two actions: `ACTION_START` (calls `startForeground` with the notification) and `ACTION_STOP` (engine.stop + `stopForeground(REMOVE)` + `stopSelf`). Manifest declares `foregroundServiceType="mediaPlayback"` and `exported="false"`.
-- `AudioRepository` is the single point of UI access. It forwards the engine's StateFlows directly (`val frequency = engine.frequency`, etc.) so the ViewModel's read pattern is unchanged. `start()` calls `ContextCompat.startForegroundService` then `engine.start()`; `stop()` calls `engine.stop()` then `context.stopService(...)`.
-- `AudioNotification` builds the `NotificationCompat` with a single "정지" action; content tap returns to `MainActivity` (declared `launchMode="singleTop"`).
-- Architecture rule preserved: `ui → AudioRepository → engine`. ViewModels never reference `AudioEngine` directly.
+- `TinnitusTrackerApp : Application` owns `AudioEngine` as `by lazy` singleton.
+- `TherapyAudioService` — started only, no `onBind`. Actions: `ACTION_START` (startForeground), `ACTION_STOP` (engine.stop + stopForeground + stopSelf), `ACTION_PAUSE`, `ACTION_RESUME`. `foregroundServiceType="mediaPlayback"`, `exported="false"`.
+- `AudioRepository` — single UI access point. Forwards engine StateFlows; `start()` → startForegroundService then engine.start; `stop()` → engine.stop then stopService; `pause()` / `resume()` stop/restart engine audio while keeping FGS alive and session open.
+- `AudioNotification` — low-importance channel `therapy_audio`, NOTIF_ID 1001; action button swaps between "일시정지" and "재생" based on `isPlaying`; content tap → `MainActivity` (`launchMode="singleTop"`).
+- Architecture rule: `ui → AudioRepository → AudioEngine`. ViewModels never reference `AudioEngine` directly.
 
-**Out of scope of this slice** (separate Next items): occluding-earphone route detection (BECOMING_NOISY); lock-screen / MediaSession integration; resumable-pause state in the notification.
+## Audio focus & interruption handling ✓
 
-## Audio focus & interruption handling _(✓ landed 2026-05-11; see [[wiki/app/plan]] Done)_
+`AudioFocusController` owns a single `AudioFocusRequest` (USAGE_MEDIA / CONTENT_TYPE_MUSIC; `setWillPauseWhenDucked(true)`). Its listener mirrors LOSS/GAIN into its own `hasFocus` flag so re-requesting after permanent loss actually re-asks the system.
 
-`audio/routing/AudioFocusController` owns a single `AudioFocusRequest` (USAGE_MEDIA / CONTENT_TYPE_MUSIC; `setWillPauseWhenDucked(true)` — we pause instead of letting the system duck therapeutic noise). The controller's own listener mirrors LOSS / GAIN into its `hasFocus` flag so re-requesting after a permanent loss actually re-asks the system.
-
-`AudioRepository` is the policy layer:
-- `start()` requests focus before promoting the service / starting the engine.
-- `stop()` (user-initiated) abandons focus and tears down the service.
-- `LOSS` → full teardown; clears the `wasPlayingBeforeInterruption` latch.
+`AudioRepository` focus policy:
+- `start()` — requests focus before promoting service / starting engine.
+- `stop()` (user) — abandons focus, tears down service.
+- `LOSS` → full teardown; clears `wasPlayingBeforeInterruption` latch.
 - `LOSS_TRANSIENT` / `LOSS_TRANSIENT_CAN_DUCK` → engine off, **service stays in foreground**, latch set.
-- `GAIN` after a transient → engine restarts; latch cleared.
+- `GAIN` after transient → engine restarts; latch cleared.
+
+## Design system
+
+**Tokens** (`ui/theme/Tokens.kt`):
+- `Spacing` — 4 dp grid: xs=4, sm=8, md=12, lg=16, xl=20, xxl=24, section=32. Forbidden literals (must not appear in UI code): 5, 6, 9, 10, 14, 18, 22, 26, 28 dp.
+- `Radius` — card=16 dp, chip=8 dp, button=12 dp, pill=100 dp.
+- `Elevation` — card=2 dp, raised=4 dp, hero=8 dp.
+
+**Component library** (`ui/theme/components/`): `AppCard` (5 variants), `PrimaryButton`, `SecondaryButton`, `Pill` (4 variants × 2 sizes), `TagChip`, `SegmentedControl`, `IconBadge`, `ChevronRow`, `EmptyStateCard`, `SectionHeader`. Adding a new variant = extend the enum, not build a parallel component.
+
+**Press effects** (`ui/theme/PressEffect.kt`): `pressableClickable` (drop-in for `.clickable`; 0.96 press-scale, spring dampingRatio=0.62/stiffness=820). `PolishedPlayButton` with `PlayButtonVariant` enum (`Coral`, `Orange`, `Teal`). Every interactive surface except `TabRow` and `Slider` uses `pressableClickable`.
+
+**Theme:** Light/cream app-wide (status bar light icons, white `NavigationBar`, Teal active). `FrequencyMatchingScreen` stays dark (bespoke lab aesthetic — exempt from token rules for its metallic-knob geometry).
 
 ## Module dependency rules
 
 ```
 ui  →  domain  →  data
-ui  →  audio  (only via repository)
+ui  →  audio  (only via AudioRepository)
 audio/service  →  audio/engine
 data/repository  →  data/database  +  data/preferences
 ```
 
-- `ui` never touches `data` directly — always through a Repository
-- `audio/engine` has no Compose / Activity dependencies (testable in isolation)
-- `domain` is pure Kotlin (no Android imports) — easy to unit test
+- `ui` never touches `data` directly — always through a Repository.
+- `audio/engine` has no Compose / Activity dependencies (testable in isolation).
+- `domain` is pure Kotlin (no Android imports) — not yet created.
 
 ## See also
 - [[wiki/app/prd]] — product scope
 - [[wiki/app/plan]] — implementation sequence
-- [[wiki/app/android-snapshot]] — current-state snapshot of code
+- [[wiki/app/android-snapshot]] — historical code snapshot (2026-05-11; may be stale)

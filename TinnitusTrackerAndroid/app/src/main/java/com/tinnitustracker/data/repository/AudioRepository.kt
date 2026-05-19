@@ -10,7 +10,9 @@ import com.tinnitustracker.audio.routing.AudioFocusController
 import com.tinnitustracker.audio.service.TherapyAudioService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -74,7 +76,11 @@ class AudioRepository(
                 .flatMapLatest { id -> presetRepo.observeById(id) }
                 .collect { preset ->
                     if (preset != null) {
-                        val m = if (preset.processingMode == "amplify") AudioEngine.Mode.MASK else AudioEngine.Mode.NOTCH
+                        val m = when (preset.processingMode) {
+                            "amplify" -> AudioEngine.Mode.MASK
+                            "off" -> AudioEngine.Mode.OFF
+                            else -> AudioEngine.Mode.NOTCH
+                        }
                         engine.setMode(m)
                         engine.setColorNoise(preset.colorNoise)
                         engine.setColorNoiseVolume(preset.colorNoiseVolume)
@@ -120,6 +126,39 @@ class AudioRepository(
     data class LiveSession(val startedAtEpochMs: Long, val isPaused: Boolean)
     private val _liveSession = MutableStateFlow<LiveSession?>(null)
     val liveSession: StateFlow<LiveSession?> = _liveSession.asStateFlow()
+
+    /**
+     * Sleep timer state. Owned here (rather than in `HomeViewModel`) so any UI
+     * surface — Home card, MiniPlayer — can show the same countdown. `null` =
+     * no timer set. On expiry the engine is paused via [pause] (session stays
+     * open; user can resume).
+     */
+    data class SleepTimerState(val setMinutes: Int, val remainingSec: Int)
+    private val _sleepTimer = MutableStateFlow<SleepTimerState?>(null)
+    val sleepTimer: StateFlow<SleepTimerState?> = _sleepTimer.asStateFlow()
+    private var sleepTimerJob: Job? = null
+
+    fun setSleepTimer(minutes: Int) {
+        sleepTimerJob?.cancel()
+        if (minutes <= 0) {
+            _sleepTimer.value = null
+            return
+        }
+        _sleepTimer.value = SleepTimerState(setMinutes = minutes, remainingSec = minutes * 60)
+        sleepTimerJob = ioScope.launch {
+            while ((_sleepTimer.value?.remainingSec ?: 0) > 0) {
+                delay(1000)
+                _sleepTimer.update { it?.copy(remainingSec = it.remainingSec - 1) }
+            }
+            _sleepTimer.value = null
+            pause()
+        }
+    }
+
+    fun cancelSleepTimer() {
+        sleepTimerJob?.cancel()
+        _sleepTimer.value = null
+    }
 
     // ── Engine setters (1-to-1 forwarding) ─────────────────────────────────
     fun setFrequency(hz: Float)      = engine.setFrequency(hz)

@@ -47,6 +47,7 @@ import com.tinnitustracker.ui.assessment.TfiQuestionnaireViewModelFactory
 import com.tinnitustracker.ui.assessment.TfiResultsScreen
 import com.tinnitustracker.ui.components.MiniPlayer
 import com.tinnitustracker.ui.home.HomeScreen
+import com.tinnitustracker.ui.home.PresetPickerBottomSheet
 import com.tinnitustracker.ui.matcher.FrequencyMatchingScreen
 import com.tinnitustracker.ui.matcher.FrequencyMatchingViewModel
 import com.tinnitustracker.ui.matcher.FrequencyMatchingViewModelFactory
@@ -180,22 +181,31 @@ private fun RootScaffold(
     val tfiVm: TfiQuestionnaireViewModel =
         viewModel(factory = TfiQuestionnaireViewModelFactory(tfi))
     val recordsVm: RecordsViewModel =
-        viewModel(factory = RecordsViewModelFactory(sessions, diary, tfi))
+        viewModel(factory = RecordsViewModelFactory(sessions, diary, tfi, repo))
     val homeVm: HomeViewModel =
         viewModel(factory = HomeViewModelFactory(audio, preset, sessions, repo))
 
     val tfiCadenceWeeks by repo.tfiCadenceWeeks.collectAsState(initial = 2)
     val lastTfiDate by repo.lastTfiDate.collectAsState(initial = 0L)
     val isPlaying by audio.isPlayingFlow.collectAsState(initial = false)
+    val activePresetId by repo.activePresetId.collectAsState(initial = 0L)
     val activePreset by repo.activePresetId
         .flatMapLatest { id -> preset.observeById(id) }
         .collectAsState(initial = null)
-        
+    val allPresets by preset.observeAll().collectAsState(initial = emptyList())
+    val liveSession by audio.liveSession.collectAsState(initial = null)
+    val sleepTimer by audio.sleepTimer.collectAsState(initial = null)
+    val treatmentStartDate by repo.treatmentStartDate.collectAsState(initial = 0L)
+    val dailyGoalMin by repo.dailyListeningGoalMin.collectAsState(initial = 120)
+
     val showTfiPrompt = System.currentTimeMillis() >=
         lastTfiDate + tfiCadenceWeeks * 7L * 24L * 60L * 60L * 1000L
     val scope = rememberCoroutineScope()
-    
+
     var showQuickLog by rememberSaveable { mutableStateOf(false) }
+    var showPresetPicker by rememberSaveable { mutableStateOf(false) }
+    /** When non-null, the active preset name is appended to the saved tags. */
+    var quickLogPrefillPreset by rememberSaveable { mutableStateOf<String?>(null) }
 
     // System back inside a 소리 subscreen returns to the 소리 root.
     BackHandler(enabled = current == Tab.Sound && soundSub != null) {
@@ -210,10 +220,16 @@ private fun RootScaffold(
         bottomBar = {
           Column {
             MiniPlayer(
-                visible = !(current == Tab.Sound && soundSub == SoundSub.Matcher),
+                visible = current != Tab.Home && !(current == Tab.Sound && soundSub == SoundSub.Matcher),
                 presetName = activePreset?.name,
                 isPlaying = isPlaying,
+                liveSession = liveSession,
+                sleepTimerRemainingSec = sleepTimer?.remainingSec,
                 onTogglePlay = { audio.togglePlay() },
+                onLogSession = {
+                    quickLogPrefillPreset = activePreset?.name
+                    showQuickLog = true
+                },
                 onClick = {
                     if (current == Tab.Sound) soundSub = null
                     current = Tab.Sound
@@ -271,14 +287,17 @@ private fun RootScaffold(
                 Tab.Home -> HomeScreen(
                     vm = homeVm,
                     onStartTherapy = { current = Tab.Sound },
-                    onOpenSettings = { current = Tab.Settings },
                     onStartTfi = {
                         tfiVm.reset()
                         current = Tab.Settings
                         settingsSub = SettingsSub.Tfi
                     },
                     showTfiPrompt = showTfiPrompt,
-                    onOpenQuickLog = { showQuickLog = true }
+                    onOpenQuickLog = {
+                        quickLogPrefillPreset = null
+                        showQuickLog = true
+                    },
+                    onOpenPresetPicker = { showPresetPicker = true }
                 )
                 Tab.Sound -> when (soundSub) {
                     null -> SoundSettingsScreen(
@@ -309,6 +328,14 @@ private fun RootScaffold(
                             scope.launch {
                                 repo.setTfiCadenceWeeks(if (tfiCadenceWeeks == 2) 1 else 2)
                             }
+                        },
+                        treatmentStartDate = treatmentStartDate,
+                        onSetTreatmentStartDate = { ms ->
+                            scope.launch { repo.setTreatmentStartDate(ms) }
+                        },
+                        dailyGoalMin = dailyGoalMin,
+                        onSetDailyGoal = { mins ->
+                            scope.launch { repo.setDailyListeningGoalMin(mins) }
                         }
                     )
                     SettingsSub.Tfi -> TfiQuestionnaireScreen(
@@ -325,11 +352,28 @@ private fun RootScaffold(
             
             if (showQuickLog) {
                 QuickLogBottomSheet(
-                    onDismiss = { showQuickLog = false },
-                    onSave = { severity, stress, tags ->
-                        recordsVm.addDiaryEntry(severity, stress, tags)
+                    onDismiss = {
                         showQuickLog = false
+                        quickLogPrefillPreset = null
+                    },
+                    onSave = { severity, stress, tags ->
+                        val finalTags = quickLogPrefillPreset?.let { listOf(it) + tags } ?: tags
+                        recordsVm.addDiaryEntry(severity, stress, finalTags)
+                        showQuickLog = false
+                        quickLogPrefillPreset = null
                     }
+                )
+            }
+
+            if (showPresetPicker) {
+                PresetPickerBottomSheet(
+                    presets = allPresets,
+                    activePresetId = activePresetId,
+                    onPick = { id ->
+                        scope.launch { repo.setActivePresetId(id) }
+                        showPresetPicker = false
+                    },
+                    onDismiss = { showPresetPicker = false }
                 )
             }
         }
