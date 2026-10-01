@@ -4,21 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "8928bcc15bc8a745",
+        "id": "8cbc5e1c1695f28b",
         "type": "tabs",
         "children": [
           {
-            "id": "1e8d70051c4def61",
+            "id": "212f1468e0a7f39e",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "raw/gemini_chat/gemini-code-1778723974953.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "gemini-code-1778723974953"
+              "title": "New tab"
             }
           }
         ]
@@ -181,11 +177,18 @@
       "bases:Create new base": false
     }
   },
-  "active": "1e8d70051c4def61",
+  "active": "0a808ef28ff75307",
   "lastOpenFiles": [
-    "wiki/app/done.md",
+    "claude.md",
+    "wiki/clinical/trt.md",
+    "wiki/clinical/tinnitus.md",
+    "wiki/index.md",
     "Untitled.md",
+    "claude 1.md",
+    "raw/TFI.pdf",
     "raw/gemini_chat/gemini-code-1778723974953.md",
+    "Untitled",
+    "wiki/app/done.md",
     "wiki/app/plan.md",
     "wiki/app/sound-library.md",
     "wiki/app/red-flags.md",
@@ -208,16 +211,9 @@
     "raw/NR21-001-12.pdf",
     "wiki/sources/kole-jain-beginner-mistakes.md",
     "wiki/sources/kole-jain-genius-ux.md",
-    "raw/TFI.pdf",
     "raw/ui_ux_beginner_mistakes_detailed.md",
-    "raw/genius_ui_ux_design_strategy_detailed.md",
-    "wiki/app/navigation.md",
-    "raw/Plan(수기).md",
-    "wiki/app/prd.md",
-    "wiki/app/architecture.md",
     "wiki/app/ect",
     "wiki/clinical",
-    "raw/jmir-2025-1-e59575.pdf",
-    "raw/assets/mockup-prototype(extended).html"
+    "raw/jmir-2025-1-e59575.pdf"
   ]
 }
